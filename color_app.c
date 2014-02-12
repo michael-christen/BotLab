@@ -22,6 +22,18 @@
 #include "lcmtypes/maebot_laser_t.h"
 #include "lcmtypes/maebot_leds_t.h"
 #include "lcmtypes/maebot_sensor_data_t.h"
+
+#define MOUSE_MOVE_THRESHOLD 10
+
+static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_touch_event_t * mouse)
+{
+    return 0;
+}
+static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_mouse_event_t * mouse)
+{
+    return 0;
+}
+
 static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t * key)
 {
     state_t *state = vh->impl;
@@ -49,7 +61,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		state->red &= 0xff;
 		state->green &= 0xff;
 		state->blue &= 0xff;
-		printf("r: %d, g: %d, b: %d, t: %f",
+		printf("r: %d, g: %d, b: %d, t: %f\n",
 				state->red, state->green, state->blue,
 				state->thresh);
 	}
@@ -176,7 +188,11 @@ int main(int argc, char ** argv)
     state->app.display_started = display_started;
     state->app.impl = state;
     state->veh.dispatch_order = -10;
+    state->veh.touch_event = touch_event;
+    state->veh.mouse_event = mouse_event;
     state->veh.key_event = key_event;
+    state->veh.destroy = nodestroy;
+    state->veh.impl = state;
     state->red = 0x3a;
     state->green = 0x76;
     state->blue = 0x41;
