@@ -738,7 +738,7 @@ void* FSM(void* data){
 	clock_t startTime = clock();
 	int turnIndex = 0;
 	double analyzeAngle;
-	fired_from_t* firedFrom;
+	fired_from_t firedFrom[100];
 	int fires = 0;
 	int ftthresh = 12;
 	double frthresh = M_PI/3;
@@ -1066,11 +1066,12 @@ int main(int argc, char ** argv)
 	-0.001299, -0.000377, 5.889305,
 	-0.000036, 0.001629, -0.385430});
 
-	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
+	pid_init(state->green_pid, 1.0, 0.1, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 	//0.5 is way too high for d
-	pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
+	//pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.60, 0.3, 0.30, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
