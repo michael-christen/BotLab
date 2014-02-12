@@ -24,6 +24,7 @@ struct pid {
 	double min_output, max_val;
 };
 
+//+D will increase resistance
 void   pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal, double min_output, double max_val);
 void   pid_update_pid(pid_ctrl_t *pid, double P, double I, double D);
 void   pid_update_goal(pid_ctrl_t *pid, double goal);

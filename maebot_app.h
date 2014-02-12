@@ -229,6 +229,8 @@ struct state_t {
 
 	pid_ctrl_t *theta_pid;
 	int         doing_pid_theta;
+
+	double left_offset;
 };
 
 //////////////
