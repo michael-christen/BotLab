@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "image.h"
+#include "pixel.h"
 
 #define COLOR_THRESHOLD 37.0
 //ABGR
@@ -18,14 +19,16 @@
 //#define TEMPLATE_PX 0xff4f4029
 //#define TEMPLATE_PX 0xff514430
 //#define SHOW_PX 0xffe127ff
-#define MIN_PXS 75
-#define MAX_PXS 400
+#define MIN_PXS 500
+#define MAX_PXS 2000
 #define MAX_NUM_NEIGHBORS 8
 #define MAX_NUM_BALLS 1500
 
 typedef struct ball ball_t;
 struct ball {
     double x, y;
+    pixel_t t, b, l, r;
+    int valid;
     int num_px;
 };
 

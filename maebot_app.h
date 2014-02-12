@@ -174,6 +174,8 @@ struct state_t {
 
     pid_ctrl_t *green_pid;
     double      green_pid_out;
+    double      diff_x;
+    int         diamond_seen;
 };
 
 enum stateType{

@@ -43,8 +43,10 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 }
 
 double pid_to_rot(double pid_out) {
+    double scale_factor = -5;
     if(fabs(pid_out) > 1) {
 	pid_out /= fabs(pid_out);
     }
+    pid_out /= scale_factor;
     return pid_out;
 }
