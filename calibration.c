@@ -49,7 +49,10 @@ void calibrate_gyros(int64_t gyro_int[], double gyro_bias[],
 	int64_t orig_1 = gyro_int[1];
 	int64_t orig_2 = gyro_int[2];
 	printf("Calibrating gyros...\n");
-	
+	for(int i = 0; i < 3; i++){
+		printf("Gyro %i: %lld\n", i, gyro_int[i]);
+	}
+
 	double time = 2.5;
 	sleep(time);
 	gyro_int_offset = gyro_int;
@@ -77,7 +80,7 @@ void calibrate_gyros(int64_t gyro_int[], double gyro_bias[],
 		case 1: printf("Calc %i: %g\n", i, slope_1); break;
 		case 2: printf("Calc %i: %g\n", i, slope_2); break;
 		}*/
-		printf("Gyro %i: %g\n", i, gyro_bias[i]);
+		printf("Gyro %i: %lld, %g\n", i, gyro_int[i], gyro_bias[i]);
 	}
 
 	return;

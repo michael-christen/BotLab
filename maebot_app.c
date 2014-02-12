@@ -451,7 +451,7 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
             msg->gyro_int[0], msg->gyro_int[1], msg->gyro_int[2]);*/
 
 	//printf("%d, %lld\n",msg->gyro[2], msg->gyro_int[2]);
-	printf("%d, %lld\n", state->gyro[2], state->gyro_int[2]);
+	printf("%d, %lld, %lld, %g\n", state->gyro[2], state->gyro_int[2], state->gyro_int_offset[2], state->gyro_bias[2]);
 }
 
 void* lcm_handle_loop(void *data) {
