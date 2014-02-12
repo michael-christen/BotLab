@@ -329,7 +329,35 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->left_offset -= 5;
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
-		}
+		} else if(key->key_code == 'z') {
+			double average_change_int[120];
+			double average_theta[120];
+			double average_theta_degrees[120];
+			for(int i = 0; i < 36; i++){
+				state->gyro_int[2] = 0;
+				for(int k = 0; k < 120; k++){
+					sleep(1);
+					int64_t change_int = state->gyro_int[2];
+					double theta = change_int / state->gyro_ticks_per_theta;
+					double thetaDegrees = theta/M_PI * 180.0;
+					average_change_int[k] += change_int;
+					average_theta[k] += theta;
+					average_theta_degrees[k] += thetaDegrees;
+					printf("%f, %f, %f\n", average_change_int[k], average_theta[i], average_theta_degrees[i]);
+				}
+				//printf("Test %d:\nGyro integral: %lld\nTheta(r): %g\nTheta(d): %g\n\n\n", i, change_int, theta, thetaDegrees);
+			}
+			for(int i = 0; i < 120; i++){
+				average_change_int[i] /= 36.0;
+				average_theta[i] /= 36.0;
+				average_theta_degrees[i] /= 36.0;
+				printf("%f, %f, %f\n", average_change_int[i], average_theta[i], average_theta_degrees[i]);
+			}
+			exit(0);
+
+			//printf("Finished 36 tests:\nAverage gyro integral: %f\nAverage theta(r): %g\nAverage theta(d): %g\n", average_change_int, average_theta, average_theta_degrees);
+		
+		}	
 
 		state->red &= 0xff;
 		state->green &= 0xff;
