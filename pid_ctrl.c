@@ -58,9 +58,9 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 	double proportion   = pid->P * err;
 	double integral     = pid->I * pid->integral;
 	double deriv_out    = pid->D * -derivative;
-	printf("proportion: %f\n",proportion);
+	//printf("proportion: %f\n",proportion);
 	//printf("integral  : %f\n",integral);
-	printf("derivative: %f\n",deriv_out);
+	//printf("derivative: %f\n",deriv_out);
     double output       = proportion +
 		                  integral   +
 						  deriv_out;
@@ -94,7 +94,7 @@ double pid_to_rot(pid_ctrl_t *pid, double pid_out) {
 	//Scale to factor
 	pid_out *= -MAPPING_FACTOR;
 
-    printf("speed: %f\n",pid_out);
+    //printf("speed: %f\n",pid_out);
     return pid_out;
 }
 

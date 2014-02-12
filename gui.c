@@ -102,29 +102,29 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 }
 
 void draw_path(vx_buffer_t *buf, path_t *path, float color[]) {
-    uint32_t numCoords = 6 * (path->length - 1);
-    float *traj = malloc(sizeof(float) * numCoords);
-    uint32_t i, baseIndex;
-    for (i = 0; i < path->length; i++) {
-        if (i == 0) {
-            baseIndex = 0;
-        } else {
-            baseIndex = (i*6) - 3;
-        }
-        traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
-        traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
-        traj[baseIndex + 2] = 0.5;
+	uint32_t numCoords = 6 * (path->length - 1);
+	float *traj = malloc(sizeof(float) * numCoords);
+	uint32_t i, baseIndex;
+	for (i = 0; i < path->length; i++) {
+		if (i == 0) {
+			baseIndex = 0;
+		} else {
+			baseIndex = (i*6) - 3;
+		}
+		traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
+		traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
+		traj[baseIndex + 2] = 0.5;
 
-        if (i != path->length - 1 &&  i != 0) {
-            traj[baseIndex + 3] = traj[baseIndex];
-            traj[baseIndex + 4] = traj[baseIndex + 1];
-            traj[baseIndex + 5] = traj[baseIndex + 2];
-        }
-    }
+		if (i != path->length - 1 &&  i != 0) {
+			traj[baseIndex + 3] = traj[baseIndex];
+			traj[baseIndex + 4] = traj[baseIndex + 1];
+			traj[baseIndex + 5] = traj[baseIndex + 2];
+		}
+	}
 
-    vx_resc_t *posPoints = vx_resc_copyf(traj, numCoords);
-    vx_buffer_add_back(buf, vxo_lines(posPoints, numCoords/3, GL_LINES, vxo_points_style(color , 2.0f)));
-    free(traj);
+	vx_resc_t *posPoints = vx_resc_copyf(traj, numCoords);
+	vx_buffer_add_back(buf, vxo_lines(posPoints, numCoords/3, GL_LINES, vxo_points_style(color , 2.0f)));
+	free(traj);
 }
 
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
