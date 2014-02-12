@@ -12,25 +12,27 @@ void driveRad(state_t * state, double radius, double speed) {
 		l_speed  = r_speed ;
 		r_speed  = temp;
 	}
+	//printf("RAD-> L: %f, R: %f\n",l_speed, r_speed);
+	driveLR(state, l_speed, r_speed, speed);
+}
 
-	//l_speed  += state->left_offset;
-
+void driveLR(state_t *state, double l, double r, double speed) {
 	//Normalize so greatest = 1
-	double max = (l_speed > r_speed ) ?
-		l_speed : r_speed ;
-	l_speed  /= max;
-	r_speed  /= max;
+	//printf("L: %f, R: %f, speed: %f\n", l, r, speed);
+	double max = (l > r ) ?
+		l : r ;
+	l  /= max;
+	r  /= max;
 
 	//Factor by speed
-	l_speed  *= speed;
-	r_speed  *= speed;
-
-	//printf("RAD-> L: %f, R: %f\n",l_speed, r_speed);
+	l  *= speed;
+	r  *= speed;
 
 
+	//printf("NEWL: %f, NEWR: %f\n", l, r, speed);
 	pthread_mutex_lock(&state->cmd_mutex);
-	state->cmd.motor_left_speed  = l_speed;
-	state->cmd.motor_right_speed = r_speed;
+	state->cmd.motor_left_speed  = l;
+	state->cmd.motor_right_speed = r;
 	pthread_mutex_unlock(&state->cmd_mutex);
 }
 
@@ -91,7 +93,7 @@ void driveToTheta(state_t * state, double theta) {
 
 		double pid_out = -pid_get_output(state->theta_pid, difference);
 		// / by 2 to decrease speed
-		double motor_val = pid_to_rot(state->theta_pid, pid_out)/2;
+		double motor_val = pid_to_rot(state->theta_pid, pid_out)/3;
 		//offset to linearize
 	    motor_val += sign(motor_val)*0.1;
 		//printf("difference: %f, pid: %f, motor_val: %f\n",difference, pid_out, motor_val);
@@ -159,12 +161,11 @@ void driveToPosition(state_t * state, position_t position){
 		//We want to oscillate around STRAIGHT_OFFSET
 		//adding to it will cause it to rotate more to
 		//the right, subtracting will rotate more to left
-		double angle_mag = 1;
+		double angle_mag = 0.4;
 		double offset = ang_f*angle_mag;
 		double radius = STRAIGHT_OFFSET + offset;
-
-		//radius        = -norm;
-		//double radius = dir*norm / mag_ang;
+		double r_off  = -0.07 + offset;
+		printf("r_off: %f\n",r_off);
 
 		double speed_f= pid_get_output(pos_pid, dist);
 		double speed  = fabs(speed_f);
@@ -175,7 +176,8 @@ void driveToPosition(state_t * state, position_t position){
 			//printf("rotating theta\n");
 			rotateTheta(state, -theta);
 		} else {
-			driveRad(state, radius, speed);
+			driveLR(state, 1, 1 + r_off, speed);
+			//driveRad(state, radius, speed);
 		}
 
 		usleep(50000);

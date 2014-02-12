@@ -35,7 +35,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
     //double dt           = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
 	double dt = cur_time - pid->prev_time;
     double err          = pid->goal - meas;
-	printf("%f, %f\n",dt,err);
+	//printf("%f, %f\n",dt,err);
 	/*
 	if(err < 0) {
 		printf("ERROR is < 0\n");
