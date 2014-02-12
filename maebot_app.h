@@ -192,6 +192,7 @@ struct state_t {
     double      green_pid_out;
     double      diff_x;
     int         diamond_seen;
+	int         doing_pid;
 };
 
 //////////////
