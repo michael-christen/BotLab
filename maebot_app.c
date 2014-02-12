@@ -80,6 +80,9 @@ void fireLaser(state_t* state){
 
 void moveBot(state_t* state){
 	//double arc_val = 5;
+	if(state->doing_pid_theta) {
+		return;
+	}
 	if(((state->cmd_val & PID) | state->doing_pid) != 0) {
 		//uint32_t color_detect = state->red | state->green << 8 | state->blue << 16 | 0xff << 24;
 		//printf("color: %x\n",color_detect);
@@ -294,9 +297,15 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			pid_update_pid(state->theta_pid, state->theta_pid->P, state->theta_pid->I, state->theta_pid->D - 0.1);
 			printf("D updated to %g\n", state->theta_pid->D);
 		}else if(key->key_code == 'm') {
+			//left, some inconsistency
+			state->doing_pid_theta = 1;
 			rotateTheta(state, -M_PI/2.0);
+			state->doing_pid_theta = 0;
 		}else if(key->key_code == 'k') {
+			//right
+			state->doing_pid_theta = 1;
 			rotateTheta(state, M_PI/2.0);
+			state->doing_pid_theta = 0;
 		}else if(key->key_code == 'c') {
 			if(!state->calibrate && !state->calibrating){
 				state->calibrate = 1;
@@ -782,10 +791,12 @@ int main(int argc, char ** argv)
 	state->diff_x        = 0;
 	state->dist          = 0;
 	state->diamond_seen  = 0;
-	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;
+	state->doing_pid     = 0;
+	state->doing_pid_theta     = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
-	pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
+	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
+	pid_init(state->theta_pid, 2.0, 0.0, 0.0, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
