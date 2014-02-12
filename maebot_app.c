@@ -177,6 +177,7 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			// Add state machine flag here
 			state->goalMouseX = man_point[0];
 			state->goalMouseY = man_point[1];
+			printf("mx: %f, my: %f\n", man_point[0], man_point[1]);
 		}
 	}
 
@@ -730,9 +731,9 @@ int main(int argc, char ** argv)
 		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + 10 + i, HAZ_MAP_OBSTACLE);
 		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2 + i, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
 	}*/
-	
-	state->targetPath = haz_map_get_path(&state->hazMap, 40, 40);
-	state->targetPathValid = 1;
+
+	//state->targetPath = haz_map_get_path(&state->hazMap, 40, 40);
+	//state->targetPathValid = 1;
 
 	//Should be width
 	state->tape = calloc(1000, sizeof(pixel_t));
