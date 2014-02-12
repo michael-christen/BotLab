@@ -256,15 +256,37 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	}
 
 	//Draw Gaussian Ellipse
+	vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world, "ellipse-buff");
+	for(int i = 0; i < state->stored_mat_num; ++i) {
+		drawEllipse(ellipseBuff, state->stored_matrices[i],
+					state->stored_pos[i], state);
+	}
+	odometry_t tp;
+	tp.x = state->pos_x;
+	tp.y = state->pos_y;
+	tp.theta = state->pos_theta;
+	drawEllipse(ellipseBuff, state->var_matrix, tp, state);
+
+	//Swap buffers
+	vx_buffer_swap(gridBuff);
+	vx_buffer_swap(bruceBuff);
+	vx_buffer_swap(ellipseBuff);
+	vx_buffer_swap(tTrajBuff);
+	vx_buffer_swap(aTrajBuff);
+	//printf("endRender TOPDOWN\n");
+	return 1;
+}
+
+void drawEllipse(vx_buffer_t *ellipseBuff, matd_t *var_matrix, odometry_t pos, state_t *state) {
 	//95% confidence ellipse from 1-sigma error ellipse
 	double scalefactor = 2.4477;
 	//just for show now
 	scalefactor = 10;
-	double covX = matd_get(state->var_matrix, 0, 0);
-	double covY = matd_get(state->var_matrix, 1, 1);
+	double covX = matd_get(var_matrix, 0, 0);
+	double covY = matd_get(var_matrix, 1, 1);
 	double trace = covX + covY;
 	double gap   = sqrt(pow(trace,2) -
-			4 * matd_det(state->var_matrix));
+						4 * matd_det(var_matrix));
 	//Calculate Eigen Values with quadratic formula
 	double eigX = (trace + gap)/2;
 	double eigY = (trace - gap)/2;
@@ -287,11 +309,11 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	}
 	//rotate phi ccw from original orientation
 	double phi = 1/2 * atan(
-			(1/aspect_ratio) *
-			( (2*sig_xy) /
-			  ( pow(sig_x,2)-pow(sig_y,2) )
-			)
-			);
+							(1/aspect_ratio) *
+							( (2*sig_xy) /
+							  ( pow(sig_x,2)-pow(sig_y,2) )
+							)
+						   );
 	phi = M_PI/2;
 
 	int npoints = 35;
@@ -307,33 +329,23 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 		points[3*i + 1] = y;
 		points[3*i + 2] = z;
 	}
-	vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world,
-			"error_ellipse");
-	vo = vxo_chain(
-			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-			vxo_mat_translate3(
-				state->pos_x,
-				state->pos_y,
-				state->pos_z
-				),
-			vxo_mat_rotate_z(phi - state->pos_theta),
-			vxo_lines(
-				vx_resc_copyf(points, npoints*3),
-				npoints,
-				GL_LINE_LOOP,
-				vxo_lines_style(vx_purple, 1.0f)
-				)
-			);
+	vx_object_t *vo = vxo_chain(
+				   vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+				   vxo_mat_translate3(
+									  pos.x,
+									  pos.y,
+									  state->pos_z
+									 ),
+				   //not sure why need to add 90 now
+				   vxo_mat_rotate_z(phi - pos.theta + M_PI/2),
+				   vxo_lines(
+							 vx_resc_copyf(points, npoints*3),
+							 npoints,
+							 GL_LINE_LOOP,
+							 vxo_lines_style(vx_purple, 1.0f)
+							)
+				  );
 	vx_buffer_add_back(ellipseBuff, vo);
-
-	//Swap buffers
-	vx_buffer_swap(gridBuff);
-	vx_buffer_swap(bruceBuff);
-	vx_buffer_swap(tTrajBuff);
-	vx_buffer_swap(aTrajBuff);
-	vx_buffer_swap(ellipseBuff);
-	//printf("endRender TOPDOWN\n");
-	return 1;
 }
 
 int destroyWorldTopDownLayer(state_t *state, layer_data_t *layerData) {

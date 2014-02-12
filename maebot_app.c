@@ -693,6 +693,9 @@ int main(int argc, char ** argv)
 	state->odometry_seen = 0;
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
+	state->stored_matrices = malloc(sizeof(matd_t*)*MAX_NUM_ELLIPSES);
+	state->stored_pos    = malloc(sizeof(odometry_t)*MAX_NUM_ELLIPSES);
+	state->stored_mat_num = 0;
 
 	state->cur_var       = matd_create(3,3);
 	state->last_var      = matd_create(3,3);

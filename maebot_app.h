@@ -43,6 +43,7 @@
 #define NUM_LAYERS 4
 #define BRUCE_DIAMETER 10.5
 #define BRUCE_HEIGHT 10
+#define MAX_NUM_ELLIPSES 0
 
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768
@@ -143,6 +144,11 @@ struct state_t {
     int    odometry_seen;
     const char *odometry_channel;
 	matd_t *var_matrix;
+
+	int    stored_mat_num;
+	odometry_t *stored_pos;
+	matd_t **stored_matrices;
+
 	double alpha, beta;
 
 	//map

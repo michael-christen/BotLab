@@ -41,6 +41,24 @@ void odometry_handler (
 		state->pos_y     += pos_update.x * cos(state->pos_theta);
 		state->pos_theta += pos_update.theta;
 
+		if(state->stored_mat_num < MAX_NUM_ELLIPSES && fabs(state->dist) > 10.0) {
+			//printf("Adding Ellipse\n");
+			state->stored_pos[state->stored_mat_num].x = state->pos_x;
+			state->stored_pos[state->stored_mat_num].y = state->pos_y;
+			state->stored_pos[state->stored_mat_num].theta = state->pos_theta;
+			/*
+			printf("x: %f, y: %f, theta: %f",
+				   state->stored_pos[state->stored_mat_num].x,
+				   state->stored_pos[state->stored_mat_num].y,
+				   state->stored_pos[state->stored_mat_num].theta
+		    );
+			*/
+
+			state->stored_matrices[state->stored_mat_num ++] =
+				matd_copy(state->var_matrix);
+			state->dist = 0;
+		}
+
 		double mthreshold = 1.0;
 		double rthreshold = 0.1;
 		/*if(state->waiting_on_pos &&
