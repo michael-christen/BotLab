@@ -681,7 +681,7 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_START;
 	nextState = curState;
-	choose_path(state);
+	//choose_path(state);
 	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
@@ -774,7 +774,7 @@ void* FSM(void* data){
 					camera_process(state);
 				}
 			}
-			default: 
+			default:
 				if (!state->FSM) {
 					nextState = EX_WAIT;
 				} else {
@@ -783,6 +783,7 @@ void* FSM(void* data){
 						while (state->targetPathValid == 0) {
 							usleep(1000);
 						}
+						path = state->targetPath;
 						//path = choose_path(state);
 					}
 				}
@@ -978,7 +979,7 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
 	pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
 	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-	pthread_create(&state->led_thread,  NULL, send_led, state);
+	//pthread_create(&state->led_thread,  NULL, send_led, state);
 	pthread_create(&state->gui_thread,  NULL, gui_create, state);
 	pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
