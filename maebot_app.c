@@ -744,6 +744,8 @@ void* FSM(void* data){
 				printf("\nSTATE: Move\n");
 				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
+					printf("cX: %d, cY: %d\n", state->pos_x, state->pos_y);
+					printf("tX: %d, tY: %d\n", waypoint.x, waypoint.y);
 					driveToPosition(state, waypoint);
 					path->position++;
 					printf("Completed move %d\n", path->position);
@@ -907,6 +909,7 @@ void* FSM(void* data){
 							path = state->targetPath;
 						} else {
 							path = choose_path(state, pre_analyze_theta);
+							printf("AutoNave path length: %u\n", path->length);
 							if (path->length == 0) {
 								printf("Bad path returned by explorer!\n");
 								nextState = EX_ANALYZE;
@@ -952,7 +955,7 @@ void* position_tracker(void *data) {
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
 
-		//world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
 	//		state->pos_x += 1;
 	//		state->pos_y += 2;
 
@@ -1100,11 +1103,10 @@ int main(int argc, char ** argv)
 
 	state->getopt_options.verbose = getopt_get_bool(state->gopt, "verbose");
 	state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
-	state->getopt_options.mouseGuidance = pow(2, getopt_get_bool(state->gopt, "mouse-guidance"));
+	state->getopt_options.mouseGuidance = getopt_get_bool(state->gopt, "mouse-guidance");
 	state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
 	state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
 	state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
-
 
 	//pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
