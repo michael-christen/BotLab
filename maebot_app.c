@@ -46,6 +46,8 @@
 
 #define MOUSE_MOVE_THRESHOLD 10
 
+#define GYRO_OFF_2 -280.5897772	//From 3815 samples
+
 int count;
 
 void setLaser(state_t* state, int lsr_val){
@@ -440,8 +442,11 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
 	for(int i = 0; i < 3; i++){
 		state->acc[i] = msg->accel[i];
 		state->gyro[i] = msg->gyro[i];
-		state->gyro_int[i] += state->gyro[i] - state->gyro_bias[i]; //msg->gyro_int[i] -state->gyro_int_offset[i] - state->gyro_bias[i];
+		state->gyro_int[i] += state->gyro[i];// state->gyro_bias[i]; //msg->gyro_int[i] -state->gyro_int_offset[i] - state->gyro_bias[i];
 	}
+	//printf("Gryo2: %g, %lld, ", state->gyro[2], state->gyro_int[2]);
+	state->gyro_int[2] -= GYRO_OFF_2;
+	//printf("%lld\n,", state->gyro_int[2]);
 
 	//state->gyro[2] -=
 	/*printf ("  gyro values = (%d, %d, %d)\n",
@@ -450,7 +455,7 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
             msg->gyro_int[0], msg->gyro_int[1], msg->gyro_int[2]);*/
 
 	//printf("%d, %lld\n",msg->gyro[2], msg->gyro_int[2]);
-	printf("%d, %lld, %lld, %g\n", state->gyro[2], state->gyro_int[2], state->gyro_int_offset[2], state->gyro_bias[2]);
+	//printf("%d, %lld, %lld, %g\n", state->gyro[2], state->gyro_int[2], state->gyro_int_offset[2], state->gyro_bias[2]);
 }
 
 void* lcm_handle_loop(void *data) {
