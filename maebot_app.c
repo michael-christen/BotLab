@@ -87,6 +87,8 @@ void moveBot(state_t* state){
 		//printf("thresh: %f\n",state->thresh);
 		pthread_mutex_lock(&state->image_mutex);
 		{
+			//Wait for fresh image to arrive
+			pthread_cond_wait(&state->image_cv, &state->image_mutex);
 			state->num_balls = blob_detection(state->im, state->balls,
 											  state->hue, 0xff039dfd, state->thresh);
 			//printf("num_balls: %d\n",state->num_balls);
@@ -395,6 +397,8 @@ void * camera_analyze(void * data)
 
 	while (state->running) {
 		pthread_mutex_lock(&state->image_mutex);
+		//Let PID know that I am here
+		pthread_cond_signal(&state->image_cv);
 		res = isrc->get_frame(isrc, &isdata);
 		if (!res) {
 			if (state->imageValid == 1) {

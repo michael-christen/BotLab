@@ -154,6 +154,7 @@ struct state_t {
     int imageValid;
     image_u32_t *im;
     pthread_mutex_t image_mutex;
+	pthread_cond_t  image_cv;
     pthread_t camera_thread;
 
     int num_balls;
