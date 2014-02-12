@@ -89,11 +89,13 @@ void moveBot(state_t* state){
 		{
 			//Wait for fresh image to arrive
 			pthread_cond_wait(&state->image_cv, &state->image_mutex);
+			printf("received image\n");
 			state->num_balls = blob_detection(state->im, state->balls,
 											  state->hue, 0xff039dfd, state->thresh);
 			//printf("num_balls: %d\n",state->num_balls);
 			if(state->num_balls == 1) {
 				state->diff_x = state->im->width/2.0 - state->balls[0].x;
+				printf("diff_x = %f\n",state->diff_x);
 				//printf("x: %f\n", diff_x);
 				state->im->buf[(int) (state->im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
 
@@ -128,7 +130,7 @@ void moveBot(state_t* state){
 		}
 		double rot = pid_to_rot(state->green_pid_out);
 		driveRot(state, rot);
-		usleep(100000);
+		usleep(50000);
 		driveStop(state);
 	} else if (state->cmd_val & FORWARD) {
 		driveRad(state, -1000, LONG_SPEED);
@@ -399,6 +401,7 @@ void * camera_analyze(void * data)
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
 		pthread_cond_signal(&state->image_cv);
+		printf("got image\n");
 		res = isrc->get_frame(isrc, &isdata);
 		if (!res) {
 			if (state->imageValid == 1) {
@@ -424,7 +427,9 @@ void * camera_analyze(void * data)
 			//Also, gonna need to copy image
 			//Green
 			int obstacle = 1;
-			//state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
+			if(!state->doing_pid) {
+				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
+			}
 			find_point_pos( state, obstacle);
 			state->num_pts_tape = 0;
 			int x = 190; //525

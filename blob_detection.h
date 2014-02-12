@@ -20,7 +20,7 @@
 //#define TEMPLATE_PX 0xff514430
 //#define SHOW_PX 0xffe127ff
 #define MIN_PXS 500
-#define MAX_PXS 20000
+#define MAX_PXS 40000000
 #define MAX_NUM_NEIGHBORS 8
 #define MAX_NUM_BALLS 15000
 
