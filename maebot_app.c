@@ -239,7 +239,9 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->hue --;
 		}else if(key->key_code == 'm') {
 			rotateTheta(state, -M_PI/2.0);
-		} else if(key->key_code == 'c') {
+		}else if(key->key_code == 'k') {
+			rotateTheta(state, M_PI/2.0);
+		}else if(key->key_code == 'c') {
 			if(!state->calibrate && !state->calibrating){
 				state->calibrate = 1;
 			}else if(state->calibrating){
@@ -644,7 +646,8 @@ void* position_tracker(void *data) {
         path->waypoints[path->length - 1].x = state->pos_x;
         path->waypoints[path->length - 1].y = state->pos_y;
 
-        world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+		printf("x: %d y: %d\n", state->pos_x, state->pos_y);
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
 
 
         usleep(POS_SAMPLES_INTERVAL);
@@ -726,7 +729,7 @@ int main(int argc, char ** argv)
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
-	pid_init(state->theta_pid, 10.0, 1, 4, 0, .1, 2*M_PI);
+	pid_init(state->theta_pid, 5.0, 0, 0, 0, .1, 2*M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	/*for (i = 0; i < 10; i++) {
@@ -738,7 +741,7 @@ int main(int argc, char ** argv)
 
 	world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
 
-	
+
 	//state->targetPath = haz_map_get_path(&state->hazMap, 40, 40);
 	//state->targetPathValid = 1;
 

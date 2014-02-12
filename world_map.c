@@ -34,23 +34,23 @@ void world_map_set(world_map_t *wm, int x, int y, int8_t type) {
 	}
 	wm->image->buf[adjY*wm->image->width + adjX] = color;
 
-	printf("seen x: %d, y: %f \n", adjX, adjY);
+//	printf("seen x: %d, y: %f \n", adjX, adjY);
 	//reset t/b/l/r if necessary
 	if(adjX < wm->left){
 		wm->left = adjX;
-		printf("went lefter\n");
+//		printf("went lefter\n");
 	}
 	if(adjX > wm->right){
 		wm->right = adjX;
-		printf("went righter\n");
+//		printf("went righter\n");
 	}
 	if(adjY < wm->bottom){
 		wm->bottom = adjY;
-		printf("went lower\n");
+//		printf("went lower\n");
 	}
 	if(adjY > wm->top){
 		wm->top = adjY;
-		printf("went higher\n");
+//		printf("went higher\n");
 	}
 }
 
