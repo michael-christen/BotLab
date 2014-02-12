@@ -40,11 +40,11 @@ void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
 
 
 
-path_t * dumb_explore(void * data){
+path_t * dumb_explore(void * data, double pre_analyze_theta){
 
 	state_t * state = data;
 
-	double theta = state->pos_theta;
+	double theta = pre_analyze_theta; //state->pos_theta;
 	double bruce_x = state->pos_x;
 	double bruce_y = state->pos_y;
 	haz_map_t * hm = &state->hazMap;
