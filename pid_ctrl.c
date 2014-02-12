@@ -30,8 +30,12 @@ void pid_update_goal(pid_ctrl_t *pid, double goal) {
 
 double pid_get_output(pid_ctrl_t *pid, double meas) {
     clock_t cur_clock   = clock();
-    double dt           = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
+	double  cur_time    = utime_now()/1000000.0;
+	//printf("clock: %d, prev_clock: %d, utime: %f\n",cur_clock, pid->prev_clk, utime_now()/1000000.0);
+    //double dt           = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
+	double dt = cur_time - pid->prev_time;
     double err          = pid->goal - meas;
+	printf("%f, %f\n",dt,err);
 	/*
 	if(err < 0) {
 		printf("ERROR is < 0\n");
@@ -58,7 +62,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 
 	//If passes, get rid of integral
 	if(sign(pid->prev_err) != sign(err)) {
-		printf("SWITCH");
+		//printf("SWITCH\n");
 		pid->integral = 0;
 	}
 
@@ -85,6 +89,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 
     pid->prev_err       = err;
     pid->prev_clk       = cur_clock;
+    pid->prev_time      = cur_time;
     return output;
 }
 

@@ -4,6 +4,7 @@
 #include<stdio.h>
 #include<math.h>
 #include<float.h>
+#include "common/timestamp.h"
 
 //#define MAX_VAL 100
 //#define MIN_OUTPUT 16
@@ -16,6 +17,7 @@ struct pid {
 
     double integral;
     clock_t prev_clk;
+	double prev_time;
     double  prev_err;
 
     //Boolean to not evaluate integral or derivative on first attempt

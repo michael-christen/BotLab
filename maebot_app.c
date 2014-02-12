@@ -192,8 +192,7 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			// Add state machine flag here
 			state->goalMouseX = man_point[0] / CM_TO_VX;
 			state->goalMouseY = man_point[1] / CM_TO_VX;
-			printf("Clicked: %f cm's x, %f cm's y\n",
-					state->goalMouseX, state->goalMouseY);
+			//printf("Clicked: %f cm's x, %f cm's y\n", state->goalMouseX, state->goalMouseY);
 			pthread_mutex_lock(&state->haz_map_mutex);
 			if (state->targetPathValid == 1) {
 				path_destroy(state->targetPath);
@@ -1024,7 +1023,8 @@ int main(int argc, char ** argv)
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
-	pid_init(state->theta_pid, 0.5, 0.4, 0.04, 0, .1, M_PI);
+	//0.5 is way too high for d
+	pid_init(state->theta_pid, 0.8, 0.0, 0.2, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
