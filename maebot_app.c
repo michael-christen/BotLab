@@ -62,7 +62,7 @@ void fireLaser(state_t* state){
 		setLaser(state, 0);
 		LEDStatus(state, NONE);
 		usleep(150000);
-	
+
 		setLaser(state, 1);
 		LEDStatus(state, LASER_ON);
 		usleep(200000);
@@ -80,7 +80,7 @@ void moveBot(state_t* state, int cmd_val){
 	} else if(cmd_val & LEFT) {
 	    driveRad(state, arc_val, LONG_SPEED);
 	} else {
-	    driveRad(state, -100, LONG_SPEED);
+	    driveRad(state, -1000, LONG_SPEED);
 	}
     } else if(cmd_val & BACKWARD) {
 	if(cmd_val & RIGHT) {
@@ -134,7 +134,7 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
             state->goalMouseY = man_point[1];
         }
     }
-    
+
 
     return 0;
 }
@@ -199,12 +199,14 @@ static void * send_cmds(void * data)
 
     while (state->running) {
 
+        pthread_mutex_lock(&state->lcm_mutex);
         pthread_mutex_lock(&state->cmd_mutex);
         {
             //state->cmd.timestamp = utime_now();
-            maebot_diff_drive_t_publish(state->lcm,  "MAEBOT_DIFF_DRIVE", &state->cmd);
+            maebot_diff_drive_t_publish(state->lcm,  "MAEBOT_DIFF_DRIVE", &(state->cmd));
         }
         pthread_mutex_unlock(&state->cmd_mutex);
+        pthread_mutex_unlock(&state->lcm_mutex);
 
         usleep(50000); // send at 20 hz
     }
@@ -215,11 +217,13 @@ static void * send_lsr(void * data){
 	state_t * state = data;
 
 	while(state->running) {
+        pthread_mutex_lock(&state->lcm_mutex);
 		pthread_mutex_lock(&state->lsr_mutex);
 		{
-			maebot_laser_t_publish(state->lcm, "MAEBOT_LASER", &state->lsr);
+			maebot_laser_t_publish(state->lcm, "MAEBOT_LASER", &(state->lsr));
 		}
 		pthread_mutex_unlock(&state->lsr_mutex);
+        pthread_mutex_unlock(&state->lcm_mutex);
 
 		usleep(50000);
 	}
@@ -231,11 +235,13 @@ static void * send_led(void * data){
 	state_t * state = data;
 
 	while(state->running){
+        pthread_mutex_lock(&state->lcm_mutex);
 		pthread_mutex_lock(&state->led_mutex);
 		{
 			maebot_leds_t_publish(state->lcm, "MAEBOT_LEDS", &state->led);
 		}
 		pthread_mutex_unlock(&state->led_mutex);
+        pthread_mutex_unlock(&state->lcm_mutex);
 
 		usleep(50000);
 	}
@@ -255,45 +261,48 @@ static void * driver_monitor(void *data) {
 void* lcm_handle_loop(void *data) {
     state_t *state = data;
 
-    maebot_sensor_data_t_subscription_t * sensor_sub = 
+    maebot_sensor_data_t_subscription_t * sensor_sub =
 	maebot_sensor_data_t_subscribe(
-		state->lcm, "MAEBOT_SENSOR_DATA", 
+		state->lcm, "MAEBOT_SENSOR_DATA",
 		&sensor_handler, state
 	); //subscribe to gyro/accelerometer data
 
     maebot_motor_feedback_t_subscription_t * odometry_sub =
 	maebot_motor_feedback_t_subscribe(state->lcm,
-		"MAEBOT_MOTOR_FEEDBACK", 
+		"MAEBOT_MOTOR_FEEDBACK",
 		&odometry_handler, state); //subscribe to odometry data
 
     int hz = 15;
-    while (1) {
+    while (state->running) {
         // Set up the LCM file descriptor for waiting. This lets us monitor it
         // until somethign is "ready" to happen. In this case, we are ready to
         // receive a message.
+        lcm_handle(state->lcm);
+        /*
         int lcm_fd = lcm_get_fileno(state->lcm);
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(lcm_fd, &fds);
-		
+
         // Handle message if appropriate
         struct timeval timeout = {
             0,              // Seconds
             1000000/hz      // Microseconds
         };
-		
+
         int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
-		
+
         if (0 == status) {
             continue;
         } else {
             // LCM has events ready to be processed
             lcm_handle(state->lcm);
         }
+        */
     }
 
     //clean up
-    maebot_sensor_data_t_unsubscribe(state->lcm, sensor_sub); 
+    maebot_sensor_data_t_unsubscribe(state->lcm, sensor_sub);
     maebot_motor_feedback_t_unsubscribe(state->lcm, odometry_sub);
 
     return NULL;
@@ -330,8 +339,8 @@ int main(int argc, char ** argv)
 
     lcm_t * lcm = lcm_create (NULL);
     state->lcm = lcm;
-    state->sensor_channel = "MAEBOT_SENSOR"; 
-    state->odometry_channel = "MAEBOT_ODOMETRY"; 
+    state->sensor_channel = "MAEBOT_SENSOR";
+    state->odometry_channel = "MAEBOT_ODOMETRY";
 
     state->vw = vx_world_create();
     state->displayStarted = state->displayFinished = 0;
@@ -340,6 +349,7 @@ int main(int argc, char ** argv)
     pthread_mutex_init(&state->layer_mutex, NULL);
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lsr_mutex, NULL);
+    pthread_mutex_init(&state->lcm_mutex, NULL);
 
 
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
@@ -367,8 +377,8 @@ int main(int argc, char ** argv)
 
     //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
-    pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-    pthread_create(&state->led_thread,  NULL, send_led, state);
+//    pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
+//    pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 
@@ -378,7 +388,7 @@ int main(int argc, char ** argv)
     vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
     grid_map_destroy(&state->gridMap);
-    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
+    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
 

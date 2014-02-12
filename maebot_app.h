@@ -90,8 +90,8 @@ struct state_t {
 //		not sure if we need this?
 /*	 maebot_sensor_data_t sensor;
     pthread_mutex_t sensor_mutex;
-    pthread_t sensor_thread;	
-*/ 
+    pthread_t sensor_thread;
+*/
     int acc[3];
     int gyro[3];
     int gyro_int[3];
@@ -111,6 +111,7 @@ struct state_t {
     int fidx;
 
     lcm_t * lcm;
+    pthread_mutex_t lcm_mutex;
 
     pthread_t lcm_handle_thread;
 
