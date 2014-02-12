@@ -47,7 +47,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	int maxU, minU, u, v;
 	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
-	int maxV, minV, offset;
+	int maxV, minV;
 	//Bounds checking
 	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
 		return;
@@ -115,7 +115,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->stride + x] = color;
+	hm->image->buf[y*hm->image->width + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, int newX, int newY, int oldX, int oldY) {
