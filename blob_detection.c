@@ -226,7 +226,7 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 			int height = pixel_height(balls[i].t,balls[i].b);
 
 			double w_over_h = (width+0.0) / (height+0.0);
-			int width_lte_height = w_over_h <= 1.2 && w_over_h > 0.5;
+			int width_lte_height = w_over_h <= 1.2 && w_over_h > 0.7;
 
 			double density = (balls[i].num_px + 0.0) / (width*height+0.0);
 			int dense_enough  = density > 0.45;

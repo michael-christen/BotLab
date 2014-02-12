@@ -99,6 +99,8 @@ void detect_diamonds(state_t * state) {
 
 int shoot_diamond(state_t * state) {
 	state->doing_pid = 1;
+	int not_seen = 0;
+	int last_seen = 0;
 	while(state->doing_pid) {
 		detect_diamonds(state);
 		double pid_out = pid_get_output( state->green_pid,state->diff_x);
@@ -118,6 +120,16 @@ int shoot_diamond(state_t * state) {
 		//printf("pid_out: %f\n",pid_out);
 		if(!state->diamond_seen) {
 			printf("not seen\n");
+			if(!last_seen){
+				not_seen++;
+			}
+			last_seen = 0;
+		}else{
+			last_seen = 1;
+			not_seen = 0;
+		}
+		if(not_seen == 20){
+			return 0;
 		}
 		double rot = pid_to_rot(state->green_pid, state->green_pid_out);
 		driveRot(state, rot);
@@ -126,6 +138,7 @@ int shoot_diamond(state_t * state) {
 		usleep(20000);
 	}
 	fireLaser(state);
+	return 1;
 }
 
 void moveBot(state_t* state){
@@ -738,10 +751,11 @@ void* FSM(void* data){
 	clock_t startTime = clock();
 	int turnIndex = 0;
 	double analyzeAngle;
+	state->num_zapped_diamonds = 0;
 	fired_from_t firedFrom[100];
 	int fires = 0;
 	int ftthresh = 12;
-	double frthresh = M_PI/3;
+	double frthresh = M_PI/4.0;
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
@@ -790,15 +804,10 @@ void* FSM(void* data){
 					printf("Diamond at %f, %f\n", pos_x, pos_y);
 					if(diamondIsZapped(state, pos_x, pos_y)){
 						//Go to next diamond in image
-						printf("Alread saw diamond\n");
+						printf("Diamond seen by its position\n");
 						nextState = EX_ANALYZE;
 						break;
 					}
-
-					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
-					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
-					state->num_zapped_diamonds++;
-
 
 					/*for(int k = 0; k < state->num_pts_tape; k++){
 						if(state->tape[k].x == image_x){
@@ -832,11 +841,16 @@ void* FSM(void* data){
 					state->doing_pid_theta = 0;
 				}*/
 				double originalTheta = state->pos_theta;
-				shoot_diamond(state);
-				firedFrom[fires].x = state->pos_x;
-				firedFrom[fires].y = state->pos_y;
-				firedFrom[fires].theta = state->pos_theta;
-				fires++;
+				if(shoot_diamond(state)){
+					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
+					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
+					state->num_zapped_diamonds++;
+
+					firedFrom[fires].x = state->pos_x;
+					firedFrom[fires].y = state->pos_y;
+					firedFrom[fires].theta = state->pos_theta;
+					fires++;
+				}
 				driveToTheta(state, originalTheta);
 
 				nextState = EX_ANALYZE;
@@ -870,8 +884,9 @@ void* FSM(void* data){
 				state->fsm_time_elapsed = difftime(cur_time, start_time);
 				state->fsmTimeElapsed = (double)(curTime - startTime)/CLOCKS_PER_SEC;
 				if(state->fsm_time_elapsed >= 180){
-					nextState = EX_EXIT;
-					break;
+					printf("Three minutes are up!\n");
+					//nextState = EX_EXIT;
+					//break;
 				}
 				for (; turnIndex < 6; turnIndex++) {
 					printf("Turn Index: %d\n", turnIndex);
@@ -889,12 +904,13 @@ void* FSM(void* data){
 					endTime = clock();
 					printf("Finsihed camera process in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
 					//Uncomment to zap diamonds (pew pew)
-					/*if(state->num_balls){
+					if(state->num_balls){
 						int zappedIt = 0;
 						for(int i = fires; i >=0 ; i--){
 							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
 								fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
 								fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
+									printf("Diamond seen by bot position\n");
 									zappedIt = 1;
 									break;
 							}
@@ -905,7 +921,7 @@ void* FSM(void* data){
 							nextState = EX_ZAP_DIAMOND;
 							break;
 						}
-					}*/
+					}
 				}
 				if (nextState == EX_ZAP_DIAMOND) {
 					break;
@@ -1077,7 +1093,7 @@ int main(int argc, char ** argv)
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 	//0.5 is way too high for d
 	//pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
-	pid_init(state->theta_pid, 0.60, 0.3, 0.30, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.70, 0.4, 0.30, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
