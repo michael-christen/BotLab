@@ -408,8 +408,36 @@ void * camera_analyze(void * data)
 				state->green_pid_out = pid_out;
 				//printf("pid_out: %f\n",pid_out);
 			}
+			
+				state->num_pts_tape = 0;
+				int x = 370; //525
+				int y = 280;
+				for(y; y < 320; y++){
+					pixel_t px;
+					px.x = x;
+					px.y = y;
+					state->tape[y-280] = px;
+					state->num_pts_tape++;
+				}
+
+				obstacle = 1;
+				find_point_pos( state, obstacle);
 		} else {
 			//printf("shouldn't get heree!!!\n");
+			
+				state->num_pts_tape = 0;
+				int x = 370; //525
+				int y = 280;
+				for(y; y < 320; y++){
+					pixel_t px;
+					px.x = x;
+					px.y = y;
+					state->tape[y-280] = px;
+					state->num_pts_tape++;
+				}
+
+				int obstacle = 1;
+				find_point_pos( state, obstacle);
 		}
 		pthread_mutex_unlock(&state->image_mutex);
 		usleep(10000);
@@ -712,7 +740,10 @@ int main(int argc, char ** argv)
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	//pthread_create(&state->fsm_thread, NULL, FSM, state);
     pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
+
+
 	pthread_create(&state->calibrator_thread, NULL, calibrator, state);
+
 
 
 /*	find_H_matrix(state);
