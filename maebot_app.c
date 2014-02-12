@@ -213,6 +213,9 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if(key->key_code == 'l' || key->key_code == 'L') {
 			// fire laser
 			fireLaser(state);
+		} else if(key->key_code == '0') {
+			printf("%f, \n",state->dist);
+			state->dist = 0;
 		} else if(key->key_code == 'r') {
 			state->red ++;
 		} else if(key->key_code == 'g') {
@@ -711,6 +714,7 @@ int main(int argc, char ** argv)
 	state->cmd_val = 0;
 	state->motor_count = 0;
 	state->diff_x        = 0;
+	state->dist          = 0;
 	state->diamond_seen  = 0;
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;

@@ -26,25 +26,17 @@ void odometry_handler (
 		odometry_t pos_update = get_odometry_data(diff_left, diff_right);
 		matd_t *var_update    = get_motor_variance(diff_left, diff_right);
 
-		state->pos            = get_updated_od(state->last_pos,pos_update); 
+		state->pos            = get_updated_od(state->last_pos,pos_update);
 		state->cur_var        = get_updated_variance(
 				state->last_var, state->last_pos,
 				var_update, pos_update
 		);
 		matd_destroy(var_update);
 
-
-		matd_t *temp_var = matd_identity(2);
-		if(pos_update.x != 0) {
-			matd_put(temp_var,0,0,state->alpha*pos_update.x);
-			matd_put(temp_var,1,1,state->beta*pos_update.x);
-		}
-		matd_t *mult_result = matd_multiply(
-				state->var_matrix,temp_var);
-		matd_destroy(state->var_matrix);
-		matd_destroy(temp_var);
-		state->var_matrix = mult_result;
+		MATD_EL(state->var_matrix,0,0) = MATD_EL(state->cur_var,0,0);
+		MATD_EL(state->var_matrix,1,1) = MATD_EL(state->cur_var,1,1);
 		//msg->motor_left_actual_speed;
+		state->dist      += pos_update.x;
 		state->pos_x     += pos_update.x * sin(state->pos_theta);
 		state->pos_y     += pos_update.x * cos(state->pos_theta);
 		state->pos_theta += pos_update.theta;
@@ -184,7 +176,7 @@ matd_t * get_motor_variance(int32_t diff_left, int32_t diff_right) {
 }
 
 matd_t * get_updated_variance(
-		matd_t *prev_variance, odometry_t prev_od, 
+		matd_t *prev_variance, odometry_t prev_od,
 		matd_t *cur_variance,  odometry_t cur_od) {
 	matd_t *jacob   = get_jacobian(prev_od, cur_od);
 	matd_t *jacob_a = matd_select(jacob,0,2,0,2);

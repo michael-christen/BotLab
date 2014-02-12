@@ -223,7 +223,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 
 	vo = vxo_chain(
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-			vxo_mat_translate3(state->pos.x, state->pos.y, state->pos_z + BRUCE_HEIGHT / 2),
+			vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z + BRUCE_HEIGHT / 2),
 			vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
 			vxo_cylinder(vxo_mesh_style(vx_blue),
 				vxo_lines_style(vx_cyan, 2.0f))
@@ -233,8 +233,8 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 
 	vo = vxo_chain(
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-			vxo_mat_translate3(state->pos.x, state->pos.y ,state->pos_z + BRUCE_HEIGHT + 0.1),
-			vxo_mat_rotate_z(-state->pos.theta),
+			vxo_mat_translate3(state->pos_x, state->pos_y ,state->pos_z + BRUCE_HEIGHT + 0.1),
+			vxo_mat_rotate_z(-state->pos_theta),
 			vxo_mat_translate3(0, -BRUCE_DIAMETER / 2, 0),
 			vxo_mat_rotate_x(-M_PI/2),
 			vxo_mat_scale3(BRUCE_DIAMETER / 2, 1, BRUCE_DIAMETER),
@@ -312,11 +312,11 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	vo = vxo_chain(
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
 			vxo_mat_translate3(
-				state->pos.x,
-				state->pos.y,
+				state->pos_x,
+				state->pos_y,
 				state->pos_z
 				),
-			vxo_mat_rotate_z(phi - state->pos.theta),
+			vxo_mat_rotate_z(phi - state->pos_theta),
 			vxo_lines(
 				vx_resc_copyf(points, npoints*3),
 				npoints,
@@ -357,11 +357,11 @@ int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
 	float eye[3];
 	float lookat[3];
 	float up[3];
-	eye[0] = (state->pos.x + (distBehind * sin(-state->pos.theta))) * CM_TO_VX;
-	eye[1] = (state->pos.y - (distBehind * cos(-state->pos.theta))) * CM_TO_VX;
+	eye[0] = (state->pos_x + (distBehind * sin(-state->pos_theta))) * CM_TO_VX;
+	eye[1] = (state->pos_y - (distBehind * cos(-state->pos_theta))) * CM_TO_VX;
 	eye[2] = (state->pos_z + BRUCE_HEIGHT + distAbove) * CM_TO_VX;
-	lookat[0] = state->pos.x * CM_TO_VX;
-	lookat[1] = state->pos.y * CM_TO_VX;
+	lookat[0] = state->pos_x * CM_TO_VX;
+	lookat[1] = state->pos_y * CM_TO_VX;
 	lookat[2] = (state->pos_z + BRUCE_HEIGHT) * CM_TO_VX;
 	up[0] = lookat[0] - eye[0];
 	up[1] = lookat[1] - eye[1];
@@ -394,8 +394,8 @@ int renderDebugLayer(state_t *state, layer_data_t *layerData) {
 	char debugText[700];
 	const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\nDiff_x: %f\nPID_OUT: %f\nDIAMOND: %d\nDOING_PID: %d\nCOV_X: %f, COV_Y: %f\n";
 	sprintf(debugText, formatting,
-			state->pos.x, state->pos.y,
-			state->pos.theta, state->gyro[0],
+			state->pos_x, state->pos_y,
+			state->pos_theta, state->gyro[0],
 			state->diff_x, state->green_pid_out,
 			state->diamond_seen, state->doing_pid,
 			matd_get(state->var_matrix,0,0),

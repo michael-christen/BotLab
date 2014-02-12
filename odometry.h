@@ -6,12 +6,12 @@
 
 #define DIST_BETWEEN_WHEELS 8.1
 #define WHEEL_CIRCUMFERENCE 10
-#define TICKS_PER_CM        45.3 
-#define LONG_ERR            0.05
-#define LAT_ERR             0.02
+#define TICKS_PER_CM        45.3
+#define LONG_ERR            0.15
+#define LAT_ERR             0.07
 
 typedef struct od odometry_t;
-struct od{ 
+struct od{
 	double x, y, theta;
 };
 
@@ -22,7 +22,7 @@ void odometry_handler (
 	void * data
 );
 
-odometry_t get_odometry_data(int32_t diff_left, int32_t diff_right); 
+odometry_t get_odometry_data(int32_t diff_left, int32_t diff_right);
 
 /*Get 3 x 3 transformation matrix from given odometry
   [ cos(t) | -sin(t) | x ]
@@ -54,7 +54,7 @@ matd_t * get_motor_variance(int32_t diff_left, int32_t diff_right);
 //Returns 3 x 3 Matrix of updated variance by combining cur variance
 //with previous variances
 matd_t * get_updated_variance(
-		matd_t *prev_variance, odometry_t prev_od, 
+		matd_t *prev_variance, odometry_t prev_od,
 		matd_t *cur_variance,  odometry_t cur_od);
 
 double getDistFromTicks(int32_t ticks);
