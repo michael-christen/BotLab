@@ -862,18 +862,24 @@ void* FSM(void* data){
 					printf("Turn Index: %d\n", turnIndex);
 					analyzeAngle = 2.0 * M_PI / 5;
 					printf("Drive to theta: %f\n", state->pos_theta + analyzeAngle);
+					clock_t analyzeTime = clock();
 					state->doing_pid_theta = 1;
+					printf("Driving to theta\n");
 					driveToTheta(state, state->pos_theta + analyzeAngle);
 					state->doing_pid_theta = 0;
-					printf("Finished driving to theta\n");
+					clock_t endTime = clock();
+					printf("Finished driving to theta in %g s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
+					analyzeTime = clock();
 					camera_process(state);
-					printf("Finsihed camera process\n");
+					endTime = clock();
+					printf("Finsihed camera process in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
 					//Uncomment to zap diamonds (pew pew)
-					if(state->num_balls){
+					/*if(state->num_balls){
 						printf("Found a diamond!\n");
+						turnIndex++;
 						nextState = EX_ZAP_DIAMOND;
 						break;
-					}
+					}*/
 				}
 				if (nextState == EX_ZAP_DIAMOND) {
 					break;
