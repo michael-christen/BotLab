@@ -744,6 +744,7 @@ void* FSM(void* data){
 					path_destroy(path);
 					printf("Path done, going to analyze\n");
 					nextState = EX_ANALYZE;
+					turnIndex = 0;
 					//nextState = EX_ANALYZE;
 				}
 				break;}
@@ -880,10 +881,10 @@ void* FSM(void* data){
 					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 					if(nextState == EX_MOVE){
 						printf("\nchoosing next move\n");
-					/*	while (state->targetPathValid == 0) {
+						while (state->targetPathValid == 0) {
 							usleep(1000);
 						}
-					*/
+
 						// To use mouse path, uncomment following line
 						path = state->targetPath;
 						// To use autonomous path finding, uncomment following lines
