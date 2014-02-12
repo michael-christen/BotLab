@@ -88,24 +88,28 @@ void rotateTheta(state_t * state, double theta) {
 }
 
 void driveToPosition(state_t * state, position_t position){
-	double thresh = 0.3;
+	double thresh = 5;
 
 	state->goal_x = position.x;
 	state->goal_y = position.y;
 	double dist = getDist(state->pos_x, state->pos_y,
 			state->goal_x, state->goal_y);
-	double theta= getTheta(state->pos_x, state->pos_y,
-			state->goal_x, state->goal_y);
+	double theta= getDiffTraj(state);
 
 	if(dist > thresh) {
-		driveToTheta(state, theta);
+		printf("theta chosen: %f\n",theta);
+		rotateTheta(state, theta);
 	}
-	while(dist > thresh){
+	while(dist > thresh && state->goToMouseCoords){
 		dist = getDist(state->pos_x, state->pos_y,
 			state->goal_x, state->goal_y);
-		theta= getTheta(state->pos_x, state->pos_y,
-			state->goal_x, state->goal_y);
-		driveRad(state, 1000, 0.5);
+		theta= getDiffTraj(state);
+		printf("dist: %f, theta: %f\n",dist, theta);
+
+		double radius = 1000 - theta;
+		double speed  = 0.15;// + dist/100;
+
+		//driveRad(state, radius, speed);
 
 		/*
 		state->waiting_on_pos = 1;
@@ -119,6 +123,7 @@ void driveToPosition(state_t * state, position_t position){
 
 		state->waiting_on_pos = 0;
 		*/
+		usleep(10000);
 	}
 	driveStop(state);
 }
@@ -128,9 +133,16 @@ double getDist(double cur_x, double cur_y,
 	return sqrt(pow(cur_x-new_x,2) + pow(cur_y-new_y,2));
 }
 
-double getTheta(double cur_x, double cur_y,
-						double new_x, double new_y) {
-	double v_x = cur_x - new_x;
-	double v_y = cur_y - new_y;
-	return atan2(v_y, v_x);
+double getTheta(double x, double y) {
+	return atan2(y, x);
+}
+
+double getDiffTraj(state_t *state) {
+	return fmod(
+			getThetaDist(
+				 state->pos_theta,
+				 getTheta(state->goal_x,state->goal_y) + M_PI/2
+			),
+			M_PI
+	);
 }

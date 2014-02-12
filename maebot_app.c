@@ -178,7 +178,6 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			state->goalMouseY = man_point[1] / CM_TO_VX;
 			printf("Clicked: %f cm's x, %f cm's y\n",
 					state->goalMouseX, state->goalMouseY);
-			state->goToMouseCoords = 1;
 			pthread_mutex_lock(&state->haz_map_mutex);
 			if (state->targetPathValid == 1) {
 				path_destroy(state->targetPath);
@@ -195,7 +194,9 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			position_t pos;
 			pos.x = state->goalMouseX;
 			pos.y = state->goalMouseY;
-			driveToPosition(state,pos);
+			if(state->goToMouseCoords) {
+				driveToPosition(state,pos);
+			}
 		}
 	}
 
@@ -221,7 +222,10 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 				state->doing_pid = 0;
 				state->cmd_val |= ~PID;
 			}
-		} else if (key->key_code == 'w' || key->key_code == 'W') {
+		} else if (key->key_code == '1') {
+			state->goToMouseCoords = !state->goToMouseCoords;
+			printf("%d going to Mouse coords\n",state->goToMouseCoords);
+		}else if (key->key_code == 'w' || key->key_code == 'W') {
 			state->cmd_val |= FORWARD;
 		} else if (key->key_code == 'a' || key->key_code == 'A' ) {
 			state->cmd_val |= LEFT;
@@ -633,6 +637,7 @@ void* position_tracker(void *data) {
 
     state->pathTakenValid = 1;
 
+
     while (state->running) {
         for (i = 1; i < path->length; i++) {
             path->waypoints[i - 1].x = path->waypoints[i].x;
@@ -642,10 +647,10 @@ void* position_tracker(void *data) {
         path->waypoints[path->length - 1].y = state->pos_y;
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
-        
+
 		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
-			state->pos_x += 1;
-			state->pos_y += 2;
+	//		state->pos_x += 1;
+	//		state->pos_y += 2;
 
 
 
@@ -698,6 +703,7 @@ int main(int argc, char ** argv)
     state->targetPathValid = 0;
 	state->odometry_seen = 0;
 	state->goToMouseCoords = 0;
+
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
 	state->stored_matrices = malloc(sizeof(matd_t*)*MAX_NUM_ELLIPSES);

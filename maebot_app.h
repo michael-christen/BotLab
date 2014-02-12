@@ -198,6 +198,7 @@ struct state_t {
     vx_mouse_event_t last_mouse;
     double mouseDownX, mouseDownY;
     double goalMouseX, goalMouseY;
+	int  click_following;
     uint8_t goToMouseCoords;
 
     pthread_t dmon_thread;

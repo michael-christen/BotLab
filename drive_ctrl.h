@@ -34,8 +34,9 @@ void driveToPosition(state_t * state, position_t position);
 
 double getThetaDist(double from, double to);
 
-double getTheta(double cur_x, double cur_y,
-						double new_x, double new_y);
+double getTheta(double x, double y);
+
+double getDiffTraj(state_t *state);
 
 double getDist(double cur_x, double cur_y,
 						double new_x, double new_y);
