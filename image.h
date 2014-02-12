@@ -2,9 +2,15 @@
 #define __IMAGE__H__
 #include "common/image_util.h"
 #include <math.h>
+uint8_t get_red(uint32_t px);
+uint8_t get_green(uint32_t px);
+uint8_t get_blue(uint32_t px);
+
 double color_dist(uint32_t p1, uint32_t p2);
 
-void RGBtoHSV( uint32_t r, uint32_t g, uint32_t b, 
+uint32_t avg_px(uint32_t *pxs, int n);
+
+void RGBtoHSV( uint32_t r, uint32_t g, uint32_t b,
 	double *h, double *s, double *v);
 
 #endif

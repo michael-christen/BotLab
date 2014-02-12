@@ -1,5 +1,15 @@
 #include "image.h"
 
+uint8_t get_red(uint32_t px) {
+    return px & 0xFF;
+}
+uint8_t get_green(uint32_t px) {
+    return (px >> 8) & 0xFF;
+}
+uint8_t get_blue(uint32_t px) {
+    return (px >> 16) & 0XFF;
+}
+
 uint32_t MIN(uint32_t a, uint32_t b, uint32_t c) {
     uint32_t min = a;
     if(b < min) min = b;
@@ -55,6 +65,7 @@ void RGBtoHSV( uint32_t r, uint32_t g, uint32_t b, double *h, double *s, double 
     }
 }
 
+
 //Returns distance from test_px to match_px
 double color_dist(uint32_t p1, uint32_t p2) {
     //Only first 8 bits are used until computation
@@ -76,4 +87,18 @@ double color_dist(uint32_t p1, uint32_t p2) {
     return sqrt(pow((r1 - r2),2) + pow((g1 - g2),2) + pow((b1 - b2),2));
     //return sqrt(pow((h1 - h2),2) + pow((s1 - s2),2) + pow((v1 - v2),2));
 //    return abs(h1 - h2) + abs(s1 - s2) + abs(v1 - v2);
+}
+
+uint32_t avg_px(uint32_t *pxs, int n) {
+    uint32_t reds, greens, blues;
+    reds = greens = blues = 0;
+    for(int i = 0; i < n; ++i) {
+	reds   += get_red(pxs[i]);
+	greens += get_green(pxs[i]);
+	blues  += get_blue(pxs[i]);
+    }
+    reds   = (uint32_t) (reds + 0.0)/(n+0.0);
+    greens = (uint32_t) (greens + 0.0)/(n+0.0);
+    blues  = (uint32_t) (blues + 0.0)/(n+0.0);
+    return (0xff << 24) | (blues << 16) | (greens << 8) | reds;
 }

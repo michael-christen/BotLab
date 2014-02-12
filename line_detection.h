@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define COLOR_THRESHOLD 37.0
+#define COLOR_THRESHOLD 50.0
 //ABGR
 //Blue
 #define TEMPLATE_PX 0xff514430

@@ -17,19 +17,15 @@ int line_detection(image_u32_t *im, pixel_t *points) {
             px = im->buf[id];
 	    if(is_tape(px)) {
 		//Make sure above is blue too
-		int good = 1;
+		int num = 0;
+		uint32_t pxs[SEARCH_DIST];
 		for(int chk = y-1; chk >= 0 &&
 		    chk >= y - SEARCH_DIST; -- chk) {
 		    int c_id = im->stride * chk + x;
-		    uint32_t c_px = im->buf[c_id];
-		    if(!is_tape(c_px)) {
-			good = 0;
-			break;
-		    } else {
-			//im->buf[c_id] = SHOW_PX;
-		    }
+		    pxs[num++] = im->buf[c_id];
 		}
-		if(good) {
+		uint32_t mean_px = avg_px(pxs,num);
+		if(is_tape(mean_px)) {
 		    im->buf[id] = SHOW_PX;
 		    point.x = x;
 		    point.y = y;
