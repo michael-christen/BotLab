@@ -85,6 +85,8 @@ void driveToTheta(state_t * state, double theta) {
 	double endTheta = state->pos_theta;
 	double gyroTheta = (endInt - beginningInt)/state->gyro_ticks_per_theta;
 	double stateTheta = endTheta - beginningTheta;
+	gyroTheta = gyroTheta/M_PI * 180.0;
+	stateTheta = stateTheta/M_PI * 180.0;
 	printf("stopping pid with diff: %f\n",
 		   getThetaDist(state->pos_theta, state->goal_theta));
 	printf("Theta measured by gyro: %g\n", gyroTheta);
