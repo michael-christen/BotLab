@@ -143,8 +143,6 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY) {
 	if (transY != 0 || transX != 0) {
 		hm->gridX += (transX * GRID_RES);
 		hm->gridY += (transY * GRID_RES);
-		printf("Translating!\n");
-		printf("lowX: %d, highX: %d, lowY: %d, highY: %d\n", lowX, highX, lowY, highY);
 		if (transY >= 0) {
 			y = 0;
 		} else {
@@ -245,12 +243,11 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	int testindex = adjEndY*hm->width + adjEndX;
 	curTile = &hm->hazMap[testindex];
 	if(testindex > HAZ_MAP_MAX_WIDTH * HAZ_MAP_MAX_HEIGHT) { printf("out of range in djikstra\n"); return;}
-	if (curTile->type == HAZ_MAP_OBSTACLE) {
+	/*if (curTile->type == HAZ_MAP_OBSTACLE) {
 		retPath = malloc(sizeof(path_t));
-		retPath->length = 0;
+		retPath->length = retPath->distance = 0;
 		return retPath;
-	}
-	//printf("i: %d, cX: %d, cY: %d, eX: %d, eY: %d\n", testindex, curTile->x, curTile->y, adjEndX, adjEndY);
+	}*/
 	//int startX = 0;
 	//int startY = 0;
 
@@ -265,7 +262,7 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 		if (i == startIndex) {
 			curData.dist = 0;
 		} else {
-			curData.dist = HAZ_MAP_HUGE_DIST;
+			curData.dist = HAZ_MAP_MEGA_DIST;
 		}
 
 		zarray_add(dData, &curData);
@@ -302,15 +299,9 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 		zarray_get(dData, minDist.tileIndex, &curData);
 		//printf("curData.dist %d\n", curData.dist);
 		curTile = &hm->hazMap[minDist.tileIndex];
-
 		if (curData.shortestPathKnown == 0) {
 			curData.shortestPathKnown = 1;
-
-			/*if (curTile->x == adjEndX && curTile->y == adjEndY) {
-				printf("Found path at %d, %d of length %d\n", curTile->x, curTile->y, curData.pathCount);
-				cont = 0;
-				break;
-			}*/
+			//printf("cx: %d, cy: %d\n", curTile->x, curTile->y);
 
 			// for each neighbor
 			//printf("cur tile: %u, %u\n", curTile->x, curTile->y);
