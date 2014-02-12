@@ -124,6 +124,7 @@ struct state_t {
     unsigned int num_pts_tape;
 
     uint32_t red, green, blue;
+	double hue;
     double thresh;
 };
 

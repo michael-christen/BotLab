@@ -188,7 +188,11 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->thresh ++;
 		} else if(key->key_code == 'u') {
 			state->thresh --;
-		} else if(key->key_code == 'm') {
+		} else if(key->key_code == 'z') {
+			state->hue ++;
+		} else if(key->key_code == 'x') {
+			state->hue --;
+		}else if(key->key_code == 'm') {
 			rotateTheta(state, -M_PI/2.0);
 		} else if(key->key_code == 'c') {
 			if(!state->calibrating){
@@ -377,9 +381,7 @@ void * camera_analyze(void * data)
             //printf("color: %x\n",color_detect);
             //printf("thresh: %f\n",state->thresh);
                 state->num_balls = blob_detection(state->im, state->balls,
-                    color_detect,
-                    0xff039dfd,
-                                state->thresh);
+									  state->hue, 0xff039dfd, state->thresh);
             //printf("num_balls: %d\n",state->num_balls);
             if(state->num_balls == 1) {
                 state->diff_x = state->im->width/2.0 - state->balls[0].x;
@@ -616,7 +618,8 @@ int main(int argc, char ** argv)
     state->red = 0x3a;
     state->green = 0x76;
     state->blue = 0x41;
-    state->thresh = 52.0;
+    state->thresh = 20.0;
+	state->hue    = 145.0;
     state->green_pid = malloc(sizeof(pid_ctrl_t));
     state->green_pid_out = 0;
     state->isrcReady = 0;
