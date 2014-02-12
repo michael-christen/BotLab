@@ -146,8 +146,8 @@ void moveBot(state_t* state){
 	if(state->doing_pid_theta) {
 		return;
 	}
-	if(((state->cmd_val == PID) | state->doing_pid) != 0) {
-		//shoot_diamond(state);
+	if(state->cmd_val == PID != 0) {
+		shoot_diamond(state);
 	} else if (state->cmd_val == FORWARD) {
 		//driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		driveLR(state, 1, 1+state->left_offset, LONG_SPEED);
@@ -495,7 +495,7 @@ int diamondIsZapped(state_t *state, double diamond_x, double diamond_y){
 	double thresh = 50.0;
 	for(int k = 0; k < state->num_zapped_diamonds; k++){
 		if(fabs(diamond_x - state->zapped_diamonds[k].x) < thresh &&
-			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh && 
+			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh &&
 			fabs(state->pos_theta - state->zapped_diamonds[k].y < M_PI)){
 			//Diamond's been zapped already
 			return 1;
@@ -740,7 +740,7 @@ void* lcm_handle_loop(void *data) {
 	return NULL;
 }
 
-void analyze(state_t *state, double analyzeAngle, fired_from_t firedFrom[], 
+void analyze(state_t *state, double analyzeAngle, fired_from_t firedFrom[],
 	int fires, explorer_state_t *nextState, int* turnIndex){
 	printf("Drive to theta: %f\n", state->pos_theta + analyzeAngle);
 	//clock_t analyzeTime = clock();
