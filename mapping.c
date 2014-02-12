@@ -11,8 +11,8 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 	double rot_theta = 0; //need to get from gyro sensors. gyro[0/1/2?]
 	double bruce_x = state->pos_x, bruce_y = state->pos_y;
 
-	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,		
-																y_rel,	
+	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
+																y_rel,
 																0});
 	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
 													-sin(rot_theta),	cos(rot_theta),	0,
@@ -37,7 +37,7 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 /*
 	int bruce_grid_x = (bruce_x + 5)/10; //add 5 to make it round, not truncate
 	bruce_grid_x++; //bruce can't see 1 grid cell in front of him
-	
+
 	for(bruce_grid_x; bruce_grid_x < scale_x; bruce_grid_x++){
 			state->obstacle_map[bruce_grid_x][scale_y].status = UNOCCUPIED;
 			state->obstacle_map[bruce_grid_x][scale_y].created = clock();
@@ -50,8 +50,8 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_t *hm){
 	double rot_theta = 0; //need to get from gyro sensors. gyro[0/1/2?]
 
-	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,		
-																y_rel,	
+	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
+																y_rel,
 																0});
 
 	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
@@ -81,7 +81,7 @@ void find_point_pos( void * data, int x_px, int y_px, haz_map_t *hm){
 																0,	0,	-2472,
 																0,	0,	-52});
 	matd_t * rel_coords = matd_multiply(H, px_coords);
-	
+
 //determine x and y coordinates, relative to bruce
 	double x_rel, y_rel;
 	x_rel = matd_get(rel_coords, 0, 0);
@@ -146,7 +146,8 @@ void find_H_matrix(){
 		zarray_add(correspondences, coordinates);
 	}
 
-	matd_t * H = homography_compute(correspondences);
+	//matd_t * H = homography_compute(correspondences);
+	matd_t * H = matd_create(3,3);
 
 	int H00 = matd_get(H, 0, 0);
 	int H01 = matd_get(H, 0, 1);
@@ -157,6 +158,8 @@ void find_H_matrix(){
 	int H20 = matd_get(H, 2, 0);
 	int H21 = matd_get(H, 2, 1);
 	int H22 = matd_get(H, 2, 2);
+
+	matd_destroy(H);
 
 	printf(" %d, %d, %d, \n %d, %d, %d, \n %d, %d, %d, \n", H00, H01, H02, H10, H11, H12, H20, H21, H22);
 }
