@@ -7,7 +7,7 @@
 
 #define MAX_VAL 100
 #define MIN_OUTPUT 15
-#define MAPPING_FACTOR  0.14
+#define MAPPING_FACTOR  0.12
 typedef struct pid pid_ctrl_t;
 struct pid {
     double goal;

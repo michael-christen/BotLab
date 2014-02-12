@@ -30,6 +30,12 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
     clock_t cur_clock   = clock();
     double dt           = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
     double err          = pid->goal - meas;
+	if(err < 0) {
+		printf("ERROR is < 0\n");
+	}
+	else if(err > 0) {
+		printf("ERROR is > 0\n");
+	}
     double derivative   = 0;
 
     if(pid->first_meas) {
@@ -38,17 +44,24 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 		pid->integral   += err*dt;
 		derivative      = (err - pid->prev_err)/dt;
     }
-	
-	if(fabs(pid->integral) > MAX_VAL) {
-		pid->integral = sign(pid->integral) * MAX_VAL;
+
+	//If passes, get rid of integral
+	if(sign(pid->prev_err) != sign(err)) {
+		printf("SWITCH");
+		pid->integral = 0;
 	}
 
     double output       = pid->P*err +
 		                  pid->I*pid->integral -
 		                  pid->D*derivative;
 
-	if(output > MAX_VAL) {
+	if(fabs(output) > MAX_VAL) {
 		output = sign(output) * MAX_VAL;
+	}
+	//STOP when within error bounds
+    if(fabs(err) < MIN_OUTPUT) {
+		pid->integral   = 0;
+		output          = 0;
 	}
 
     pid->prev_err       = err;
@@ -57,7 +70,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 }
 
 //Map (-max_val, +max_val) -> (-1,1), ~actually want (-.14,.14)
-//what to do when < min_movable, I will catch up, but will it 
+//what to do when < min_movable, I will catch up, but will it
 //take too long?
 double pid_to_rot(double pid_out) {
     //There
@@ -66,10 +79,10 @@ double pid_to_rot(double pid_out) {
 		return 0;
     }
 	//Scale to (-1,1)
-	pid_out /= MAX_VAL; 
+	pid_out /= MAX_VAL;
 
 	//Scale to factor
-	pid_out *= MAPPING_FACTOR;
+	pid_out *= -MAPPING_FACTOR;
 
     printf("speed: %f\n",pid_out);
     return pid_out;

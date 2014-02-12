@@ -373,11 +373,11 @@ void * camera_analyze(void * data)
                                 state->thresh);
             //printf("num_balls: %d\n",state->num_balls);
             if(state->num_balls == 1) {
-                double diff_x = state->im->width/2.0 - state->balls[0].x;
+                state->diff_x = state->im->width/2.0 - state->balls[0].x;
                 //printf("x: %f\n", diff_x);
                 state->im->buf[(int) (state->im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
                 double pid_out = pid_get_output(
-                        state->green_pid,diff_x);
+                        state->green_pid,state->diff_x);
                 state->green_pid_out = pid_out;
 		state->diamond_seen  = 1;
                 //printf("pid_out: %f\n",pid_out);
@@ -431,7 +431,7 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
     printf ("  gyro_int values= (%lld, %lld, %lld)\n",
             msg->gyro_int[0], msg->gyro_int[1], msg->gyro_int[2]);*/
 
-	printf("%d, %lld\n",msg->gyro[2], msg->gyro_int[2]);
+	//printf("%d, %lld\n",msg->gyro[2], msg->gyro_int[2]);
 }
 
 void* lcm_handle_loop(void *data) {
@@ -595,7 +595,7 @@ int main(int argc, char ** argv)
     state->im = NULL;
     state->diff_x        = 0;
     state->diamond_seen  = 0;
-    pid_init(state->green_pid, 1, 1, 0, 0);
+    pid_init(state->green_pid, 0.5, 0.5, 0, 0);
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
