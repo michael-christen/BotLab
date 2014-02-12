@@ -15,13 +15,13 @@ void calibrate_gyros(int64_t *gyro2_int, int *calibrating, double *gyro_ticks_pe
 	for(int i = 0; i < 4; i++){
 		int64_t orig_2 = *gyro2_int;
 		printf("Test %d:\n", i);
-		printf("Rotate Bruce %sclockwise 720 degrees and\n press 'c' when done\n", (i < 2 ? "counter-" : ""));
+		printf("Rotate Bruce %sclockwise 720 degrees and press 'c' when done\n", (i < 2 ? "counter-" : ""));
 		*calibrating = 1;
 
 		while(*calibrating){
 			usleep(1000);
 		}
-	
+
 		int64_t total = *gyro2_int - orig_2;
 		double test_ticks_per_theta = abs(total / 720.0);
 		sum += test_ticks_per_theta;
