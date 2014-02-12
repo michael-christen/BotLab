@@ -238,6 +238,8 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if (key->key_code == '1') {
 			state->goToMouseCoords = !state->goToMouseCoords;
 			printf("%d going to Mouse coords\n",state->goToMouseCoords);
+		}else if (key->key_code == '2') {
+			camera_process(state);
 		}else if (key->key_code == 'w' || key->key_code == 'W') {
 			state->cmd_val = FORWARD;
 		} else if (key->key_code == 'a' || key->key_code == 'A' ) {
@@ -508,6 +510,7 @@ void camera_process(state_t* state){
 	int res;
 	image_source_data_t isdata;
 	image_source_t *isrc = state->isrc;
+	image_u32_t *oldIm;
 
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
@@ -516,19 +519,21 @@ void camera_process(state_t* state){
 		double bruce_x = state->pos_x;
 		double bruce_y = state->pos_y;
 		res = isrc->get_frame(isrc, &isdata);
+		isrc->release_frame(isrc, &isdata);
+		res = isrc->get_frame(isrc, &isdata);
+		oldIm = state->im;
 		if (!res) {
 			if (state->imageValid == 1) {
 				image_u32_destroy(state->im);
 			}
 			state->im = image_convert_u32(&isdata);
 			state->imageValid = 1;
+		} else {
+			printf("Here!\n");
 		}
 
 		isrc->release_frame(isrc, &isdata);
 
-		if (state->getopt_options.verbose) {
-			//printf("Got frame %p\n", state->im);
-		}
 		if (state->imageValid == 1) {
 			correctDistortion(state->im, state->lookupTable);
 			//Blue
@@ -549,7 +554,7 @@ void camera_process(state_t* state){
 
 			//find_point_pos( state, obstacle);
 		} else {
-			//printf("shouldn't get heree!!!\n");
+			printf("shouldn't get heree!!!\n");
 		}
 		pthread_mutex_unlock(&state->image_mutex);
 }
@@ -966,6 +971,7 @@ int main(int argc, char ** argv)
 	state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
 	state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
 
+
 	//pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
 	pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
@@ -976,7 +982,7 @@ int main(int argc, char ** argv)
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 	pthread_create(&state->motion_thread,  NULL, motionFxn, state);
 	//pthread_create(&state->calibrator_thread, NULL, calibrator, state);
-	//pthread_create(&state->fsm_thread, NULL, FSM, state);
+	pthread_create(&state->fsm_thread, NULL, FSM, state);
 
 
 
