@@ -106,7 +106,7 @@ int shoot_diamond(state_t * state) {
 		double pid_out = pid_get_output( state->green_pid,state->diff_x);
 		if(pid_out == 0 ) {
 			if(state->diamond_seen) {
-				printf("done with pid\n");
+				//printf("done with pid\n");
 				state->num_pid_zeros ++;
 				if(state->num_pid_zeros >= 5) {
 					state->doing_pid = 0;
@@ -119,25 +119,27 @@ int shoot_diamond(state_t * state) {
 		state->green_pid_out = pid_out;
 		//printf("pid_out: %f\n",pid_out);
 		if(!state->diamond_seen) {
-			printf("not seen\n");
-			if(!last_seen){
+			//printf("not seen %d\n", not_seen);
+			/*if(!last_seen){
 				not_seen++;
 			}
-			last_seen = 0;
-		}else{
+			last_seen = 0;*/
+		}/*else{
 			last_seen = 1;
 			not_seen = 0;
 		}
-		if(not_seen == 20){
+		if(not_seen == 15){
 			return 0;
-		}
+		}*/
 		double rot = pid_to_rot(state->green_pid, state->green_pid_out);
 		driveRot(state, rot);
 		usleep(20000);
 		driveStop(state);
 		usleep(20000);
 	}
+	printf("Firing laser\n");
 	fireLaser(state);
+	usleep(10000);
 	return 1;
 }
 
@@ -147,7 +149,7 @@ void moveBot(state_t* state){
 		return;
 	}
 	if(((state->cmd_val == PID) | state->doing_pid) != 0) {
-		shoot_diamond(state);
+		//shoot_diamond(state);
 	} else if (state->cmd_val == FORWARD) {
 		//driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		driveLR(state, 1, 1+state->left_offset, LONG_SPEED);
@@ -609,7 +611,7 @@ void camera_process(state_t* state){
 			  diamonds[updated_num_balls] = diamond;
 			  updated_num_balls++;
 			  }
-			  }
+		  }
 			 *state->balls = *diamonds;
 			 state->num_balls = updated_num_balls;*/
 
@@ -796,15 +798,36 @@ void* FSM(void* data){
 					ball_t diamond = state->balls[0];
 					double image_x = diamond.x;
 					double image_y = diamond.y;
-
+					int k;
+					double closest = 1000;
+					int iclosest = 0;
+					double max = 0;
+					for( k = 0; k < state->num_pts_tape; k++){
+						if(fabs(image_x - state->tape[k].x) < closest){
+							closest = state->tape[k].x;
+							iclosest = k;
+						}
+						if(state->tape[k].x > max){
+							max = state->tape[k].x;
+						}
+						if(state->tape[k].x == image_x){
+							printf("Found a tape reference\n!");
+							image_y = state->tape[k].y;
+							break;
+						}
+					}
+					if(closest != image_x){
+						image_y = state->tape[iclosest].y;
+					}
+					printf("Searched %d columns for tape at x: %f. Closest was %f\n", k, image_x, closest);
 					double diamond_x = 0, diamond_y = 0;
 					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
-					double pos_x = diamond_x + state->pos_x;
-					double pos_y = diamond_y + state->pos_y;
+					double pos_x = (diamond_x + state->pos_x) * cos(state->pos_theta);
+					double pos_y = (diamond_y + state->pos_y) * sin(state->pos_theta);
 					printf("Diamond at %f, %f\n", pos_x, pos_y);
 					printf("Diamond is %f, %f from the bot\n", diamond_x, diamond_y);
-					printf("Bot is at %f, %f\n", state->pos_x, state->pos_y);
-					sleep(10);
+					printf("Bot is at %f, %f, %f\n", state->pos_x, state->pos_y, state->pos_theta);
+
 					if(diamondIsZapped(state, pos_x, pos_y)){
 						//Go to next diamond in image
 						printf("Diamond seen by its position\n");
@@ -812,13 +835,8 @@ void* FSM(void* data){
 						break;
 					}
 
-					/*for(int k = 0; k < state->num_pts_tape; k++){
-						if(state->tape[k].x == image_x){
-							image_y = state->tape[k].y;
-						}
-					}
 
-					homography_project(state->H ,image_x, image_y, &diamond_x, &diamond_y);
+					/*homography_project(state->H ,image_x, image_y, &diamond_x, &diamond_y);
 					pos_x = diamond_x + state->pos_x;
 					pos_y = diamond_y + state->pos_y;
 
@@ -854,7 +872,8 @@ void* FSM(void* data){
 					firedFrom[fires].theta = state->pos_theta;
 					fires++;
 				}
-				driveToTheta(state, originalTheta);
+				//driveToTheta(state, originalTheta); //kind of
+				//unecessary
 
 				nextState = EX_ANALYZE;
 				break;}
@@ -1096,7 +1115,7 @@ int main(int argc, char ** argv)
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 	//0.5 is way too high for d
 	//pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
-	pid_init(state->theta_pid, 0.70, 0.4, 0.30, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.65, 0.29, 0.30, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
