@@ -31,13 +31,20 @@ void world_map_init(world_map_t *wm, int w, int h) {
 	wm->left = wm->width / 2;
 	wm->right = wm->width / 2;
 
-	int x, y;
+
+	int x, y, z;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
 			data_set(wm, x, y, WORLD_MAP_UNVISITED);
 			wm->worldMap[y*w + x].shot_diamond = 0;
+			for(z = 0; z < 8; z++){
+				//wm->worldMap[y*w + x].neighbors[z]->timestamp = CLOCKS_PER_SEC * 250;
+			}
 		}
 	}
+
+
+
 }
 
 void world_map_set(world_map_t *wm, double x, double y, int8_t type) {
