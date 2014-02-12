@@ -6,8 +6,8 @@
 #include<float.h>
 
 #define MAX_VAL 100
-#define MIN_OUTPUT 15
-#define MAPPING_FACTOR  0.2
+#define MIN_OUTPUT 16
+#define MAPPING_FACTOR  0.4
 typedef struct pid pid_ctrl_t;
 struct pid {
     double goal;

@@ -89,7 +89,6 @@ void moveBot(state_t* state){
 		{
 			//Wait for fresh image to arrive
 			pthread_cond_wait(&state->image_cv, &state->image_mutex);
-			printf("received image\n");
 			state->num_balls = blob_detection(state->im, state->balls,
 											  state->hue, 0xff039dfd, state->thresh);
 			//printf("num_balls: %d\n",state->num_balls);
@@ -401,7 +400,6 @@ void * camera_analyze(void * data)
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
 		pthread_cond_signal(&state->image_cv);
-		printf("got image\n");
 		res = isrc->get_frame(isrc, &isdata);
 		if (!res) {
 			if (state->imageValid == 1) {
@@ -694,7 +692,7 @@ int main(int argc, char ** argv)
 	state->diamond_seen  = 0;
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;
-	pid_init(state->green_pid, 1.0, 1.0, 0, 0);
+	pid_init(state->green_pid, 1.0, 0, 0, 0);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
