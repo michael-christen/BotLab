@@ -15,6 +15,7 @@
 #include "barrel_distortion.h"
 #include "pixel.h"
 #include "grid_map.h"
+#include "pid_ctrl.h"
 
 // EECS 467 Libraries
 #include "common/getopt.h"
@@ -144,6 +145,12 @@ struct state_t {
     //Tape data
     pixel_t* tape;
     unsigned int num_pts_tape;
+
+    uint32_t red, green, blue;
+    double thresh;
+
+    pid_ctrl_t *green_pid;
+    double      green_pid_out;
 };
 
 enum stateType{
@@ -153,8 +160,8 @@ enum stateType{
 	zap_diamond,
 	take_branch
 };
-	
-	
+
+
 
 //////////////
 // FUNCTIONS

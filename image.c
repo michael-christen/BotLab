@@ -102,3 +102,22 @@ uint32_t avg_px(uint32_t *pxs, int n) {
     blues  = (uint32_t) (blues + 0.0)/(n+0.0);
     return (0xff << 24) | (blues << 16) | (greens << 8) | reds;
 }
+
+uint32_t dist_to_grey(double dist) {
+    //445 is largest distance
+    uint32_t grey_val = (dist/445.0) * 256;
+    grey_val &= 0xff;
+    uint32_t result = 0xff000000;
+    result |= grey_val;
+    result |= grey_val << 8;
+    result |= grey_val << 16;
+    int valid = get_red(result) == get_blue(result) &&
+	   get_blue(result) == get_green(result);
+    if(!valid) {
+	printf("grey_val: %x\n",grey_val);
+	printf("r: %x\ng: %x\nb: %x\n\n",get_red(result),
+	       get_green(result),get_blue(result));
+	assert(0);
+    }
+    return result;
+}

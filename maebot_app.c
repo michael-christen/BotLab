@@ -35,6 +35,7 @@
 #define BACKWARD 2
 #define LEFT 4
 #define RIGHT 8
+#define PID 16
 
 #define LONG_SPEED 0.5
 #define ROT_SPEED 0.2
@@ -94,6 +95,9 @@ void moveBot(state_t* state, int cmd_val){
 	driveRot(state, -ROT_SPEED);
     } else if(cmd_val & LEFT) {
 	driveRot(state, ROT_SPEED);
+    } else if(cmd_val & PID) {
+	double rot = pid_to_rot(state->green_pid_out);
+	driveRot(state, rot);
     } else {
 	driveStop(state);
     }
@@ -157,7 +161,30 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 	} else if(key->key_code == 'l' || key->key_code == 'L') {
 	    // fire laser
 	    fireLaser(state);
+	} else if(key->key_code == 'r') {
+	    state->red ++;
+	} else if(key->key_code == 'g') {
+	    state->green ++;
+	} else if(key->key_code == 'b') {
+	    state->blue ++;
+	} else if(key->key_code == 't') {
+	    state->red --;
+	} else if(key->key_code == 'h') {
+	    state->green --;
+	} else if(key->key_code == 'n') {
+	    state->blue --;
+	} else if(key->key_code == 'y') {
+	    state->thresh ++;
+	} else if(key->key_code == 'u') {
+	    state->thresh --;
+	} else if(key->key_code == 'p') {
+	    cmd_val = PID;
+	} else if(key->key_code == '0') {
+	    cmd_val |= ~PID;
 	}
+	state->red &= 0xff;
+	state->green &= 0xff;
+	state->blue &= 0xff;
     }
     moveBot(state, cmd_val);
     if (cmd_val & FORWARD) {
@@ -378,6 +405,13 @@ int main(int argc, char ** argv)
     state->pos_theta= 0;
     state->odometry_seen = 0;
     state->init_last_mouse = 0;
+    state->red = 0x3a;
+    state->green = 0x76;
+    state->blue = 0x41;
+    state->thresh = 52.0;
+    state->green_pid = malloc(sizeof(pid_ctrl_t));
+    state->green_pid_out = 0;
+    pid_init(state->green_pid, 1, 0, 0, 0);
 
     grid_map_init(&state->gridMap, GRID_MAP_MAX_WIDTH, GRID_MAP_MAX_HEIGHT);
 
