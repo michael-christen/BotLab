@@ -11,7 +11,7 @@ void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
 
 	switch (type) {
 		case WORLD_MAP_SEEN:
-			printf ("setting x: %d, y: %d \n", adjX, adjY);
+			//printf ("setting x: %d, y: %d \n", adjX, adjY);
 			color = 0xFF8AE051;
 		break;
 		default: // unseen

@@ -51,7 +51,7 @@ void display_finished(vx_application_t * app, vx_display_t * disp)
 		layer_data_t *layerData = &(state->layers[i]);
 		if (layerData->enable == 1) {
 			uint64_t key = ((uint64_t) disp) * (i + 1);
-			printf("disp: %u, key %u\n", ((uint64_t) disp), key);
+			printf("disp: %zu, key %zu\n", ((uint64_t) disp), key);
 			zhash_remove(state->layer_map, &key, NULL, &value);
 			printf("layer being destroyed!\n");
 			vx_layer_destroy(value);
@@ -85,7 +85,7 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 			uint64_t key = ((uint64_t) disp) * (i + 1);
 			printf("Layer being created\n");
 			vx_layer_t * layer = vx_layer_create(layerData->world);
-			printf("disp: %u, key %u\n", ((uint64_t) disp), key);
+			printf("disp: %zu, key %zu\n", ((uint64_t) disp), key);
 			layerData->layer = layer;
 
 			vx_layer_set_display(layer, disp);
@@ -102,30 +102,103 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 	printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
-void draw_path(vx_buffer_t *buf, path_t *path, float color[]) {
-	uint32_t numCoords = 6 * (path->length - 1);
-	float *traj = malloc(sizeof(float) * numCoords);
-	uint32_t i, baseIndex;
-	for (i = 0; i < path->length; i++) {
-		if (i == 0) {
-			baseIndex = 0;
-		} else {
-			baseIndex = (i*6) - 3;
-		}
-		traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
-		traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
-		traj[baseIndex + 2] = 0.5;
 
-		if (i != path->length - 1 &&  i != 0) {
-			traj[baseIndex + 3] = traj[baseIndex];
-			traj[baseIndex + 4] = traj[baseIndex + 1];
-			traj[baseIndex + 5] = traj[baseIndex + 2];
-		}
+void drawEllipse(vx_buffer_t *ellipseBuff, matd_t *var_matrix, odometry_t pos, state_t *state) {
+	//95% confidence ellipse from 1-sigma error ellipse
+	double scalefactor = 2.4477;
+	//just for show now
+	scalefactor = 10;
+	double covX = matd_get(var_matrix, 0, 0);
+	double covY = matd_get(var_matrix, 1, 1);
+	double trace = covX + covY;
+	double gap   = sqrt(pow(trace,2) -
+						4 * matd_det(var_matrix));
+	//Calculate Eigen Values with quadratic formula
+	double eigX = (trace + gap)/2;
+	double eigY = (trace - gap)/2;
+	double min_eig = (eigX < eigY) ? eigX : eigY;
+	double max_eig = (eigX == min_eig) ? eigY : eigX;
+	//Semi-major -> x, Semi-minor -> y, axes
+	//lengths = sqrt(eigenvalues), larger eigenvalue -> larger uncertainty
+	//therefore
+	double semi_major_length = sqrt(max_eig) * scalefactor;
+	double semi_minor_length = sqrt(min_eig) * scalefactor;
+	double x_length, y_length;
+	double aspect_ratio      = 0.5;
+	double sig_xy = 0.5, sig_x = 0.25, sig_y = 0.125;
+	if(covX > covY) {
+		x_length = semi_major_length;
+		y_length = semi_minor_length;
+	} else {
+		x_length = semi_minor_length;
+		y_length = semi_major_length;
 	}
+	//rotate phi ccw from original orientation
+	double phi = 1/2 * atan(
+							(1/aspect_ratio) *
+							( (2*sig_xy) /
+							  ( pow(sig_x,2)-pow(sig_y,2) )
+							)
+						   );
+	phi = M_PI/2;
 
-	vx_resc_t *posPoints = vx_resc_copyf(traj, numCoords);
-	vx_buffer_add_back(buf, vxo_lines(posPoints, numCoords/3, GL_LINES, vxo_points_style(color , 2.0f)));
-	free(traj);
+	int npoints = 35;
+	float points[npoints*3];
+	for (int i = 0; i < npoints; i++) {
+		float angle = 2*M_PI*i/npoints;
+
+		float x = x_length*cosf(angle);
+		float y = y_length*sinf(angle);
+		float z = 0.0f;
+
+		points[3*i + 0] = x;
+		points[3*i + 1] = y;
+		points[3*i + 2] = z;
+	}
+	vx_object_t *vo = vxo_chain(
+				   vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+				   vxo_mat_translate3(
+									  pos.x,
+									  pos.y,
+									  state->pos_z
+									 ),
+				   //not sure why need to add 90 now
+				   vxo_mat_rotate_z(phi - pos.theta + M_PI/2),
+				   vxo_lines(
+							 vx_resc_copyf(points, npoints*3),
+							 npoints,
+							 GL_LINE_LOOP,
+							 vxo_lines_style(vx_purple, 1.0f)
+							)
+				  );
+	vx_buffer_add_back(ellipseBuff, vo);
+}
+
+void draw_path(vx_buffer_t *buf, path_t *path, const float color[]) {
+    uint32_t numCoords = 6 * (path->length - 1);
+    float *traj = malloc(sizeof(float) * numCoords);
+    uint32_t i, baseIndex;
+    for (i = 0; i < path->length; i++) {
+        if (i == 0) {
+            baseIndex = 0;
+        } else {
+            baseIndex = (i*6) - 3;
+        }
+        traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
+        traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
+        traj[baseIndex + 2] = 0.5;
+
+        if (i != path->length - 1 &&  i != 0) {
+            traj[baseIndex + 3] = traj[baseIndex];
+            traj[baseIndex + 4] = traj[baseIndex + 1];
+            traj[baseIndex + 5] = traj[baseIndex + 2];
+        }
+    }
+
+    vx_resc_t *posPoints = vx_resc_copyf(traj, numCoords);
+    vx_buffer_add_back(buf, vxo_lines(posPoints, numCoords/3, GL_LINES, vxo_points_style(color , 2.0f)));
+    free(traj);
+
 }
 
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
@@ -279,76 +352,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	return 1;
 }
 
-void drawEllipse(vx_buffer_t *ellipseBuff, matd_t *var_matrix, odometry_t pos, state_t *state) {
-	//95% confidence ellipse from 1-sigma error ellipse
-	double scalefactor = 2.4477;
-	//just for show now
-	scalefactor = 10;
-	double covX = matd_get(var_matrix, 0, 0);
-	double covY = matd_get(var_matrix, 1, 1);
-	double trace = covX + covY;
-	double gap   = sqrt(pow(trace,2) -
-						4 * matd_det(var_matrix));
-	//Calculate Eigen Values with quadratic formula
-	double eigX = (trace + gap)/2;
-	double eigY = (trace - gap)/2;
-	double min_eig = (eigX < eigY) ? eigX : eigY;
-	double max_eig = (eigX == min_eig) ? eigY : eigX;
-	//Semi-major -> x, Semi-minor -> y, axes
-	//lengths = sqrt(eigenvalues), larger eigenvalue -> larger uncertainty
-	//therefore
-	double semi_major_length = sqrt(max_eig) * scalefactor;
-	double semi_minor_length = sqrt(min_eig) * scalefactor;
-	double x_length, y_length;
-	double aspect_ratio      = 0.5;
-	double sig_xy = 0.5, sig_x = 0.25, sig_y = 0.125;
-	if(covX > covY) {
-		x_length = semi_major_length;
-		y_length = semi_minor_length;
-	} else {
-		x_length = semi_minor_length;
-		y_length = semi_major_length;
-	}
-	//rotate phi ccw from original orientation
-	double phi = 1/2 * atan(
-							(1/aspect_ratio) *
-							( (2*sig_xy) /
-							  ( pow(sig_x,2)-pow(sig_y,2) )
-							)
-						   );
-	phi = M_PI/2;
 
-	int npoints = 35;
-	float points[npoints*3];
-	for (int i = 0; i < npoints; i++) {
-		float angle = 2*M_PI*i/npoints;
-
-		float x = x_length*cosf(angle);
-		float y = y_length*sinf(angle);
-		float z = 0.0f;
-
-		points[3*i + 0] = x;
-		points[3*i + 1] = y;
-		points[3*i + 2] = z;
-	}
-	vx_object_t *vo = vxo_chain(
-				   vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-				   vxo_mat_translate3(
-									  pos.x,
-									  pos.y,
-									  state->pos_z
-									 ),
-				   //not sure why need to add 90 now
-				   vxo_mat_rotate_z(phi - pos.theta + M_PI/2),
-				   vxo_lines(
-							 vx_resc_copyf(points, npoints*3),
-							 npoints,
-							 GL_LINE_LOOP,
-							 vxo_lines_style(vx_purple, 1.0f)
-							)
-				  );
-	vx_buffer_add_back(ellipseBuff, vo);
-}
 
 int destroyWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	vx_world_destroy(layerData->world);

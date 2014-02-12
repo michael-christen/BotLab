@@ -79,10 +79,9 @@ void fireLaser(state_t* state){
 }
 
 void moveBot(state_t* state){
-	double arc_val = 5;
-	if(state->cmd_val & PID | state->doing_pid) {
-		uint32_t color_detect = state->red | state->green << 8 |
-			state->blue << 16 | 0xff << 24;
+	//double arc_val = 5;
+	if(((state->cmd_val & PID) | state->doing_pid) != 0) {
+		//uint32_t color_detect = state->red | state->green << 8 | state->blue << 16 | 0xff << 24;
 		//printf("color: %x\n",color_detect);
 		//printf("thresh: %f\n",state->thresh);
 		pthread_mutex_lock(&state->image_mutex);
@@ -175,14 +174,17 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			vx_camera_pos_compute_ray(pos, mouse->x, mouse->y, &ray);
 			vx_ray3_intersect_xy(&ray, 0, man_point);
 			// Add state machine flag here
-			state->goalMouseX = man_point[0];
-			state->goalMouseY = man_point[1];
+			state->goalMouseX = man_point[0] / CM_TO_VX;
+			state->goalMouseY = man_point[1] / CM_TO_VX;
+			printf("Clicked: %f cm's x, %f cm's y\n",
+					state->goalMouseX, state->goalMouseY);
 			state->goToMouseCoords = 1;
 			pthread_mutex_lock(&state->haz_map_mutex);
 			if (state->targetPathValid == 1) {
 				path_destroy(state->targetPath);
 			}
-			state->targetPath = haz_map_get_path(&state->hazMap, man_point[0] / CM_TO_VX, man_point[1] / CM_TO_VX);
+			state->targetPath = haz_map_get_path(&state->hazMap,
+					state->goalMouseX, state->goalMouseY);
 			if (state->targetPath->length > 0) {
 				state->targetPathValid = 1;
 			} else {
@@ -190,7 +192,10 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 				state->targetPathValid = 0;
 			}
 			pthread_mutex_unlock(&state->haz_map_mutex);
-			printf("mx: %f, my: %f\n", man_point[0], man_point[1]);
+			position_t pos;
+			pos.x = state->goalMouseX;
+			pos.y = state->goalMouseY;
+			driveToPosition(state,pos);
 		}
 	}
 
@@ -450,41 +455,16 @@ void * camera_analyze(void * data)
 			pthread_mutex_lock(&state->haz_map_mutex);
 			find_point_pos(state, obstacle);
 			pthread_mutex_unlock(&state->haz_map_mutex);
-			state->num_pts_tape = 0;
-			int x = 190; //525
-			int y = 300;
-			for(x; x < 560; x++){
-				pixel_t px;
-				px.x = x;
-				px.y = y;
-				state->tape[x-190] = px;
-				state->num_pts_tape++;
-			}
 
-			obstacle = 1;
 			//find_point_pos( state, obstacle);
 		} else {
 			//printf("shouldn't get heree!!!\n");
-
-			state->num_pts_tape = 0;
-			int x = 370; //525
-			int y = 280;
-			for(y; y < 320; y++){
-				pixel_t px;
-				px.x = x;
-				px.y = y;
-				state->tape[y-280] = px;
-				state->num_pts_tape++;
-			}
-
-			int obstacle = 1;
-			find_point_pos( state, obstacle);
 		}
 		pthread_mutex_unlock(&state->image_mutex);
 		usleep(10000);
 	}
 
-	if (state->imageValid = 1) {
+	if (state->imageValid == 1) {
 		//printf("Final image destroy\n");
 		pthread_mutex_lock(&state->image_mutex);
 		image_u32_destroy(state->im);
@@ -545,7 +525,7 @@ void* lcm_handle_loop(void *data) {
 										  "MAEBOT_MOTOR_FEEDBACK",
 										  &odometry_handler, state); //subscribe to odometry data
 
-	int hz = 15;
+	//int hz = 15;
 	while (state->running) {
 		// Set up the LCM file descriptor for waiting. This lets us monitor it
 		// until somethign is "ready" to happen. In this case, we are ready to
@@ -610,7 +590,7 @@ void* FSM(void* data){
 				break;}
 			case EX_ZAP_DIAMOND:{
 				//Still need to get diamond coords
-				double diamond_x, diamond_y;
+				double diamond_x = 0, diamond_y = 0;
 				double dx = diamond_x - state->pos_x;
 				double dy = diamond_y - state->pos_y;
 				double dtheta = atan2(dy, dx);

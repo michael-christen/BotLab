@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "common/zarray.h"
 
+
 // Haz Map origin at bottom left corner
 
 double map(double x, double in_min, double in_max, double out_min, double out_max)
@@ -233,7 +234,7 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	while (cont && zarray_size(pq) > 0) {
 		uint8_t valid = 0;
 		dijkstra_dists_t minDist;
-		uint32_t minIndex;
+		uint32_t minIndex = 0;
 		// Find current smallest distance
 		// NOTE: should be replaced by a priority queue
 		for (i = 0; i < zarray_size(pq); i++) {
@@ -342,7 +343,7 @@ void haz_map_compute_config(haz_map_t *hm) {
 	int maxU, minU, x, y, u, v;
 	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
-	int maxV, minV, count;
+	int maxV, minV; //count;
 	offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
 	obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
 	for (y = 0; y < hm->height; y++) {
