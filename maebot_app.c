@@ -56,7 +56,7 @@ void setLaser(state_t* state, int lsr_val){
 }
 
 void fireLaser(state_t* state){
-	printf("pew pew\n");
+	//printf("pew pew\n");
 	setLaser(state, 1);
 	LEDStatus(state, LASER_ON);
 	usleep(200000);
@@ -225,7 +225,7 @@ static void handler(int signum)
         case SIGINT:
         case SIGQUIT:
             pthread_mutex_lock(&global_state->running_mutex);
-            printf("setting running to 0\n");
+            //printf("setting running to 0\n");
             global_state->running = 0;
             pthread_mutex_unlock(&global_state->running_mutex);
             break;
@@ -296,16 +296,16 @@ void * camera_analyze(void * data)
 
     zarray_t *urls = image_source_enumerate();
 
-    printf("Cameras:\n");
+    //printf("Cameras:\n");
     for (int i = 0; i < zarray_size(urls); i++) {
         char *url;
         zarray_get(urls, i, &url);
-        printf("  %3d: %s\n", i, url);
+        //printf("  %3d: %s\n", i, url);
     }
 
     if (zarray_size(urls) == 0) {
         image_source_enumerate_free(urls);
-        printf("No cameras found.\n");
+        //printf("No cameras found.\n");
         return 0;
     }
     zarray_get(urls, 0, &state->url);
@@ -317,14 +317,14 @@ void * camera_analyze(void * data)
 
     state->isrc = image_source_open(state->url);
     if (state->isrc == NULL) {
-        printf("Unable to open device %s\n", state->url);
+        //printf("Unable to open device %s\n", state->url);
         return 0;
     }
 
     image_source_t *isrc = state->isrc;
 
     if (isrc->start(isrc)) {
-        printf("Can't start image source\n");
+        //printf("Can't start image source\n");
         return 0;
     }
 
@@ -351,7 +351,7 @@ void * camera_analyze(void * data)
         isrc->release_frame(isrc, &isdata);
 
         if (state->getopt_options.verbose) {
-            printf("Got frame %p\n", state->im);
+            //printf("Got frame %p\n", state->im);
         }
         if (state->imageValid == 1) {
             // HOMOGRAPHY BEFORE BARREL DISTORTION CORRECTION GOES HERE
@@ -385,14 +385,14 @@ void * camera_analyze(void * data)
 		state->diamond_seen  = 0;
 	    }
         } else {
-            printf("shouldn't get heree!!!\n");
+            //printf("shouldn't get heree!!!\n");
         }
         pthread_mutex_unlock(&state->image_mutex);
         usleep(10000);
     }
 
     if (state->imageValid = 1) {
-        printf("Final image destroy\n");
+        //printf("Final image destroy\n");
         pthread_mutex_lock(&state->image_mutex);
         image_u32_destroy(state->im);
         state->imageValid = 0;
@@ -416,7 +416,7 @@ static void * driver_monitor(void *data) {
 
 void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
 	const maebot_sensor_data_t * msg, void * data){
-	
+
 	state_t* state = data;
 
 	for(int i = 0; i < 3; i++){
@@ -425,6 +425,13 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
 		state->gyro_int[i] = msg->gyro_int[i] - state->gyro_bias[i];
 	}
 
+	//state->gyro[2] -=
+	/*printf ("  gyro values = (%d, %d, %d)\n",
+            msg->gyro[0], msg->gyro[1], msg->gyro[2]);
+    printf ("  gyro_int values= (%lld, %lld, %lld)\n",
+            msg->gyro_int[0], msg->gyro_int[1], msg->gyro_int[2]);*/
+
+	printf("%d, %lld\n",msg->gyro[2], msg->gyro_int[2]);
 }
 
 void* lcm_handle_loop(void *data) {
@@ -667,16 +674,16 @@ int main(int argc, char ** argv)
 	//pthread_join(state->camera_thread, NULL);
 
     if (pthread_join(state->gui_thread, NULL) != 0) {
-        printf("Problem here!\n");
+        //printf("Problem here!\n");
     } else {
-        printf("All good!\n");
+        //printf("All good!\n");
     }
 
     // clean up
     vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
     haz_map_destroy(&state->hazMap);
-    printf("Exited Cleanly!\n");
+    //printf("Exited Cleanly!\n");
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");

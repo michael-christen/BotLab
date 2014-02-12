@@ -32,7 +32,7 @@
 
 }*/
 
-void calibrate_gyros(int *gyro_int, double *gyro_bias){
+void calibrate_gyros(int64_t gyro_int[], double gyro_bias[]){
 //Inputs should be : &state->gyro_int, &state->gyro_bias
 //void * data){
 	//this is gonna be a call at the start, we let the robot sit and let the gyroscopes accumulate error.
@@ -44,21 +44,24 @@ void calibrate_gyros(int *gyro_int, double *gyro_bias){
 
 	//state_t * state = data;
 
-	int orig_0 = gyro_int[0];
-	int orig_1 = gyro_int[1];
-	int orig_2 = gyro_int[2];
-
+	int64_t orig_0 = gyro_int[0];
+	int64_t orig_1 = gyro_int[1];
+	int64_t orig_2 = gyro_int[2];
+	printf("Calibrating gyros...\n");
 	//???Do you really think it's necessary to wait 3 minutes
-	sleep(5);
+	double time = 2.5;
+	sleep(time);
 
-	int biased_0 = gyro_int[0];
-	int biased_1 = gyro_int[1];
-	int biased_2 = gyro_int[2];
+	int64_t biased_0 = gyro_int[0];
+	int64_t biased_1 = gyro_int[1];
+	int64_t biased_2 = gyro_int[2];
+	//printf("After calibration:\nG1: %ld\nG2: %ld\nG3: %ld\n",
+	//	   (long)biased_0, (long)biased_1, (long)biased_2);
 
 	//some rise/run stuff
-	double slope_0 = (biased_0 - orig_0)/180.0;
-	double slope_1 = (biased_1 - orig_1)/180.0;
-	double slope_2 = (biased_2 - orig_2)/180.0;
+	double slope_0 = (biased_0 - orig_0)/time;
+	double slope_1 = (biased_1 - orig_1)/time;
+	double slope_2 = (biased_2 - orig_2)/time;
 
 	gyro_bias[0] = slope_0;
 	gyro_bias[1] = slope_1;
@@ -67,6 +70,11 @@ void calibrate_gyros(int *gyro_int, double *gyro_bias){
 	printf("Gyros calibrated:\n");
 
 	for(int i = 0; i < 3; i++){
+	    /*	switch(i){
+		case 0: printf("Calc %i: %g\n", i, slope_0); break;
+		case 1: printf("Calc %i: %g\n", i, slope_1); break;
+		case 2: printf("Calc %i: %g\n", i, slope_2); break;
+		}*/
 		printf("Gyro %i: %g\n", i, gyro_bias[i]);
 	}
 

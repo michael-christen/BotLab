@@ -114,7 +114,7 @@ struct state_t {
 
     int acc[3];
     int gyro[3];
-    int gyro_int[3];
+    int64_t gyro_int[3];
 	double gyro_bias[3];
     //double gyro_0_bias, gyro_1_bias, gyro_2_bias;
     const char *sensor_channel;
