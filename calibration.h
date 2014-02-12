@@ -10,8 +10,6 @@
 	void * data
 );*/
 
-void calibrate_gyros(int64_t gyro_int[], double gyro_bias[],
-	int64_t gyro_int_offset[]);
-
+void calibrate_gyros(int64_t *gyro2_int, int *calibrating, double *gyro_ticks_per_theta);
 
 #endif

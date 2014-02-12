@@ -117,9 +117,12 @@ struct state_t {
     int acc[3];
     int gyro[3];
     int64_t gyro_int[3];
-	double gyro_bias[3];
-    int64_t gyro_int_offset[3];
+	double gyro_ticks_per_theta;
+	//double gyro_bias[3];
+    //int64_t gyro_int_offset[3];
     const char *sensor_channel;
+
+	int calibrating;
 
     //Position info from odometry
     int positionQueueP, positionQueueCount;
