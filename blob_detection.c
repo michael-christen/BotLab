@@ -224,6 +224,9 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 
 			double w_over_h = (width+0.0) / (height+0.0);
 			int width_lte_height = w_over_h <= 1.2 && w_over_h > 0.5;
+
+			double density = (balls[i].num_px + 0.0) / (width*height+0.0);
+			int dense_enough  = density > 0.45;
 			/*
 			printf("i: %d, px_size: %d, t&b_in_lr: %d, t_inline_b: %d, w<=h: %d, w/h: %f,, height: %d, width: %d\n",
 			  i, balls[i].num_px, top_and_bot_in_lr,
@@ -231,9 +234,10 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 			  height, width);
 			  */
 			if(top_and_bot_in_lr &&
-			   //top_inline_bot    &&
+			   top_inline_bot    &&
 			   width_lte_height  &&
-			   right_num_pxs) {
+			   right_num_pxs     &&
+			   dense_enough) {
 
 				final_balls[final_num_balls] = balls[i];
 				//Get coordinates, not sum
