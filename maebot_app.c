@@ -487,7 +487,7 @@ void camera_process(state_t* state){
 	int res;
 	image_source_data_t isdata;
 	image_source_t *isrc = state->isrc;
-		
+
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
 		pthread_cond_signal(&state->image_cv);
@@ -552,7 +552,7 @@ void camera_destroy(state_t* state){
 void * camera_analyze(void * data){
 	state_t * state = data;
 	camera_init(state);
-	
+
 	while(state->running){
 		camera_process(state);
 		usleep(10000);
@@ -651,10 +651,12 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_MOVE;
 	nextState = curState;
-	path_t* path = haz_map_get_path(&state->hazMap, 10, 20);
 	while(!state->FSM){
 		usleep(1000);
 	}
+	path_t* path = haz_map_get_path(&state->hazMap, 10, 20);
+	state->targetPath = path;
+	state->targetPathValid = 1;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
 	while(state->running && state->FSM){
@@ -664,9 +666,12 @@ void* FSM(void* data){
 					position_t waypoint = path->waypoints[path->position];
 					driveToPosition(state, waypoint);
 					path->position++;
+					printf("Completed move %d\n", path->position);
 					nextState = EX_MOVE;
 				}else{
+					state->targetPathValid = 0;
 					path_destroy(path);
+					printf("FSM done\n");
 					return NULL;
 					nextState = EX_ANALYZE;
 				}
@@ -723,7 +728,7 @@ void* FSM(void* data){
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 				if(nextState == EX_MOVE){
 					path = explorer_get_move(&explorer);
-				} 
+				}
 		}
 		curState = nextState;
 	}
