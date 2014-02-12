@@ -11,8 +11,10 @@
 //ABGR
 //Blue
 #define TEMPLATE_PX 0xff514430
-#define SHOW_PX 0xff0127ff
+#define SHOW_PX 0xff00ff00
 #define MAX_NUM_POINTS 1000
+//Number of places to look up, to filter out fake tape
+#define SEARCH_DIST 5
 
 unsigned int is_tape(uint32_t px);
 

@@ -179,8 +179,9 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         }
 
 	//Blue
-	state->num_pts_tape = 
+	state->num_pts_tape =
 	    line_detection(im, state->tape);
+	printf("Pts: %d\n",state->num_pts_tape);
         //might wanna make diff d.s.
         //Also, gonna need to copy image
         //Green
