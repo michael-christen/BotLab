@@ -571,7 +571,7 @@ int main(int argc, char ** argv)
     state->im = NULL;
     state->diff_x        = 0;
     state->diamond_seen  = 0;
-    pid_init(state->green_pid, 1, 0, 0, 0);
+    pid_init(state->green_pid, 1, 1, 0, 0);
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 

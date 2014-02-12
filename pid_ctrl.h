@@ -4,7 +4,7 @@
 #include<stdio.h>
 #include<math.h>
 
-#define MAX_OUTPUT 1000
+#define MAX_OUTPUT 100
 #define MIN_OUTPUT 15
 typedef struct pid pid_ctrl_t;
 struct pid {
