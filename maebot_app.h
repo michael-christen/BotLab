@@ -61,12 +61,17 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
+typedef struct fired_from fired_from_t;
 typedef enum command_val cmd_val_t;
 
 
 struct getopt_options_t {
     int verbose, no_video, limitKBs, autoCamera, mouseGuidance;
     double decimate;
+};
+
+struct fired_from {
+	double x, y, theta;
 };
 
 struct layer_data_t {
@@ -192,9 +197,9 @@ struct state_t {
 
     int num_balls;
     ball_t balls[MAX_NUM_BALLS];
-	pixel_t* zapped_diamonds;
+	pixel_t zapped_diamonds[50];
 	int num_zapped_diamonds;
-	
+
 
     lcm_t * lcm;
     pthread_mutex_t lcm_mutex;

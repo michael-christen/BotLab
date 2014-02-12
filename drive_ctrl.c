@@ -73,7 +73,7 @@ void driveToTheta(state_t * state, double theta) {
 	double beginningTheta = state->pos_theta;
 	int    num_zeros      = 0;
 	int    min_zeros      = 5;
-
+	int iterations = 0;
 	while(num_zeros < min_zeros){
 		//Won't quite work yet, I have some left overs
 		//from green targeting pid
@@ -99,6 +99,9 @@ void driveToTheta(state_t * state, double theta) {
 		//printf("difference: %f, pid: %f, motor_val: %f\n",difference, pid_out, motor_val);
 
 		driveRot(state, motor_val);
+		if(iterations == 70){
+			break;
+		}
 		//Sampling speed is important,
 		//if you oversample D will lose relevance
 		usleep(50000);
@@ -107,7 +110,9 @@ void driveToTheta(state_t * state, double theta) {
 		driveStop(state);
 		usleep(100000);
 		*/
+		iterations++;
 	}
+	printf("Took %d iterations\n", iterations);
 	int64_t endInt = state->gyro_int[2];
 	double endTheta = state->pos_theta;
 	double gyroTheta = (endInt - beginningInt)/state->gyro_ticks_per_theta;
