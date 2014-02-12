@@ -21,10 +21,10 @@ struct pid {
     //Boolean to not evaluate integral or derivative on first attempt
     int first_meas;
 
-	int min_output, max_val;
+	double min_output, max_val;
 };
 
-void   pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal, int min_output, int max_val);
+void   pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal, double min_output, double max_val);
 void   pid_update_pid(pid_ctrl_t *pid, double P, double I, double D);
 void   pid_update_goal(pid_ctrl_t *pid, double goal);
 double pid_get_output(pid_ctrl_t *pid, double meas);
