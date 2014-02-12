@@ -864,7 +864,7 @@ void* FSM(void* data){
 							usleep(1000);
 						}
 						path = state->targetPath;
-						path = dumb_explore(state, pre_analyze_theta);
+						//path = dumb_explore(state, pre_analyze_theta);
 						//state->targetPath = path;
 						//state->targetPathValid = 1;
 						printf("after path calc\n");
@@ -999,7 +999,7 @@ int main(int argc, char ** argv)
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
-	pid_init(state->theta_pid, 0.5, 0.3, 0.04, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.5, 0.4, 0.04, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);

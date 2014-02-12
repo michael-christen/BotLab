@@ -12,11 +12,11 @@
 #define HAZ_MAP_OBSTACLE 2
 #define GRID_RES 5
 #define HAZ_MAP_OBSTACLE_RADIUS 5
-#define HAZ_MAP_CONFIG_RAIDUS 15
+#define HAZ_MAP_CONFIG_RAIDUS 25
 #define HAZ_MAP_HUGE_DIST 999
 #define HAZ_MAP_MEGA_DIST 99999999
 #define HAZ_MAP_TTL 60
-#define HAZ_MAP_REPULSE_FACTOR 50
+#define HAZ_MAP_REPULSE_FACTOR 20
 
 typedef struct haz_map_t haz_map_t;
 typedef struct haz_map_tile_t haz_map_tile_t;
