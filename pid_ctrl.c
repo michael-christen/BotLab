@@ -43,8 +43,18 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 }
 
 double pid_to_rot(double pid_out) {
-    if(fabs(pid_out) > 1) {
-	pid_out /= fabs(pid_out);
+    //There
+    if(fabs(pid_out) < MIN_OUTPUT) {
+	printf("there\n");
+	return 0;
     }
+    if(fabs(pid_out) > MAX_OUTPUT) {
+	//get sign
+	pid_out /= fabs(pid_out);
+	//Set to max_output
+	pid_out *= MAX_OUTPUT;
+    }
+    pid_out /= -MAX_OUTPUT;
+    printf("speed: %f\n",pid_out);
     return pid_out;
 }

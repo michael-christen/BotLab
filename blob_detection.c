@@ -130,6 +130,20 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
     for(i = 0; i <= label_num; ++i) {
 	balls[i].x = 0;
 	balls[i].y = 0;
+
+	balls[i].t.x = 0;
+	balls[i].t.y = 0;
+
+	balls[i].b.x = 0;
+	balls[i].b.y = im->height;
+
+	balls[i].l.x = im->width;
+	balls[i].l.y = 0;
+
+	balls[i].r.x = 0;
+	balls[i].r.y = 0;
+
+	balls[i].valid  = 1;
 	balls[i].num_px = 0;
     }
     //2nd pass
@@ -140,26 +154,99 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 	    if(is_ball(color_threshold,template_px,px)
            && links[labels[id]]){
 		labels[id] = set_find(links[labels[id]])->val;
+		//Add ball data
 		balls[labels[id]].x += x;
 		balls[labels[id]].y += y;
 		balls[labels[id]].num_px ++;
+		//Update t,b,l,r
+		if(x > balls[labels[id]].r.x) {
+		    balls[labels[id]].r.x = x;
+		    balls[labels[id]].r.y = y;
+		    balls[labels[id]].valid = 1;
+		    //If == then not our diamond
+		} else if(x == balls[labels[id]].r.x){
+		    balls[labels[id]].valid = 0;
+		}
+		if(x < balls[labels[id]].l.x) {
+		    balls[labels[id]].l.x = x;
+		    balls[labels[id]].l.y = y;
+		    balls[labels[id]].valid = 1;
+		} else if(x == balls[labels[id]].l.x){
+		    balls[labels[id]].valid = 0;
+		}
+		if(y > balls[labels[id]].t.y) {
+		    balls[labels[id]].t.x = x;
+		    balls[labels[id]].t.y = y;
+		    balls[labels[id]].valid = 1;
+		} else if(y == balls[labels[id]].t.y){
+		    balls[labels[id]].valid = 0;
+		}
+		if(y < balls[labels[id]].b.y) {
+		    balls[labels[id]].b.x = x;
+		    balls[labels[id]].b.y = y;
+		    balls[labels[id]].valid = 1;
+		} else if(y == balls[labels[id]].b.y){
+		    balls[labels[id]].valid = 0;
+		}
+
 		im->buf[id] = show_px;
 	    }
 	}
     }
-    //Filter out noise / not enough pixels
+
+    //Filter out non-diamonds
+    int err = 2;
+    //printf("%d possible diamonds\n",label_num);
     for(i = 1; i < label_num; ++i) {
-	if(balls[i].num_px >= MIN_PXS &&
-		balls[i].num_px <= MAX_PXS) {
-	    final_balls[final_num_balls++] = balls[i];
+	//Assert right num_pxs
+	int right_num_pxs = (balls[i].num_px >= MIN_PXS &&
+		balls[i].num_px <= MAX_PXS);
+
+	if(right_num_pxs) {
+	    //Assert top and bottom y within left and right x
+	    int top_and_bot_in_lr =
+		(balls[i].t.x > balls[i].l.x - err &&
+		 balls[i].t.x < err + balls[i].r.x &&
+		 balls[i].b.x > balls[i].l.x - err &&
+		 balls[i].b.x < err + balls[i].r.x);
+
+	    //Assert top is always inline with bottom
+	    int top_inline_bot =
+		pixel_width(balls[i].t,balls[i].b) < 3*err;
+
+	    //assert width is <= height
+	    int width = pixel_width(balls[i].l,balls[i].r);
+	    int height = pixel_height(balls[i].t,balls[i].b);
+
+	    double w_over_h = (width+0.0) / (height+0.0);
+	    int width_lte_height = w_over_h <= 1.2 && w_over_h > 0.5;
+	    /*printf("i: %d, px_size: %d, t&b_in_lr: %d, t_inline_b: %d, w<=h: %d, w/h: %f,, height: %d, width: %d\n",
+		   i, balls[i].num_px, top_and_bot_in_lr,
+		   top_inline_bot, width_lte_height, w_over_h,
+		   height, width);
+		*/
+
+	    if(top_and_bot_in_lr &&
+	       //top_inline_bot    &&
+	       width_lte_height  &&
+	       right_num_pxs) {
+		final_balls[final_num_balls] = balls[i];
+		//Get coordinates, not sum
+		final_balls[final_num_balls].x
+		    = (final_balls[final_num_balls].x+0.0)/
+		    final_balls[final_num_balls].num_px;
+		final_balls[final_num_balls].y =
+		    (final_balls[final_num_balls].y+0.0)/
+		    final_balls[final_num_balls].num_px;
+		/*
+		printf("%d passed, x: %f, y: %f\n",i,
+		       final_balls[final_num_balls].x,
+		       final_balls[final_num_balls].y);
+		       */
+		final_num_balls ++;
+	    }
 	}
     }
-    //Get coordinates, not sum
-    for(i = 0; i < final_num_balls; ++i) {
-	final_balls[i].x = (final_balls[i].x+0.0)/
-	    final_balls[i].num_px;
-	final_balls[i].y = (final_balls[i].y+0.0)/
-	    final_balls[i].num_px;
-    }
+
     return final_num_balls;
 }
