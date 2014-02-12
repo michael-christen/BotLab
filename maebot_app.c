@@ -421,20 +421,20 @@ void * camera_analyze(void * data)
 			//Green
 			int obstacle = 1;
 			//state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
-			//find_point_pos( state, obstacle);
+			find_point_pos( state, obstacle);
 			state->num_pts_tape = 0;
 			int x = 190; //525
 			int y = 300;
-			for(y; y < 560; y++){
+			for(x; x < 560; x++){
 				pixel_t px;
 				px.x = x;
 				px.y = y;
-				state->tape[y-300] = px;
+				state->tape[x-190] = px;
 				state->num_pts_tape++;
 			}
 
 			obstacle = 1;
-			find_point_pos( state, obstacle);
+			//find_point_pos( state, obstacle);
 		} else {
 			//printf("shouldn't get heree!!!\n");
 

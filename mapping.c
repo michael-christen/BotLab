@@ -46,8 +46,7 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_t *hm, int obstacle){
 	state_t * state = data;
 
-	double rot_theta = state->pos_theta;
-	//printf("theta:%f\n", rot_theta);
+	double rot_theta = -1 * state->pos_theta;
 
 
 	//matrices for position realtive to bruce, rotation, and multiplication of the 2
@@ -55,8 +54,9 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 																y_rel,
 																1});
 
-	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		-sin(rot_theta),	0,
-													sin(rot_theta),	cos(rot_theta),	0,
+	//printf("original coords x: %f, y: %f\n", x_rel, y_rel);
+	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),	-sin(rot_theta),	state->pos_x,
+													sin(rot_theta),	 cos(rot_theta),	state->pos_y,
 													0,					0,				1});
 
 	matd_t * real = matd_multiply(R, rel_coords);
@@ -135,12 +135,12 @@ void find_point_pos( void * data, int obstacle){
 
 	 	double xx = MATD_EL(H, 0, 0)*x + MATD_EL(H, 0, 1)*y + MATD_EL(H, 0, 2);
     	double yy = MATD_EL(H, 1, 0)*x + MATD_EL(H, 1, 1)*y + MATD_EL(H, 1, 2);
-   	double zz = MATD_EL(H, 2, 0)*x + MATD_EL(H, 2, 1)*y + MATD_EL(H, 2, 2);
+		double zz = MATD_EL(H, 2, 0)*x + MATD_EL(H, 2, 1)*y + MATD_EL(H, 2, 2);
 
   	  	double x_cm = xx / zz;
     	double y_cm = yy / zz;
 
-		//printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);
+	//	printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);
 
 
 		add_obstacles_to_haz_map( x_cm, y_cm, data, &hm, obstacle);
