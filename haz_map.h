@@ -4,14 +4,14 @@
 #include "common/image_u32.h"
 #include "path.h"
 
-#define HAZ_MAP_MAX_WIDTH 300
-#define HAZ_MAP_MAX_HEIGHT 300
+#define HAZ_MAP_MAX_WIDTH  100
+#define HAZ_MAP_MAX_HEIGHT 100
 #define HAZ_MAP_UNKNOWN 0
 #define HAZ_MAP_FREE 1
 #define HAZ_MAP_OBSTACLE 2
-#define HAZ_MAP_UNIT_TO_CM 1
+#define HAZ_MAP_UNIT_TO_CM 5
 #define HAZ_MAP_OBSTACLE_RADIUS 5
-#define HAZ_MAP_CONFIG_RAIDUS 15
+#define HAZ_MAP_CONFIG_RADIUS 15
 #define HAZ_MAP_VAL_MAX 100
 #define HAZ_MAP_HUGE_DIST 999
 

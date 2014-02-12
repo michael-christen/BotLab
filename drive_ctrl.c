@@ -42,15 +42,13 @@ void driveStop(state_t * state) {
 void driveToTheta(state_t * state, double theta) {
 	double thresh = 0.1;
 
-	pid_update_goal(state->theta_pid, theta);
-
 	state->goal_theta = theta;
 
 	while(abs(state->goal_theta - state->pos_theta) > thresh){
-		//Won't quite work yet, I have some left overs 
+		//Won't quite work yet, I have some left overs
 		//from green targeting pid
 		double pid_out = pid_get_output(state->theta_pid,
-				state->pos_theta);
+				state->pos_theta - state->goal_theta);
 		double motor_val = pid_to_rot(state->theta_pid, pid_out);
 
 		driveRot(state, motor_val);
@@ -69,13 +67,13 @@ void driveToPosition(state_t * state, position_t position){
 	state->goal_x = position.x;
 	state->goal_y = position.y;
 
-	if(fabs(state->goal_x - state->pos_x) > thresh || 
+	if(fabs(state->goal_x - state->pos_x) > thresh ||
 		fabs(state->goal_y - state->pos_y) > thresh){
 		double dx = position.x - state->pos_x;
 		double dy = position.y - state->pos_y;
 		double dtheta = atan2(dy, dx);
 		driveToTheta(state, dtheta);
-	
+
 		state->waiting_on_pos = 1;
 		state->waiting_on_theta = 0;
 		//drive to position
