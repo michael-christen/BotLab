@@ -859,6 +859,7 @@ void* FSM(void* data){
 					break;
 				}
 				for (; turnIndex < 6; turnIndex++) {
+					printf("Turn Index: %d\n", turnIndex);
 					analyzeAngle = 2.0 * M_PI / 5;
 					printf("Drive to theta: %f\n", state->pos_theta + analyzeAngle);
 					state->doing_pid_theta = 1;
