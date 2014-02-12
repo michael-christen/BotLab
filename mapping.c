@@ -55,8 +55,8 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 																y_rel,
 																1});
 
-	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
-													-sin(rot_theta),	cos(rot_theta),	0,
+	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		-sin(rot_theta),	0,
+													sin(rot_theta),	cos(rot_theta),	0,
 													0,					0,				1});
 
 	matd_t * real = matd_multiply(R, rel_coords);
@@ -64,7 +64,7 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	x_rel = matd_get(real, 0, 0);
 	y_rel = matd_get(real, 1, 0);
 
-	printf("rotated coords x: %f, y: %f\n", x_rel, y_rel);
+	//printf("rotated coords x: %f, y: %f\n", x_rel, y_rel);
 
 	//constant left bias
 	double xbias = 1.5; //cm
@@ -74,8 +74,8 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 
 	double map_x = x_rel + xbias;
 	double map_y = y_rel;
-	
-	printf("haz map max width: %d, grid res: %d\n", HAZ_MAP_MAX_WIDTH, GRID_RES);
+
+	//printf("haz map max width: %d, grid res: %d\n", HAZ_MAP_MAX_WIDTH, GRID_RES);
 
 	int map_x_scaled = (map_x/GRID_RES) +(HAZ_MAP_MAX_WIDTH/2);
 	int map_y_scaled = (map_y/GRID_RES) +(HAZ_MAP_MAX_HEIGHT/2);
@@ -91,7 +91,7 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 
 	//place point on haz_map
 	if(obstacle == 1){
-		printf("grid cell on haz map filled  x: %d, y: %d\n", map_x_scaled, map_y_scaled);
+		//printf("grid cell on haz map filled  x: %d, y: %d\n", map_x_scaled, map_y_scaled);
 		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
@@ -130,7 +130,7 @@ void find_point_pos( void * data, int obstacle){
 		double x = state->tape[i].x;
 		double y = state->tape[i].y;
 
-		printf("pixel at x: %f, y: %f\n", x, y);
+		//printf("pixel at x: %f, y: %f\n", x, y);
 
 
 	 	double xx = MATD_EL(H, 0, 0)*x + MATD_EL(H, 0, 1)*y + MATD_EL(H, 0, 2);
@@ -138,9 +138,9 @@ void find_point_pos( void * data, int obstacle){
    	double zz = MATD_EL(H, 2, 0)*x + MATD_EL(H, 2, 1)*y + MATD_EL(H, 2, 2);
 
   	  	double x_cm = xx / zz;
-    	double y_cm = yy / zz;		
-		
-		printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);		
+    	double y_cm = yy / zz;
+
+		//printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);
 
 
 		add_obstacles_to_haz_map( x_cm, y_cm, data, &hm, obstacle);

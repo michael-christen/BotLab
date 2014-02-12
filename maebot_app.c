@@ -373,7 +373,7 @@ void * camera_analyze(void * data)
                 //Also, gonna need to copy image
                 //Green
 				int obstacle = 1;
-				find_point_pos( state, obstacle);
+				//find_point_pos( state, obstacle);
             uint32_t color_detect = state->red | state->green << 8 |
                 state->blue << 16 | 0xff << 24;
             //printf("color: %x\n",color_detect);
@@ -408,15 +408,15 @@ void * camera_analyze(void * data)
 				state->green_pid_out = pid_out;
 				//printf("pid_out: %f\n",pid_out);
 			}
-			
+
 				state->num_pts_tape = 0;
-				int x = 370; //525
-				int y = 280;
-				for(y; y < 320; y++){
+				int x = 190; //525
+				int y = 300;
+				for(y; y < 560; y++){
 					pixel_t px;
 					px.x = x;
 					px.y = y;
-					state->tape[y-280] = px;
+					state->tape[y-300] = px;
 					state->num_pts_tape++;
 				}
 
@@ -424,7 +424,7 @@ void * camera_analyze(void * data)
 				find_point_pos( state, obstacle);
 		} else {
 			//printf("shouldn't get heree!!!\n");
-			
+
 				state->num_pts_tape = 0;
 				int x = 370; //525
 				int y = 280;
