@@ -159,7 +159,8 @@ void driveToPosition(state_t * state, position_t position){
 		//We want to oscillate around STRAIGHT_OFFSET
 		//adding to it will cause it to rotate more to
 		//the right, subtracting will rotate more to left
-		double offset = ang_f;
+		double angle_mag = 1;
+		double offset = ang_f*angle_mag;
 		double radius = STRAIGHT_OFFSET + offset;
 
 		//radius        = -norm;
