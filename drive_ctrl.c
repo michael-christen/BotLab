@@ -93,7 +93,7 @@ void driveToTheta(state_t * state, double theta) {
 		double motor_val = pid_to_rot(state->theta_pid, pid_out)/2;
 		//offset to linearize
 	    motor_val += sign(motor_val)*0.1;
-		printf("difference: %f, pid: %f, motor_val: %f\n",difference, pid_out, motor_val);
+		//printf("difference: %f, pid: %f, motor_val: %f\n",difference, pid_out, motor_val);
 
 		driveRot(state, motor_val);
 		//Sampling speed is important,
@@ -108,11 +108,12 @@ void driveToTheta(state_t * state, double theta) {
 	int64_t endInt = state->gyro_int[2];
 	double endTheta = state->pos_theta;
 	double gyroTheta = (endInt - beginningInt)/state->gyro_ticks_per_theta;
+	printf("Gyro angle in radians: %g\n", gyroTheta);
 	double stateTheta = endTheta - beginningTheta;
 	gyroTheta = gyroTheta/M_PI * 180.0;
 	stateTheta = stateTheta/M_PI * 180.0;
-	printf("stopping pid with diff: %f\n",
-		   getThetaDist(state->pos_theta, state->goal_theta));
+	//printf("stopping pid with diff: %f\n",
+		 //  getThetaDist(state->pos_theta, state->goal_theta));
 	printf("Theta measured by gyro: %g\n", gyroTheta);
 	printf("Theta measured by tick: %g\n", stateTheta);
 	driveStop(state);

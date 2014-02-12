@@ -148,7 +148,7 @@ void moveBot(state_t* state){
 		driveRot(state, ROT_SPEED);
 	}  else {
 		driveStop(state);
-		if(state->rotating){
+		/*if(state->rotating){
 			double gyroDif = (state->gyro_int[2] - state->save_gyro) / state->gyro_ticks_per_theta;
 			gyroDif = gyroDif / M_PI * 180;
 
@@ -158,7 +158,7 @@ void moveBot(state_t* state){
 			printf("Rotation stopped...\n");
 			printf("Change in gyro theta: %g\n", gyroDif);
 			printf("Change in tick theta: %g\n", tickDif);
-		}
+		}*/
 	}
 }
 
@@ -287,9 +287,13 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		else if(key->key_code == 'g'){
 			pid_update_pid(state->theta_pid, state->theta_pid->P + 0.1, state->theta_pid->I, state->theta_pid->D);
 			printf("P updated to %g\n", state->theta_pid->P);
+			/*state->gyro_ticks_per_theta += 500;
+			printf("Gyro ticks per theta updated to %f\n", state->gyro_ticks_per_theta);*/
 		}else if(key->key_code == 'v'){
 			pid_update_pid(state->theta_pid, state->theta_pid->P - 0.1, state->theta_pid->I, state->theta_pid->D);
 			printf("P updated to %g\n", state->theta_pid->P);
+			/*state->gyro_ticks_per_theta -= 500;
+			printf("Gyro ticks per theta updated to %f\n", state->gyro_ticks_per_theta);*/
 		}else if(key->key_code == 'h'){
 			pid_update_pid(state->theta_pid, state->theta_pid->P, state->theta_pid->I + 0.1, state->theta_pid->D);
 			printf("I updated to %g\n", state->theta_pid->I);
@@ -773,6 +777,7 @@ int main(int argc, char ** argv)
     state->targetPathValid = 0;
 	state->odometry_seen = 0;
 	state->goToMouseCoords = 0;
+	state->gyro_ticks_per_theta = -145000.0;	//obtained through testing
 
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
