@@ -57,8 +57,9 @@ void haz_map_init(haz_map_t *hm, int w, int h);
 void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type);
 // Don't call this function, its "private"
 void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data);
+void haz_map_set_image_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data);
 void haz_map_get(haz_map_t *hm, haz_map_tile_t *tile, int x, int y);
-void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY);
+void haz_map_translate(haz_map_t *hm, double newX, double newY);
 void haz_map_destroy(haz_map_t *hm);
 int haz_map_in_bounds(haz_map_t *hm, int x, int y);
 path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY);

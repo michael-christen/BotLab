@@ -493,8 +493,8 @@ void * camera_analyze(void * data)
 				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
 			}
 			pthread_mutex_lock(&state->haz_map_mutex);
-			//haz_map_translate(&state->hazMap, state->pos_x, state->pos_y, state->last_x, state->last_y);
 			int obstacle = 1;
+			//haz_map_translate(&state->hazMap, bruce_x, bruce_y);
 			find_point_pos(state, bruce_theta, bruce_x, bruce_y, obstacle);
 
 			pthread_mutex_unlock(&state->haz_map_mutex);
@@ -658,7 +658,7 @@ void* FSM(void* data){
 			case EX_START:rotateTheta(state, 2*M_PI - 0.001);
 			case EX_ANALYZE:{
 				clock_t curTime = clock();
-				state->fsm_time_elapsed = 
+				state->fsm_time_elapsed =
 					(double)(curTime - start_time) / CLOCKS_PER_SEC;
 				if(state->fsm_time_elapsed >= 180){
 					nextState = EX_EXIT;

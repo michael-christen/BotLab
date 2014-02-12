@@ -281,9 +281,9 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	//printf("stride %d\n", state->gridMap.image->stride);
 	pthread_mutex_lock(&state->haz_map_mutex);
 	vx_object_t *vo = vxo_chain(
-			vxo_mat_scale3(GRID_RES, GRID_RES, GRID_RES),
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-			vxo_mat_translate3(-(int)(state->hazMap.width/2), -(int)(state->hazMap.height/2), -1),
+			vxo_mat_translate3(state->hazMap.x-(int)(state->hazMap.width * GRID_RES / 2), state->hazMap.y-(int)(state->hazMap.height * GRID_RES / 2), -0.05),
+			vxo_mat_scale3(GRID_RES, GRID_RES, 1),
 			vxo_image_from_u32(state->hazMap.image, 0, 0)
 			);
 	pthread_mutex_unlock(&state->haz_map_mutex);

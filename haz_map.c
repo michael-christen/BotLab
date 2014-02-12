@@ -54,7 +54,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	haz_map_tile_t tile;
 	tile.timestamp = clock();
 	//Bounds checking
-	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
+	if(y*hm->image->width + x >= hm->image->height*hm->image->width) {
 		return;
 	}
 
@@ -100,10 +100,10 @@ void haz_map_set_image_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->stride + x] = color;
+	hm->image->buf[y*hm->image->width + x] = color;
 }
 
-void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY) {
+void haz_map_translate(haz_map_t *hm, double newX, double newY) {
 	double diffX = newX - hm->gridX;
 	double diffY = newY - hm->gridY;
 	int transX = 0;
@@ -324,7 +324,7 @@ void haz_map_cleanup(haz_map_t *hm) {
 			haz_map_get(hm, &tile, x, y);
 
 			if (((float)now - tile.timestamp) / CLOCKS_PER_SEC > HAZ_MAP_TTL) {
-				haz_map_set(hm, x, y, HAZ_MAP_FREE);
+				haz_map_set(hm, x, y, HAZ_MAP_UNKNOWN);
 			} else if (tile.type == HAZ_MAP_OBSTACLE) {
 				count = 0;
 				for (n = 0; n < tile.numNeighbors; n++) {
@@ -336,9 +336,10 @@ void haz_map_cleanup(haz_map_t *hm) {
 				if (count < 1) {
 					haz_map_set(hm, x, y, HAZ_MAP_FREE);
 				}
+			} else if (tile.type == HAZ_MAP_FREE) {
+				tile.val = 1;
+				haz_map_set_data(hm, x, y, &tile);
 			}
-
-
 		}
 	}
 }
@@ -354,9 +355,6 @@ void haz_map_compute_config(haz_map_t *hm) {
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
 			haz_map_get(hm, &tile, x, y);
-			if (tile.type == HAZ_MAP_FREE) {
-				tile.val = 1;
-			}
 			if (tile.type == HAZ_MAP_OBSTACLE) {
 				maxV = fmin(y + offset, hm->height - 1);
 				minV = fmax(y - offset, 0);
@@ -384,6 +382,8 @@ void haz_map_compute_config(haz_map_t *hm) {
 
 					}
 				}
+			} else {
+				haz_map_set_image_data(hm, x, y, &tile);
 			}
 		}
 	}
