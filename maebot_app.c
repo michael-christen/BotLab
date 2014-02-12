@@ -76,36 +76,29 @@ void fireLaser(state_t* state){
 	LEDStatus(state, NONE);
 }
 
-void moveBot(state_t* state, int cmd_val){
+void moveBot(state_t* state){
     double arc_val = 5;
-    if (cmd_val & FORWARD) {
-	if(cmd_val & RIGHT) {
-	    driveRad(state, -arc_val, LONG_SPEED);
-	} else if(cmd_val & LEFT) {
-	    driveRad(state, arc_val, LONG_SPEED);
-	} else {
-	    driveRad(state, -1000, LONG_SPEED);
+	if(state->cmd_val & PID | state->doing_pid) {
+		if(!state->diamond_seen) {
+			printf("not seen\n");
+		}
+		double rot = pid_to_rot(state->green_pid_out);
+		if(state->motor_count < 5) {
+			driveRot(state, rot);
+		} else {
+			driveStop(state);
+		}
+	} else if (state->cmd_val & FORWARD) {
+			driveRad(state, -1000, LONG_SPEED);
+	} else if(state->cmd_val & BACKWARD) {
+			driveStraight(state, -LONG_SPEED);
+	} else if(state->cmd_val & RIGHT) {
+		driveRot(state, -ROT_SPEED);
+	} else if(state->cmd_val & LEFT) {
+		driveRot(state, ROT_SPEED);
+	}  else {
+		driveStop(state);
 	}
-    } else if(cmd_val & BACKWARD) {
-	if(cmd_val & RIGHT) {
-	    driveRad(state, -arc_val, -LONG_SPEED);
-	} else if(cmd_val & LEFT) {
-	    driveRad(state, arc_val, -LONG_SPEED);
-	} else {
-	    driveStraight(state, -LONG_SPEED);
-	}
-    } else if(cmd_val & RIGHT) {
-	driveRot(state, -ROT_SPEED);
-    } else if(cmd_val & LEFT) {
-	driveRot(state, ROT_SPEED);
-    } else if(cmd_val & PID) {
-	if(state->diamond_seen) {
-	    double rot = pid_to_rot(state->green_pid_out);
-	    driveRot(state, rot);
-	}
-    } else {
-	driveStop(state);
-    }
 }
 
 static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_touch_event_t * mouse)
@@ -152,68 +145,70 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 {
     state_t *state = vh->impl;
 
-    int cmd_val = 0;
+    state->cmd_val = 0;
     if (!key->released) {
 	// forward
 		if(key->key_code == 'p' || state->doing_pid) {
-	    	cmd_val = PID;
+			if(!state->doing_pid) {
+				state->num_pid_zeros = 0;
+				pid_update_goal(state->green_pid, 0);
+			}
+	    	state->cmd_val = PID;
 			state->doing_pid = 1;
 			if(key->key_code == 'o') {
 				state->doing_pid = 0;
-				cmd_val |= ~PID;
+				state->cmd_val |= ~PID;
 			}
+		} else if (key->key_code == 'w' || key->key_code == 'W') {
+			state->cmd_val |= FORWARD;
+		} else if (key->key_code == 'a' || key->key_code == 'A' ) {
+			state->cmd_val |= LEFT;
+		} else if (key->key_code == 's' || key->key_code == 'S') {
+			state->cmd_val |= BACKWARD;
+		} else if (key->key_code == 'd' || key->key_code == 'D') {
+			state->cmd_val |= RIGHT;
+		} else if(key->key_code == 'l' || key->key_code == 'L') {
+			// fire laser
+			fireLaser(state);
+		} else if(key->key_code == 'r') {
+			state->red ++;
+		} else if(key->key_code == 'g') {
+			state->green ++;
+		} else if(key->key_code == 'b') {
+			state->blue ++;
+		} else if(key->key_code == 't') {
+			state->red --;
+		} else if(key->key_code == 'h') {
+			state->green --;
+		} else if(key->key_code == 'n') {
+			state->blue --;
+		} else if(key->key_code == 'y') {
+			state->thresh ++;
+		} else if(key->key_code == 'u') {
+			state->thresh --;
+		} else if(key->key_code == 'm') {
+			rotateTheta(state, -M_PI/2.0);
+		} else if(key->key_code == 'c') {
+			LEDStatus(state, CALIBRATE_GYRO);
+			calibrate_gyros(&state->gyro_int, &state->gyro_bias);
+			LEDStatus(state, NONE);
 		}
-		else if (key->key_code == 'w' || key->key_code == 'W') {
-	    cmd_val |= FORWARD;
-        } else if (key->key_code == 'a' || key->key_code == 'A' ) {
-	    cmd_val |= LEFT;
-        } else if (key->key_code == 's' || key->key_code == 'S') {
-	    cmd_val |= BACKWARD;
-        } else if (key->key_code == 'd' || key->key_code == 'D') {
-	    cmd_val |= RIGHT;
-	} else if(key->key_code == 'l' || key->key_code == 'L') {
-	    // fire laser
-	    fireLaser(state);
-	} else if(key->key_code == 'r') {
-	    state->red ++;
-	} else if(key->key_code == 'g') {
-	    state->green ++;
-	} else if(key->key_code == 'b') {
-	    state->blue ++;
-	} else if(key->key_code == 't') {
-	    state->red --;
-	} else if(key->key_code == 'h') {
-	    state->green --;
-	} else if(key->key_code == 'n') {
-	    state->blue --;
-	} else if(key->key_code == 'y') {
-	    state->thresh ++;
-	} else if(key->key_code == 'u') {
-	    state->thresh --;
-	} else if(key->key_code == 'm') {
-		rotateTheta(state, -M_PI/2.0);
-	} else if(key->key_code == 'c') {
-		LEDStatus(state, CALIBRATE_GYRO);
-		calibrate_gyros(&state->gyro_int, &state->gyro_bias);
+		state->red &= 0xff;
+		state->green &= 0xff;
+		state->blue &= 0xff;
+	}
+	if (state->cmd_val & FORWARD) {
+		LEDStatus(state, MOVE_FORWARD);
+	} else if(state->cmd_val & BACKWARD) {
+		LEDStatus(state, MOVE_BACKWARD);
+	} else if(state->cmd_val & RIGHT) {
+		LEDStatus(state, TURN_RIGHT);
+	} else if(state->cmd_val & LEFT) {
+		LEDStatus(state, TURN_LEFT);
+	} else {
 		LEDStatus(state, NONE);
 	}
-	state->red &= 0xff;
-	state->green &= 0xff;
-	state->blue &= 0xff;
-    }
-    moveBot(state, cmd_val);
-    if (cmd_val & FORWARD) {
-	LEDStatus(state, MOVE_FORWARD);
-    } else if(cmd_val & BACKWARD) {
-	LEDStatus(state, MOVE_BACKWARD);
-    } else if(cmd_val & RIGHT) {
-	LEDStatus(state, TURN_RIGHT);
-    } else if(cmd_val & LEFT) {
-	LEDStatus(state, TURN_LEFT);
-    } else {
-	LEDStatus(state, NONE);
-    }
-    return 0;
+	return 0;
 }
 
 static void nodestroy (vx_event_handler_t * vh)
@@ -244,6 +239,7 @@ static void * send_cmds(void * data)
 
     while (state->running) {
 
+		moveBot(state);
         pthread_mutex_lock(&state->lcm_mutex);
         pthread_mutex_lock(&state->cmd_mutex);
         {
@@ -253,6 +249,7 @@ static void * send_cmds(void * data)
         pthread_mutex_unlock(&state->cmd_mutex);
         pthread_mutex_unlock(&state->lcm_mutex);
 
+		state->motor_count = (state->motor_count+1)%20;
         usleep(50000); // send at 20 hz
     }
     return NULL;
@@ -382,28 +379,43 @@ void * camera_analyze(void * data)
                 state->diff_x = state->im->width/2.0 - state->balls[0].x;
                 //printf("x: %f\n", diff_x);
                 state->im->buf[(int) (state->im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
-                double pid_out = pid_get_output(
-                        state->green_pid,state->diff_x);
-                state->green_pid_out = pid_out;
-		state->diamond_seen  = 1;
-                //printf("pid_out: %f\n",pid_out);
-            } else {
-		state->diamond_seen  = 0;
-	    }
-        } else {
-            //printf("shouldn't get heree!!!\n");
-        }
-        pthread_mutex_unlock(&state->image_mutex);
-        usleep(10000);
-    }
 
-    if (state->imageValid = 1) {
-        //printf("Final image destroy\n");
-        pthread_mutex_lock(&state->image_mutex);
-        image_u32_destroy(state->im);
-        state->imageValid = 0;
-        pthread_mutex_unlock(&state->image_mutex);
-    }
+				state->diamond_seen  = 1;
+			} else {
+			   state->diamond_seen = 0;
+			}
+			if(state->doing_pid) {
+				double pid_out = pid_get_output( state->green_pid,state->diff_x);
+				if(pid_out == 0 ) {
+					if(state->diamond_seen) {
+						printf("done with pid\n");
+						state->num_pid_zeros ++;
+						if(state->num_pid_zeros >= 5) {
+							state->doing_pid = 0;
+						}
+					} else {
+						//Give it a little kick in the pants to go
+						//looking
+						state->diff_x = 0.1;
+					}
+				}
+				state->green_pid_out = pid_out;
+				//printf("pid_out: %f\n",pid_out);
+			}
+		} else {
+			//printf("shouldn't get heree!!!\n");
+		}
+		pthread_mutex_unlock(&state->image_mutex);
+		usleep(10000);
+	}
+
+	if (state->imageValid = 1) {
+		//printf("Final image destroy\n");
+		pthread_mutex_lock(&state->image_mutex);
+		image_u32_destroy(state->im);
+		state->imageValid = 0;
+		pthread_mutex_unlock(&state->image_mutex);
+	}
 
     if (!state->getopt_options.no_video) {
         state->isrc->close(state->isrc);
@@ -599,10 +611,13 @@ int main(int argc, char ** argv)
     state->green_pid_out = 0;
     state->isrcReady = 0;
     state->im = NULL;
+	state->cmd_val = 0;
+	state->motor_count = 0;
     state->diff_x        = 0;
     state->diamond_seen  = 0;
 	state->doing_pid     = 0;
-    pid_init(state->green_pid, 0.5, 0.5, 0, 0);
+	state->num_pid_zeros = 0;
+    pid_init(state->green_pid, 1.0, 1.0, 0, 0);
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
