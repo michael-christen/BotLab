@@ -48,24 +48,25 @@ path_t * dumb_explore(void * data){
 	double bruce_x = state->pos_x;
 	double bruce_y = state->pos_y;
 	haz_map_t * hm = &state->hazMap;
-	
-		theta = -theta;	
+
+		theta = -theta;
 		theta = theta + M_PI/2;
 
 
 	path_t * dumb_path;
-	dumb_path->length = 0;
-
-	while(dumb_path->length == 0){
+	uint8_t valid = 0;
+	while(!valid){
 		double x = 5 * cos(theta);
 		double y = 5 * sin(theta);
 
 		dumb_path = haz_map_get_path(hm, bruce_y + y, bruce_x + x);
+		if (dumb_path->length != 0) {
+			valid = 1;
+		}
 		theta = theta + M_PI/4;
-
 	}
-	
-	return dumb_path;	
+
+	return dumb_path;
 
 }
 
@@ -101,7 +102,7 @@ path_t * choose_path(void * data){
 	down = mid_y + WORLD_MAP_RES;
 	right = mid_x + WORLD_MAP_RES;
 	left = mid_x - WORLD_MAP_RES;
-	
+
 	printf("midx, midy: (%d, %d) up: %d down: %d right %d left %d)\n", mid_x, mid_y, up, down, left, right);
 
 	int num_neighbors = 0;
@@ -150,7 +151,7 @@ path_t * choose_path(void * data){
 		double distance = curr_tile->neighbors[i]->path_to->distance;
 		int grid_dist = (distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
 		printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
-		curr_tile->neighbors[i]->distance = grid_dist;	
+		curr_tile->neighbors[i]->distance = grid_dist;
 
 	}
 

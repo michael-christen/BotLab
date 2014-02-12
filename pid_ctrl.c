@@ -94,7 +94,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 double pid_to_rot(pid_ctrl_t *pid, double pid_out) {
     //There
     if(fabs(pid_out) < pid->min_output) {
-		printf("there\n");
+		//printf("there\n");
 		return 0;
     }
 	//Scale to (-1,1)

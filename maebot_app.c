@@ -742,7 +742,6 @@ void* FSM(void* data){
 			case EX_WAIT: {
 				while (!state->FSM) {
 					usleep(1000);
-					break;
 				}
 				nextState = EX_ANALYZE;
 			break;}
@@ -751,12 +750,12 @@ void* FSM(void* data){
 					ball_t diamond = state->balls[h];
 					double image_x = diamond.x;
 					double image_y = diamond.y;
-	
+
 					double diamond_x = 0, diamond_y = 0;
 					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
 					double pos_x = diamond_x + state->pos_x;
 					double pos_y = diamond_y + state->pos_y;
-					
+
 					if(diamondIsZapped(state, pos_x, pos_y)){
 						//Go to next diamond in image
 						continue;
@@ -768,7 +767,7 @@ void* FSM(void* data){
 							image_y = state->tape[k].y;
 						}
 					}
-	
+
 					homography_project(state->H ,image_x, image_y, &diamond_x, &diamond_y);
 					pos_x = diamond_x + state->pos_x;
 					pos_y = diamond_y + state->pos_y;
@@ -788,7 +787,7 @@ void* FSM(void* data){
 					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
 					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
 					state->num_zapped_diamonds++;
-				
+
 					state->doing_pid_theta = 1;
 					driveToTheta(state, originalTheta);
 
@@ -815,6 +814,7 @@ void* FSM(void* data){
 				nextState = EX_WAIT;
 			break;}
 			case EX_ANALYZE:{
+				printf("STATE: Analyze");
 				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
 				state->fsm_time_elapsed = difftime(cur_time, start_time);
@@ -839,18 +839,23 @@ void* FSM(void* data){
 				if(turnIndex == 5){
 					turnIndex = 0;
 				}
+				printf("going into default\n");
 			}
 			default:
 				if (!state->FSM) {
 					nextState = EX_WAIT;
 				} else {
+					printf("before path calc\n");
 					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 					if(nextState == EX_MOVE){
-						while (state->targetPathValid == 0) {
+						/*while (state->targetPathValid == 0) {
 							usleep(1000);
-						}
-						path = state->targetPath;
+						}*/
+						//path = state->targetPath;
 						path = dumb_explore(state);
+						state->targetPath = path;
+						state->targetPathValid = 1;
+						printf("after path calc\n");
 					}
 
 				}
