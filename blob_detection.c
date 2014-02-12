@@ -225,7 +225,6 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 		   top_inline_bot, width_lte_height, w_over_h,
 		   height, width);
 		*/
-
 	    if(top_and_bot_in_lr &&
 	       //top_inline_bot    &&
 	       width_lte_height  &&
