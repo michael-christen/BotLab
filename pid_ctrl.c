@@ -43,6 +43,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 }
 
 double pid_to_rot(double pid_out) {
+    double min_movable = 0.13;
     //There
     if(fabs(pid_out) < MIN_OUTPUT) {
 	printf("there\n");
@@ -55,6 +56,12 @@ double pid_to_rot(double pid_out) {
 	pid_out *= MAX_OUTPUT;
     }
     pid_out /= -MAX_OUTPUT;
+    /*
+    if(fabs(pid_out) < min_movable) {
+	pid_out /= fabs(pid_out);
+	pid_out *= min_movable;
+    }
+    */
     printf("speed: %f\n",pid_out);
     return pid_out;
 }

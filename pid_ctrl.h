@@ -4,8 +4,8 @@
 #include<stdio.h>
 #include<math.h>
 
-#define MAX_OUTPUT 10000
-#define MIN_OUTPUT 5
+#define MAX_OUTPUT 1000
+#define MIN_OUTPUT 15
 typedef struct pid pid_ctrl_t;
 struct pid {
     double goal;
