@@ -98,6 +98,8 @@ struct state_t {
 	int   cmd_val;
 	int   motor_count;
 
+    pthread_t motion_thread;
+
     volatile int running;
     int displayStarted, displayFinished;
 

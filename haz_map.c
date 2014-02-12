@@ -72,7 +72,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, int type) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->stride + x] = color;
+	hm->image->buf[y*hm->image->width + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, int newX, int newY, int oldX, int oldY) {
