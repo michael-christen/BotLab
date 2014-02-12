@@ -680,7 +680,7 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_GOHOME;
 	nextState = curState;
-	//path_t* path = choose_path(state);
+	choose_path(state);
 	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
