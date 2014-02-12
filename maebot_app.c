@@ -836,25 +836,31 @@ void* FSM(void* data){
 					nextState = EX_EXIT;
 					break;
 				}
-				for (; turnIndex < 5; turnIndex++) {
+				for (; turnIndex < 6; turnIndex++) {
 					analyzeAngle = 2.0 * M_PI / 5;
-
+					printf("Drive to theta: %f\n", state->pos_theta + analyzeAngle);
 					state->doing_pid_theta = 1;
 					driveToTheta(state, state->pos_theta + analyzeAngle);
 					state->doing_pid_theta = 0;
+					printf("Finished driving to theta\n");
 					camera_process(state);
+					printf("Finsihed camera process\n");
 					//Uncomment to zap diamonds (pew pew)
 					if(state->num_balls){
 						printf("Found a diamond!\n");
-						//nextState = EX_ZAP_DIAMOND;
-						//break;
+						nextState = EX_ZAP_DIAMOND;
+						break;
 					}
+				}
+				if (nextState == EX_ZAP_DIAMOND) {
+					break;
 				}
 				if(turnIndex == 5){
 					turnIndex = 0;
 				}
 				printf("going into default\n");
-			}
+				nextState = EX_DEFAULT;
+			break;}
 			default:
 				printf("\nSTATE: Default\n");
 				if (!state->FSM) {
