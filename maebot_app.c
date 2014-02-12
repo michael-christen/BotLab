@@ -884,7 +884,7 @@ void* FSM(void* data){
 					endTime = clock();
 					printf("Finsihed camera process in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
 					//Uncomment to zap diamonds (pew pew)
-					if(state->num_balls){
+					/*if(state->num_balls){
 						int zappedIt = 0;
 						for(int i = 0; i < fires; i++){
 							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
@@ -899,7 +899,7 @@ void* FSM(void* data){
 							nextState = EX_ZAP_DIAMOND;
 							break;
 						}
-					}
+					}*/
 				}
 				if (nextState == EX_ZAP_DIAMOND) {
 					break;
@@ -927,7 +927,7 @@ void* FSM(void* data){
 							path = state->targetPath;
 						} else {
 							path = choose_path(state, pre_analyze_theta);
-							printf("AutoNav path length %u\n", path->length);
+							printf("AutoNave path length: %u\n", path->length);
 							if (path->length == 0) {
 								printf("Bad path returned by explorer!\n");
 								nextState = EX_ANALYZE;
