@@ -349,7 +349,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			exit(0);
 
 			//printf("Finished 36 tests:\nAverage gyro integral: %f\nAverage theta(r): %g\nAverage theta(d): %g\n", average_change_int, average_theta, average_theta_degrees);
-		
+
 		}	*/
 
 		state->red &= 0xff;
@@ -413,6 +413,7 @@ static void * send_cmds(void * data)
 		{
 			//state->cmd.timestamp = utime_now();
 			maebot_diff_drive_t_publish(state->lcm,  "MAEBOT_DIFF_DRIVE", &(state->cmd));
+			//printf("SEND-> L: %f, R: %f\n",state->cmd.motor_left_speed,state->cmd.motor_right_speed);
 		}
 		pthread_mutex_unlock(&state->cmd_mutex);
 		pthread_mutex_unlock(&state->lcm_mutex);
@@ -720,7 +721,7 @@ void* FSM(void* data){
 				//shoot diamond
 				fireLaser(state);
 				//update diamond to zapped
-			
+
 				state->doing_pid_theta = 1;
 				driveToTheta(state, originalTheta);
 				state->doing_pid_theta = 0;
@@ -899,7 +900,8 @@ int main(int argc, char ** argv)
 	state->doing_pid_theta     = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
-	pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
+	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.5, 0.3, 0.04, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
@@ -974,7 +976,7 @@ int main(int argc, char ** argv)
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 	pthread_create(&state->motion_thread,  NULL, motionFxn, state);
 	//pthread_create(&state->calibrator_thread, NULL, calibrator, state);
-	pthread_create(&state->fsm_thread, NULL, FSM, state);
+	//pthread_create(&state->fsm_thread, NULL, FSM, state);
 
 
 
