@@ -83,7 +83,7 @@ void detect_diamonds(state_t * state) {
 				state->thresh,
 				state->min_pxs);
 		//printf("num_balls: %d\n",state->num_balls);
-		if(state->num_balls == 1) {
+		if(state->num_balls > 0) {
 			state->diff_x = state->im->width/2.0 - state->balls[0].x;
 			printf("diff_x = %f\n",state->diff_x);
 			//printf("x: %f\n", diff_x);
@@ -121,10 +121,11 @@ int shoot_diamond(state_t * state) {
 		}
 		double rot = pid_to_rot(state->green_pid, state->green_pid_out);
 		driveRot(state, rot);
-		usleep(50000);
+		usleep(20000);
 		driveStop(state);
 		usleep(20000);
 	}
+	fireLaser(state);
 }
 
 void moveBot(state_t* state){

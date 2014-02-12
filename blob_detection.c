@@ -80,6 +80,7 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 	//Array of Set *
 	Set * links [MAX_NUM_BALLS] = {0};
 	ball_t balls [MAX_NUM_BALLS];
+	ball_t temp_balls [MAX_NUM_BALLS];
 	int final_num_balls = 0;
 	int num_links = 0;
 	int label_num;
@@ -200,6 +201,8 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 
 	//Filter out non-diamonds
 	int err = 2;
+	int largest_idx = -1;
+	int most_px    = 0;
 	//printf("%d possible diamonds\n",label_num);
 	for(i = 1; i < label_num; ++i) {
 		//Assert right num_pxs
@@ -239,14 +242,19 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 			   right_num_pxs     &&
 			   dense_enough) {
 
-				final_balls[final_num_balls] = balls[i];
+				if(balls[i].num_px > most_px) {
+					most_px = balls[i].num_px;
+					largest_idx = final_num_balls;
+				}
+
+				temp_balls[final_num_balls] = balls[i];
 				//Get coordinates, not sum
-				final_balls[final_num_balls].x
-					= (final_balls[final_num_balls].x+0.0)/
-					final_balls[final_num_balls].num_px;
-				final_balls[final_num_balls].y =
-					(final_balls[final_num_balls].y+0.0)/
-					final_balls[final_num_balls].num_px;
+				temp_balls[final_num_balls].x
+					= (temp_balls[final_num_balls].x+0.0)/
+					temp_balls[final_num_balls].num_px;
+				temp_balls[final_num_balls].y =
+					(temp_balls[final_num_balls].y+0.0)/
+					temp_balls[final_num_balls].num_px;
 				final_labels[final_num_balls] = i;
 				/*
 				   printf("%d passed, x: %f, y: %f\n",i,
@@ -271,10 +279,20 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 			}
 		}
 	}
-
 	//Clean up
 	for(i = 0; i <= label_num; ++i) {
 		set_destroy(links[i]);
+	}
+	//Order final_balls, so that largest is 0th
+	if(largest_idx != -1) {
+		final_balls[0] = temp_balls[largest_idx];
+	}
+	int count = 1;
+	for(i = 0; i < final_num_balls; ++i) {
+		if(i == largest_idx) {
+			continue;
+		}
+		final_balls[count ++] = temp_balls[i];
 	}
 	return final_num_balls;
 }
