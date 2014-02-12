@@ -650,6 +650,7 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_GOHOME;
 	nextState = curState;
+	//path_t* path = choose_path(state);
 	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
@@ -675,7 +676,7 @@ void* FSM(void* data){
 				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
 				nextState = EX_ANALYZE; */
-				break;} 
+				break;}
 			case EX_ZAP_DIAMOND:{
 				//Still need to get diamond coords
 				double diamond_x = 0, diamond_y = 0;

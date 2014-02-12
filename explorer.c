@@ -45,7 +45,7 @@ void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
 
 
 path_t * choose_path(void * data){
-
+	//printf("in choose path");
 	//set max for bound checking
 	int max_x = (WORLD_MAP_RES * WORLD_MAP_MAX_WIDTH) / 2;
 	int max_y = (WORLD_MAP_RES * WORLD_MAP_MAX_HEIGHT) / 2;
@@ -54,23 +54,25 @@ path_t * choose_path(void * data){
 	state_t * state = data;
 	world_map_t * wm = &state->world_map;
 	haz_map_t * hm = &state->hazMap;
-	int x = state->pos_x;
-	int y = state->pos_y;
+	double x = state->pos_x;
+	double y = state->pos_y;
 
 	//find grid map cell bruce is currently in
 	int gridx, gridy;
 	cm_to_world_cell(x, y, &gridx, &gridy);
 	world_map_tile_t * curr_tile = &wm->worldMap[gridy*(wm->width) + gridx];
-	
+
+	//printf("gridx: %d gridy: %d x: %f y: %f\n", gridx, gridy, x, y);
 	//find coordinates for center of all neighboring grid cells
 	int up, down, right, left;
-	up = gridy * WORLD_MAP_RES + WORLD_MAP_RES/2;
-	y = gridy * WORLD_MAP_RES - WORLD_MAP_RES/2;
-	down = gridy * WORLD_MAP_RES - 3 * WORLD_MAP_RES/2;
-	right = gridx * WORLD_MAP_RES + WORLD_MAP_RES/2;
- 	x = gridx * WORLD_MAP_RES - WORLD_MAP_RES/2;
-	left = gridx * WORLD_MAP_RES - 3 * WORLD_MAP_RES/2;
-	
+	up =  y+30;
+	//y = gridy * WORLD_MAP_RES - WORLD_MAP_RES/2;
+	down = y-30;
+	right = x+30;;
+ 	//x = gridx * WORLD_MAP_RES - WORLD_MAP_RES/2;
+	left = x-30;
+
+	//printf("x: %d, y: %d, up: %d, down: %d, left %d, right %d", x, y, up, down, left, right);
 
 	int num_neighbors = 0;
 	//bounds check before calling to get path
@@ -107,15 +109,17 @@ path_t * choose_path(void * data){
 		if( right <= max_x ){
 			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, right);
-			num_neighbors ++;	
+			num_neighbors ++;
 		}
 	}
+
+	//printf("num_neighbors: %d", num_neighbors);
 
 	//evaluate grid cell distance for all neighbors
 	for (int i = 0; i < num_neighbors; i++){
 		double distance = curr_tile->neighbors[i]->path_to->distance;
 		int grid_dist = (distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
-		curr_tile->neighbors[i]->distance = grid_dist;	
+		curr_tile->neighbors[i]->distance = grid_dist;
 	}
 
 	//qsort
@@ -127,7 +131,6 @@ path_t * choose_path(void * data){
 
 	return curr_tile->neighbors[0]->path_to;
 }
-
 
 
 
@@ -235,7 +238,7 @@ explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y,
 	int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
 	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
 	printf("forwardDist: %d\n", forwardDist);
-	printf("leftDist: %d\n", leftDist);	
+	printf("leftDist: %d\n", leftDist);
 	return EX_EXIT;
 }
 
