@@ -38,7 +38,7 @@
 #define RIGHT 8
 #define PID 16
 
-#define LONG_SPEED 0.5
+#define LONG_SPEED 0.3
 #define ROT_SPEED 0.2
 
 #define FBDIV 100000.0

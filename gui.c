@@ -263,7 +263,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	double covX = matd_get(state->var_matrix, 0, 0);
 	double covY = matd_get(state->var_matrix, 1, 1);
 	double trace = covX + covY;
-	double gap   = sqrt(pow(trace,2) - 
+	double gap   = sqrt(pow(trace,2) -
 			4 * matd_det(state->var_matrix));
 	//Calculate Eigen Values with quadratic formula
 	double eigX = (trace + gap)/2;
@@ -391,13 +391,15 @@ int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
 int renderDebugLayer(state_t *state, layer_data_t *layerData) {
 	vx_buffer_t *textBuff = vx_world_get_buffer(layerData->world, "text");
 
-	char debugText[400];
-	const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\nDiff_x: %f\nPID_OUT: %f\nDIAMOND: %d\nDOING_PID: %d\n";
+	char debugText[700];
+	const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\nDiff_x: %f\nPID_OUT: %f\nDIAMOND: %d\nDOING_PID: %d\nCOV_X: %f, COV_Y: %f\n";
 	sprintf(debugText, formatting,
 			state->pos_x, state->pos_y,
 			state->pos_theta, state->gyro[0],
 			state->diff_x, state->green_pid_out,
-			state->diamond_seen, state->doing_pid
+			state->diamond_seen, state->doing_pid,
+			matd_get(state->var_matrix,0,0),
+			matd_get(state->var_matrix,1,1)
 		   );
 	vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT, debugText);
 	vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));

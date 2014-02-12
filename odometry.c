@@ -25,12 +25,14 @@ void odometry_handler (
 		double dR        = getDistFromTicks(diff_right);
 		double avg       = (dL + dR)/2.0;
 		matd_t *temp_var = matd_identity(2);
-		matd_put(temp_var,0,0,state->alpha*avg);
-		matd_put(temp_var,1,1,state->beta*avg);
+		if(avg != 0) {
+			matd_put(temp_var,0,0,state->alpha*avg);
+			matd_put(temp_var,1,1,state->beta*avg);
+		}
 		matd_t *mult_result = matd_multiply(
 				state->var_matrix,temp_var);
-		matd_destroy(temp_var);
 		matd_destroy(state->var_matrix);
+		matd_destroy(temp_var);
 		state->var_matrix = mult_result;
 		//msg->motor_left_actual_speed;
 		state->pos_x     += avg * sin(state->pos_theta);
@@ -39,7 +41,7 @@ void odometry_handler (
 
 		double mthreshold = 1.0;
 		double rthreshold = 0.1;
-		/*if(state->waiting_on_pos && 
+		/*if(state->waiting_on_pos &&
 		  fabs(state->pos_x - state->goal_x) < mthreshold &&
 		  fabs(state->pos_y - state->goal_y) < mthreshold){
 		  pthread_mutex_lock(&state->drive_mutex);
