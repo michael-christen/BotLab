@@ -479,7 +479,7 @@ static void * send_led(void * data){
 }
 
 int diamondIsZapped(state_t *state, double diamond_x, double diamond_y){
-	double thresh = 10.0;
+	double thresh = 50.0;
 	for(int k = 0; k < state->num_zapped_diamonds; k++){
 		if(fabs(diamond_x - state->zapped_diamonds[k].x) < thresh &&
 			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh){
@@ -778,8 +778,8 @@ void* FSM(void* data){
 			break;}
 			case EX_ZAP_DIAMOND:{
 				printf("STATE: Zap Diamond\n");/*
-				for(int h = 0; h < state->num_balls; h++){
-					ball_t diamond = state->balls[h];
+				for(int h = 0; h < state->num_balls; h++){*/
+					ball_t diamond = state->balls[0];
 					double image_x = diamond.x;
 					double image_y = diamond.y;
 
@@ -787,15 +787,20 @@ void* FSM(void* data){
 					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
 					double pos_x = diamond_x + state->pos_x;
 					double pos_y = diamond_y + state->pos_y;
-					printf("Diamond %d at %f, %f\n", h, pos_x, pos_y);
+					printf("Diamond at %f, %f\n", pos_x, pos_y);
 					if(diamondIsZapped(state, pos_x, pos_y)){
 						//Go to next diamond in image
-						printf("Alread saw diamond %d\n", h);
-						continue;
+						printf("Alread saw diamond\n");
+						nextState = EX_ANALYZE;
+						break;
 					}
 
+					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
+					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
+					state->num_zapped_diamonds++;
 
-					for(int k = 0; k < state->num_pts_tape; k++){
+
+					/*for(int k = 0; k < state->num_pts_tape; k++){
 						if(state->tape[k].x == image_x){
 							image_y = state->tape[k].y;
 						}
@@ -886,11 +891,12 @@ void* FSM(void* data){
 					//Uncomment to zap diamonds (pew pew)
 					/*if(state->num_balls){
 						int zappedIt = 0;
-						for(int i = 0; i < fires; i++){
+						for(int i = fires; i >=0 ; i--){
 							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
 								fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
 								fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
 									zappedIt = 1;
+									break;
 							}
 						}
 						if(!zappedIt){
