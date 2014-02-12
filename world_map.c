@@ -6,7 +6,7 @@ void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
 		|| adjY < 0 || adjY >= WORLD_MAP_MAX_HEIGHT){
 		return;
 	}
-	int color;	
+	int color;
 	wm->worldMap[adjY*wm->width + adjX].seen = type;
 
 	switch (type) {
@@ -18,7 +18,7 @@ void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
 			color = 0xFFBBBBBB;
 		break;
 	}
-	wm->image->buf[adjY*wm->image->stride + adjX] = color;
+	wm->image->buf[adjY*wm->image->width + adjX] = color;
 	return;
 }
 
