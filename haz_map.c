@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "common/zarray.h"
-
+#include <stdlib.h>
 
 // Haz Map origin at bottom left corner
 
@@ -104,8 +104,8 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 }
 
 void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY) {
-	hm->diffX = newX - oldX;
-	hm->diffY = newY - oldY;
+	hm->diffX += newX - oldX;
+	hm->diffY += newY - oldY;
 	hm->x += hm->diffX;
 	hm->y += hm->diffY;
 
@@ -117,27 +117,28 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, dou
 	double diffY = 0;
 	haz_map_tile_t tile;
 
-	if (abs(hm->diffX) >= GRID_RES) {
+	if (fabs(hm->diffX) >= GRID_RES) {
 		diffX = hm->diffX;
 		hm->diffX = 0;
 		if (diffX >= 0) {
 			lowX = diffX;
 		} else {
-			highX = hm->width - diffX;
+			highX = hm->width + diffX;
 		}
 	}
 
-	if (abs(hm->diffY) >= GRID_RES) {
+	if (fabs(hm->diffY) >= GRID_RES) {
 		diffY = hm->diffY;
 		hm->diffY = 0;
 		if (diffY >= 0) {
 			lowY = diffY;
 		} else {
-			highY = hm->width - diffY;
+			highY = hm->height + diffY;
 		}
 	}
 
 	if (diffY != 0 || diffX != 0) {
+		printf("Translating!\n");
 		for (int y = 0; y < hm->height; y++) {
 			for (int x = 0; x < hm->width; x++) {
 				if (x < lowX || x > highX || y < lowY || y > highY) {
@@ -167,7 +168,7 @@ void haz_map_get(haz_map_t *hm, haz_map_tile_t *tile, int x, int y) {
 	for (i = 0; i < tile->numNeighbors; i++) {
 		tile->neighbors[i] = tTile->neighbors[i];
 	}
-	
+
 }
 
 void haz_map_destroy(haz_map_t *hm) {
@@ -334,7 +335,7 @@ void haz_map_cleanup(haz_map_t *hm) {
 				}
 			}
 
-			
+
 		}
 	}
 }
