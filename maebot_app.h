@@ -61,6 +61,7 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
+typedef enum command_val cmd_val_t;
 
 
 struct getopt_options_t {
@@ -88,6 +89,15 @@ typedef struct grid_cell{
 	clock_t created;
 } grid_cell;
 
+enum command_val {
+	STOP,
+	FORWARD,
+	BACKWARD,
+	LEFT,
+	RIGHT,
+	PID
+};
+
 struct state_t {
     getopt_options_t  getopt_options;
     vx_application_t app;
@@ -99,7 +109,7 @@ struct state_t {
     maebot_diff_drive_t cmd;
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
-	int   cmd_val;
+	cmd_val_t cmd_val;
 	int   motor_count;
 
     pthread_t motion_thread;

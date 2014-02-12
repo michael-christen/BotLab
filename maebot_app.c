@@ -31,13 +31,6 @@
 #include "lcmtypes/maebot_sensor_data_t.h"
 
 #define NUM_BLINKS 3
-#define STOP 0
-//1-hot encoding
-#define FORWARD 1
-#define BACKWARD 2
-#define LEFT 4
-#define RIGHT 8
-#define PID 16
 
 #define LONG_SPEED 0.3
 #define ROT_SPEED 0.2
@@ -84,7 +77,7 @@ void moveBot(state_t* state){
 	if(state->doing_pid_theta) {
 		return;
 	}
-	if(((state->cmd_val & PID) | state->doing_pid) != 0) {
+	if(((state->cmd_val == PID) | state->doing_pid) != 0) {
 		//uint32_t color_detect = state->red | state->green << 8 | state->blue << 16 | 0xff << 24;
 		//printf("color: %x\n",color_detect);
 		//printf("thresh: %f\n",state->thresh);
@@ -134,16 +127,16 @@ void moveBot(state_t* state){
 		driveRot(state, rot);
 		usleep(50000);
 		driveStop(state);
-	} else if (state->cmd_val & FORWARD) {
+	} else if (state->cmd_val == FORWARD) {
 		driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		//printf("ARC: %f\n", state->left_offset);
-	} else if(state->cmd_val & BACKWARD) {
+	} else if(state->cmd_val == BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
-	} else if(state->cmd_val & RIGHT) {
+	} else if(state->cmd_val == RIGHT) {
 		state->save_gyro = state->gyro_int[2];
 		state->save_theta = state->pos_theta;
 		driveRot(state, -ROT_SPEED);
-	} else if(state->cmd_val & LEFT) {
+	} else if(state->cmd_val == LEFT) {
 		state->save_gyro = state->gyro_int[2];
 		state->save_theta = state->pos_theta;
 		driveRot(state, ROT_SPEED);
@@ -228,7 +221,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 {
 	state_t *state = vh->impl;
 
-	state->cmd_val = 0;
+	state->cmd_val = STOP;
 	if (!key->released) {
 		// forward
 		if(key->key_code == 'p' || state->doing_pid) {
@@ -240,19 +233,19 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->doing_pid = 1;
 			if(key->key_code == 'o') {
 				state->doing_pid = 0;
-				state->cmd_val |= ~PID;
+				state->cmd_val = STOP;
 			}
 		} else if (key->key_code == '1') {
 			state->goToMouseCoords = !state->goToMouseCoords;
 			printf("%d going to Mouse coords\n",state->goToMouseCoords);
 		}else if (key->key_code == 'w' || key->key_code == 'W') {
-			state->cmd_val |= FORWARD;
+			state->cmd_val = FORWARD;
 		} else if (key->key_code == 'a' || key->key_code == 'A' ) {
-			state->cmd_val |= LEFT;
+			state->cmd_val = LEFT;
 		} else if (key->key_code == 's' || key->key_code == 'S') {
-			state->cmd_val |= BACKWARD;
+			state->cmd_val = BACKWARD;
 		} else if (key->key_code == 'd' || key->key_code == 'D') {
-			state->cmd_val |= RIGHT;
+			state->cmd_val = RIGHT;
 		} else if(key->key_code == 'l' || key->key_code == 'L') {
 			// fire laser
 			fireLaser(state);
@@ -325,12 +318,8 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			}
 		} else if(key->key_code ==';') {
 			state->left_offset += 5;
-			printf("offset = %f\n",state->left_offset +
-					STRAIGHT_OFFSET);
 		} else if(key->key_code =='\'') {
 			state->left_offset -= 5;
-			printf("Left_offset = %f\n",state->left_offset +
-					STRAIGHT_OFFSET);
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
 		} /*else if(key->key_code == 'z') {
@@ -360,20 +349,20 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			exit(0);
 
 			//printf("Finished 36 tests:\nAverage gyro integral: %f\nAverage theta(r): %g\nAverage theta(d): %g\n", average_change_int, average_theta, average_theta_degrees);
-
+		
 		}	*/
 
 		state->red &= 0xff;
 		state->green &= 0xff;
 		state->blue &= 0xff;
 	}
-	if (state->cmd_val & FORWARD) {
+	if (state->cmd_val == FORWARD) {
 		LEDStatus(state, MOVE_FORWARD);
-	} else if(state->cmd_val & BACKWARD) {
+	} else if(state->cmd_val == BACKWARD) {
 		LEDStatus(state, MOVE_BACKWARD);
-	} else if(state->cmd_val & RIGHT) {
+	} else if(state->cmd_val == RIGHT) {
 		LEDStatus(state, TURN_RIGHT);
-	} else if(state->cmd_val & LEFT) {
+	} else if(state->cmd_val == LEFT) {
 		LEDStatus(state, TURN_LEFT);
 	} else {
 		LEDStatus(state, NONE);
@@ -731,7 +720,7 @@ void* FSM(void* data){
 				//shoot diamond
 				fireLaser(state);
 				//update diamond to zapped
-
+			
 				state->doing_pid_theta = 1;
 				driveToTheta(state, originalTheta);
 				state->doing_pid_theta = 0;
@@ -900,7 +889,7 @@ int main(int argc, char ** argv)
 	state->theta_pid = malloc(sizeof(pid_ctrl_t));
 	state->isrcReady = 0;
 	state->im = NULL;
-	state->cmd_val = 0;
+	state->cmd_val = STOP;
 	state->motor_count = 0;
 	state->diff_x        = 0;
 	state->dist          = 0;
@@ -987,6 +976,13 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->calibrator_thread, NULL, calibrator, state);
 	pthread_create(&state->fsm_thread, NULL, FSM, state);
 
+
+
+	/*	find_H_matrix(state);
+		int obstacle = 0, x_px = 156, y_px = 352;
+		for(x_px; x_px < 525; x_px++){
+		find_point_pos( state, x_px, y_px, &state->hazMap, obstacle);
+		} */
 
 	//pthread_join(state->camera_thread, NULL);
 
