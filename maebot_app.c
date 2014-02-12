@@ -476,7 +476,6 @@ int camera_init(state_t *state){
 	image_source_format_t isrc_format;
 	state->isrc->get_format(state->isrc, 0, &isrc_format);
 	state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
-
 	state->isrcReady = 1;
 	state->imageValid = 0;
 	return 1;
@@ -649,17 +648,12 @@ void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
 	explorer_state_t curState, nextState;
-	curState = EX_MOVE;
+	curState = EX_GOHOME;
 	nextState = curState;
-	while(!state->FSM){
-		usleep(1000);
-	}
-	path_t* path = haz_map_get_path(&state->hazMap, 10, 20);
-	state->targetPath = path;
-	state->targetPathValid = 1;
+	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
-	while(state->running && state->FSM){
+	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
 				if(path->position != path->length){
@@ -671,9 +665,10 @@ void* FSM(void* data){
 				}else{
 					state->targetPathValid = 0;
 					path_destroy(path);
+					state->FSM = 0;
 					printf("FSM done\n");
-					return NULL;
-					nextState = EX_ANALYZE;
+					nextState = EX_GOHOME;
+					//nextState = EX_ANALYZE;
 				}
 				break;}
 			case EX_TURN:{
@@ -699,6 +694,11 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_GOHOME:{
+				while (!state->FSM) {
+					usleep(1000);
+				}
+				path = state->targetPath;
+				nextState = EX_MOVE;
 				break;}
 			case EX_EXIT:{
 				rotateTheta(state, 2*M_PI - 0.001);

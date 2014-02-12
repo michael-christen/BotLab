@@ -137,7 +137,7 @@ void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, 
 		homography_project(H, x_px, y_px, &x_cm, &y_cm);
 		add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
 		obstacle = 0;
-		for(y_px = y_px + 50; y_px < 480; y_px += 50){
+		for(y_px = y_px + 10; y_px < 480; y_px += 10){
 			homography_project(H, x_px, y_px, &x_cm, &y_cm);
 			add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
 		}
