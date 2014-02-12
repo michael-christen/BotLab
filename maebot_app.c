@@ -880,11 +880,12 @@ void* FSM(void* data){
 					printf("before path calc\n");
 					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 					if(nextState == EX_MOVE){
-						while (state->targetPathValid == 0) {
+						printf("\nchoosing next move\n");
+					/*	while (state->targetPathValid == 0) {
 							usleep(1000);
 						}
-						// To use mouse path, uncomment following line
-						path = state->targetPath;
+					*/	// To use mouse path, uncomment following line
+						//path = state->targetPath;
 						// To use autonomous path finding, uncomment following lines
 						path = choose_path(state, pre_analyze_theta);
 						state->targetPath = path;
