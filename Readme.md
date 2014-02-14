@@ -1,6 +1,5 @@
-# Hey guys, here's the new repo, i added more
-To add remote type this command 
-
+# BotLab Repo
+* To add remote type this command 
 ```
 git remote add bruce maebot@192.168.3.106:ebolson/eecs467/src/BotLab.git
 //to update type
@@ -8,4 +7,14 @@ git push bruce master
 //While in bruce, pull while in ebolson/eecs467/src/BotLab
 git pull
 //to update
+```
+
+* To get the bot working do this in the bot
+```
+/ebolson/eecs467/src/maebot/maebot_driver & 
+/ebolson/eecs467/src/apps/maebot_video_teleop &
+```
+and do this on you machine
+```
+/ebolson/eecs467/bin/vx_remote_viewer -a 192.168.3.106
 ```
