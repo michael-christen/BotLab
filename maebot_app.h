@@ -65,6 +65,8 @@ typedef struct
 
     vx_world_t * vw;
     zhash_t *layer_map; // <display, layer>
+
+    pthread_t dmon_thread;
 } state_t;
 
 
