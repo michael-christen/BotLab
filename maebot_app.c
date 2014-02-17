@@ -148,4 +148,8 @@ int main(int argc, char ** argv)
 
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
+
+    pthread_join(state->gui_thread, NULL);
+
+    return 0;
 }
