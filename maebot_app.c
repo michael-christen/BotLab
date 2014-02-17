@@ -26,8 +26,11 @@
 #define RIGHT 3
 #define STOP 4
 
-#define FBDIV 10
-#define LRDIV 100
+#define LONG_SPEED 0.5
+#define ROT_SPEED 0.2
+
+#define FBDIV 100000.0
+#define LRDIV 100000.0
 
 void setLaser(state_t* state, int lsr_val){
 //lsr_val == 1 ? laser is on : laser is off
@@ -55,22 +58,23 @@ void fireLaser(state_t* state){
 
 void moveBot(state_t* state, int cmd_val){
 	pthread_mutex_lock(&state->cmd_mutex);
+	printf("max_rev: %d, max_fwd: %d\n",MAX_REVERSE_SPEED,MAX_FORWARD_SPEED);
 	switch(cmd_val){
 		case FORWARD:
-			state->cmd.motor_left_speed = MAX_FORWARD_SPEED/FBDIV;
-			state->cmd.motor_right_speed = MAX_FORWARD_SPEED/FBDIV;
+			state->cmd.motor_left_speed = LONG_SPEED;
+			state->cmd.motor_right_speed = LONG_SPEED;
 			break;
 		case BACKWARD:
-			state->cmd.motor_left_speed = MAX_REVERSE_SPEED/FBDIV;
-			state->cmd.motor_right_speed = MAX_REVERSE_SPEED/FBDIV;
+			state->cmd.motor_left_speed = -LONG_SPEED;
+			state->cmd.motor_right_speed = -LONG_SPEED;
 			break;
 		case LEFT:
-			state->cmd.motor_left_speed = MAX_REVERSE_SPEED/LRDIV;
-			state->cmd.motor_right_speed = MAX_FORWARD_SPEED/LRDIV;
+			state->cmd.motor_left_speed = -ROT_SPEED;
+			state->cmd.motor_right_speed = ROT_SPEED;
 			break;
 		case RIGHT:
-			state->cmd.motor_left_speed = MAX_FORWARD_SPEED/LRDIV;
-			state->cmd.motor_right_speed = MAX_REVERSE_SPEED/LRDIV;
+			state->cmd.motor_left_speed = ROT_SPEED;
+			state->cmd.motor_right_speed = -ROT_SPEED;
 			break;
 		default:
 			state->cmd.motor_left_speed = 0;
@@ -222,9 +226,9 @@ int main(int argc, char ** argv)
     state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
     state->getopt_options.decimate = getopt_get_double(state->gopt, "decimate");
 
-    //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
+    pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
-	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
+    pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
 
     pthread_join(state->gui_thread, NULL);
