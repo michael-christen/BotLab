@@ -39,15 +39,15 @@ void setLaser(state_t* state, int lsr_val){
 void fireLaser(state_t* state){
 	printf("pew pew\n");
 	setLaser(state, 1);
-	usleep(25000);
+	usleep(200000);
 
 	int i;
 	for(i = 1; i < NUM_BLINKS; i++){
 		setLaser(state, 0);
-		usleep(25000);
+		usleep(150000);
 	
 		setLaser(state, 1);
-		usleep(25000);
+		usleep(200000);
 	}
 
 	setLaser(state, 0);
