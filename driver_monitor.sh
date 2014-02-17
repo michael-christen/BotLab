@@ -2,7 +2,7 @@
 
 echo "Starting rexarm driver monitor script"
 
-while [ `pgrep -f "./maebot_video_teleop"` ]
+while [ `pgrep -f "./maebot_app"` ]
 do
 	if [ ! `pgrep -f "./maebot_driver"` ]
 	then
