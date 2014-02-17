@@ -2,11 +2,11 @@
 
 echo "Starting rexarm driver monitor script"
 
-while [ `pgrep -f "./rexarm_example"` ]
+while [ `pgrep -f "./maebot_video_teleop"` ]
 do
-	if [ ! `pgrep -f "./rexarm_driver"` ]
+	if [ ! `pgrep -f "./maebot_driver"` ]
 	then
-		./rexarm_driver
+		~/ebolson/eecs467/bin/./maebot_driver
 	fi
 done
 
