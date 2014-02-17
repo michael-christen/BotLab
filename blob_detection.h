@@ -7,9 +7,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define COLOR_THRESHOLD 20.0
+#define COLOR_THRESHOLD 50.0
 //ABGR
-#define TEMPLATE_PX 0xff1e2a25
+//#define TEMPLATE_PX 0xff1e2a25
+#define TEMPLATE_PX 0xff2c3f34
+//#define TEMPLATE_PX 0xff243128
 #define SHOW_PX 0xffe127ff
 #define MIN_PXS 75
 #define MAX_PXS 400

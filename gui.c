@@ -110,15 +110,21 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         }
 
         num_balls = blob_detection(im, balls);
-        vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
+        vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
+		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
 
         // show downsampled image, but scale it so it appears the
         // same size as the original
         vx_buffer_t *vb = vx_world_get_buffer(layerData->world, "image");
-        vx_buffer_add_back(vb, vxo_pix_coords(VX_ORIGIN_TOP_LEFT,
-                                              vxo_chain (vxo_mat_scale(decimate),
-                                                         vxo_mat_translate3 (0, -im->height, 0),
-                                                         vo)));
+        vx_buffer_add_back(vb, 
+		vxo_pix_coords(VX_ORIGIN_TOP_LEFT,
+		    vxo_chain(
+			vxo_mat_scale(decimate),
+			vxo_mat_translate3 (0, -im->height,0),
+			vo
+		    )
+		)
+	);
         vx_buffer_swap(vb);
     }
     
