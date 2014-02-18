@@ -97,6 +97,8 @@ struct state_t {
     //Position info from odometry
     double pos_x, pos_y;
     double pos_theta;
+    int32_t prev_left_ticks, prev_right_ticks;
+    int    odometry_seen;
     const char *odometry_channel;
 
     getopt_t * gopt;

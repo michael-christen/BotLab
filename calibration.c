@@ -5,10 +5,11 @@
 void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel, 
         const maebot_sensor_data_t * msg, void * data)
 {
-	//do i need to be using mutex?
+    //do i need to be using mutex?
 
- 	state_t * state = data;
+    state_t * state = data;
 
+    /*
     printf ("Received message on channel \"%s\":\n", channel);
     printf ("  timestamp   = %d\n", msg->utime);
     printf ("  acceleration    = (%d, %d, %d)\n",
@@ -19,15 +20,16 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
             msg->gyro_int[0], msg->gyro_int[1], msg->gyro_int[2]);
     printf ("  line sensor values= (%d, %d, %d)\n",
             msg->line_sensors[0], msg->line_sensors[1], msg->line_sensors[2]);
-	 printf	(" range value = (%d)\n", msg->range);
+    printf(" range value = (%d)\n", msg->range);
+     */
 
-	 for( int i = 0; i < 3; i++){
-		state->acc[i]  = msg->accel[i];
-		state->gyro[i]  = msg->gyro[i];
-		state->gyro_int[i]  = msg->gyro_int[i];
-	 }
+    for( int i = 0; i < 3; i++){
+	state->acc[i]  = msg->accel[i];
+	state->gyro[i]  = msg->gyro[i];
+	state->gyro_int[i]  = msg->gyro_int[i];
+    }
 
-	return;
+    return;
 
 }
 

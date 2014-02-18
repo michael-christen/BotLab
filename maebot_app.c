@@ -206,8 +206,8 @@ static void * send_led(void * data){
 }
 
 static void * driver_monitor(void *data) {
-    int systemTry = system("bash driver_monitor.sh");
-    if (systemTry) {} //ignore status
+    //int systemTry = system("./maebot_driver");
+    //if (systemTry) {} //ignore status
 
     return NULL;
 }
@@ -278,6 +278,7 @@ int main(int argc, char ** argv)
     state->pos_x    = 0;
     state->pos_y    = 0;
     state->pos_theta= 0;
+    state->odometry_seen = 0;
 
     state->running = 1;
 
@@ -324,5 +325,6 @@ int main(int argc, char ** argv)
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 
     pthread_join(state->gui_thread, NULL);
+    //system("kill `pgrep -f './maebot_driver'`");
     return 0;
 }
