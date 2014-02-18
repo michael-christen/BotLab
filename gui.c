@@ -142,26 +142,28 @@ int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     layerData->world = vx_world_create();
 
+    /*
     const zarray_t *args = getopt_get_extra_args(state->gopt);
 
     if (zarray_size(args) > 0) {
         zarray_get(args, 0, &state->url);
     } else {
-        zarray_t *urls = image_source_enumerate();
+	*/
+    zarray_t *urls = image_source_enumerate();
 
-        printf("Cameras:\n");
-        for (int i = 0; i < zarray_size(urls); i++) {
-            char *url;
-            zarray_get(urls, i, &url);
-            printf("  %3d: %s\n", i, url);
-        }
-
-        if (zarray_size(urls) == 0) {
-            printf("No cameras found.\n");
-            return 0;
-        }
-        zarray_get(urls, 0, &state->url);
+    printf("Cameras:\n");
+    for (int i = 0; i < zarray_size(urls); i++) {
+	char *url;
+	zarray_get(urls, i, &url);
+	printf("  %3d: %s\n", i, url);
     }
+
+    if (zarray_size(urls) == 0) {
+	printf("No cameras found.\n");
+	return 0;
+    }
+    zarray_get(urls, 0, &state->url);
+    //}
 
     state->isrc = image_source_open(state->url);
     if (state->isrc == NULL) {
