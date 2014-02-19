@@ -25,36 +25,55 @@
 
 void display_finished(vx_application_t * app, vx_display_t * disp)
 {
+    zhash_iterator_t it;
+    vx_layer_t *value;
+
     state_t * state = app->impl;
+
+    printf("disp end: %d\n", disp);
+
+    zhash_iterator_init(state->layer_map, &it);
+
     pthread_mutex_lock(&state->layer_mutex);
 
-    vx_layer_t * layer = NULL;
-
-    // store a reference to the world and layer that we associate with each vx_display_t
-    zhash_remove(state->layer_map, &disp, NULL, &layer);
-
-    vx_layer_destroy(layer);
+    while (zhash_iterator_next(&it, &disp, &value)) {
+        vx_layer_destroy(value);
+        zhash_iterator_remove(&it);
+    }
 
     pthread_mutex_unlock(&state->layer_mutex);
+
+    printf("hash table size after remove: %d\n", zhash_size(state->layer_map));
 }
 
 void display_started(vx_application_t * app, vx_display_t * disp)
 {
+    int i;
+
     state_t * state = app->impl;
 
-    vx_layer_t * layer = vx_layer_create(state->vw);
-    vx_layer_set_display(layer, disp);
-    vx_layer_add_event_handler(layer, &state->veh);
+    printf("disp start: %d\n", disp);
 
-    pthread_mutex_lock(&state->layer_mutex);
-    // store a reference to the world and layer that we associate with each vx_display_t
-    zhash_put(state->layer_map, &disp, &layer, NULL, NULL);
-    pthread_mutex_unlock(&state->layer_mutex);
+    for (i = 0; i < NUM_LAYERS; i++) {
+        layer_data_t *layerData = &(state->layers[i]);
+
+        vx_layer_t * layer = vx_layer_create(layerData->world);
+
+        layerData->layer = layer;
+
+        vx_layer_set_display(layer, disp);
+
+        pthread_mutex_lock(&state->layer_mutex);
+        // store a reference to the world and layer that we associate with each vx_display_t
+        zhash_put(state->layer_map, &disp, &layer, NULL, NULL);
+        pthread_mutex_unlock(&state->layer_mutex);
+
+        layerData->displayInit(state, layerData);
+    }
+    printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
-int renderCameraPOVLayer(void *data) {
-    state_t * state = data;
-
+int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     if (state->getopt_options.verbose) {
         printf("Starting run_camera\n");
     }
@@ -89,7 +108,7 @@ int renderCameraPOVLayer(void *data) {
 
         // show downsampled image, but scale it so it appears the
         // same size as the original
-        vx_buffer_t *vb = vx_world_get_buffer(state->vw, "image");
+        vx_buffer_t *vb = vx_world_get_buffer(layerData->world, "image");
         vx_buffer_add_back(vb, vxo_pix_coords(VX_ORIGIN_TOP_LEFT,
                                               vxo_chain (vxo_mat_scale(decimate),
                                                          vxo_mat_translate3 (0, -im->height, 0),
@@ -102,79 +121,97 @@ int renderCameraPOVLayer(void *data) {
     return 1;
 }
 
-int initCameraPOVLayer(void *data) {
-    state_t * state = data;
-
-    if (!state->getopt_options.no_video) {
-        const zarray_t *args = getopt_get_extra_args(state->gopt);
-        if (zarray_size(args) > 0) {
-            zarray_get(args, 0, &state->url);
-        } else {
-            zarray_t *urls = image_source_enumerate();
-
-            printf("Cameras:\n");
-            for (int i = 0; i < zarray_size(urls); i++) {
-                char *url;
-                zarray_get(urls, i, &url);
-                printf("  %3d: %s\n", i, url);
-            }
-
-            if (zarray_size(urls) == 0) {
-                printf("No cameras found.\n");
-                return 1;
-            }
-            zarray_get(urls, 0, &state->url);
-        }
-
-        state->isrc = image_source_open(state->url);
-        if (state->isrc == NULL) {
-            printf("Unable to open device %s\n", state->url);
-            return 1;
-        }
-
-        image_source_t *isrc = state->isrc;
-
-        if (isrc->start(isrc)) {
-            return 1;
-        }
-    }
-
-    return 0;
+int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
+    vx_layer_set_viewport_rel(layerData->layer, layerData->position);
+    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    vx_layer_camera_fit2D(layerData->layer, layerData->lowLeft, layerData->upRight, 1);
 }
 
-void destroyCameraPOVLayer(void *data) {
-    state_t * state = data;
+int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
+    layerData->world = vx_world_create();
 
+    const zarray_t *args = getopt_get_extra_args(state->gopt);
+
+    if (zarray_size(args) > 0) {
+        zarray_get(args, 0, &state->url);
+    } else {
+        zarray_t *urls = image_source_enumerate();
+
+        printf("Cameras:\n");
+        for (int i = 0; i < zarray_size(urls); i++) {
+            char *url;
+            zarray_get(urls, i, &url);
+            printf("  %3d: %s\n", i, url);
+        }
+
+        if (zarray_size(urls) == 0) {
+            printf("No cameras found.\n");
+            return 0;
+        }
+        zarray_get(urls, 0, &state->url);
+    }
+
+    state->isrc = image_source_open(state->url);
+    if (state->isrc == NULL) {
+        printf("Unable to open device %s\n", state->url);
+        return 0;
+    }
+
+    image_source_t *isrc = state->isrc;
+
+    if (isrc->start(isrc)) {
+        printf("Can't start image source\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+int destroyCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     if (!state->getopt_options.no_video) {
         state->isrc->close(state->isrc);
     }
+
+    return 1;
 }
 
-void* renderLayers(void *data) {
-    state_t * state = data;
+void* renderLayers(state_t *state) {
+    int i;
 
-    // initWorldLayer(&state);
-
-    if (!initCameraPOVLayer(&state)) {
-        printf("Failed to init CameraPOVLayer");
-        return NULL;
+    // Init
+    for (i = 0; i < NUM_LAYERS; i++) {
+        layer_data_t *layer = &(state->layers[i]);
+        if (!layer->init(state, layer)) {
+            printf("Failed to init layer: %s\n", layer->name);
+            return NULL;
+        }
     }
 
-    // initWorldPOVLayer(&state);
-
+    // Render Loop
     while(state->running) {
-        // renderWorldLayer(&state);
-        renderCameraPOVLayer(&state);
-        // renderWorldPOVLayer(&state);
+        for (i = 0; i < NUM_LAYERS; i++) {
+            layer_data_t *layer = &(state->layers[i]);
+            if (layer->enable && !layer->render(state, layer)) {
+                printf("Failed to render layer: %s\n", layer->name);
+                return NULL;
+            }
+        }
     }
 
-    // destroyWorldLayer(&state);
-    destroyCameraPOVLayer(&state);
-    // destroyWorldPOVLayer(&state);
+    // Destroy/Clean up
+    for (i = 0; i < NUM_LAYERS; i++) {
+        layer_data_t *layer = &(state->layers[i]);
+        if (!layer->destroy(state, layer)) {
+            printf("Failed to destroy layer: %s\n", layer->name);
+            return NULL;
+        }
+    }
 
     return NULL;
 }
 
+
+// Main Pthread  GUI funtion
 void* gui_create(void *data) {
     state_t * state = data;
 
@@ -183,9 +220,27 @@ void* gui_create(void *data) {
     remote_attr.max_bandwidth_KBs = state->getopt_options.limitKBs;
     remote_attr.advertise_name = "Maebot Teleop";
 
+
+    // Init layer data structs
+    state->layers[0].enable = !state->getopt_options.no_video;
+    state->layers[0].name = "CameraPOV";
+    state->layers[0].position[0] = 0.666f;
+    state->layers[0].position[1] = 0.666f;
+    state->layers[0].position[2] = 0.333f;
+    state->layers[0].position[3] = 0.333f;
+    state->layers[0].lowLeft[0] = 0;
+    state->layers[0].lowLeft[1] = 0;
+    state->layers[0].upRight[0] = 1296;
+    state->layers[0].upRight[1] = 964;
+    state->layers[0].init = initCameraPOVLayer;
+    state->layers[0].displayInit = displayInitCameraPOVLayer;
+    state->layers[0].render = renderCameraPOVLayer;
+    state->layers[0].destroy = destroyCameraPOVLayer;
+
     vx_remote_display_source_t * remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
 
-    renderLayers(data);
+    // Handles layer init, rendering, and destruction
+    renderLayers(state);
 
     vx_remote_display_source_destroy(remote);
 

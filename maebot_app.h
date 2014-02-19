@@ -26,6 +26,8 @@
 // CONSTANTS
 //////////////
 
+#define NUM_LAYERS 1
+
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768
 #define MAX_FORWARD_SPEED 32767
@@ -35,14 +37,32 @@
 // STRUCTS
 //////////////
 
-typedef struct 
-{
+typedef struct layer_data_t layer_data_t;
+typedef struct state_t state_t;
+typedef struct getopt_options_t getopt_options_t;
+
+
+struct getopt_options_t {
     int verbose, no_video, limitKBs;
     double decimate;
-} getopt_options_t;
+};
 
-typedef struct
-{
+struct layer_data_t {
+    int enable;
+    const char* name;
+    vx_world_t *world;
+    vx_layer_t *layer;
+    float position[4];
+    float lowLeft[2];
+    float upRight[2];
+
+    int (*init)(state_t *state, layer_data_t *layerData);
+    int (*displayInit)(state_t *state, layer_data_t *layerData);
+    int (*render)(state_t *state, layer_data_t *layerData);
+    int (*destroy)(state_t *state, layer_data_t *layerData);
+};
+
+struct state_t {
     getopt_options_t  getopt_options;
     vx_application_t app;
     vx_event_handler_t veh;
@@ -63,12 +83,14 @@ typedef struct
     pthread_mutex_t layer_mutex;
     pthread_t gui_thread;
 
+    int layerCount;
+    layer_data_t layers[NUM_LAYERS];
+
     vx_world_t * vw;
     zhash_t *layer_map; // <display, layer>
 
     pthread_t dmon_thread;
-} state_t;
-
+};
 
 //////////////
 // FUNCTIONS
