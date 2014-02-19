@@ -23,6 +23,11 @@
 #include "imagesource/image_source.h"
 #include "imagesource/image_convert.h"
 
+#include "blob_detection.h"
+
+ball_t balls[MAX_NUM_BALLS];
+int num_balls;
+
 void display_finished(vx_application_t * app, vx_display_t * disp)
 {
     zhash_iterator_t it;
@@ -104,6 +109,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             im = im2;
         }
 
+        num_balls = blob_detection(im, balls);
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
 
         // show downsampled image, but scale it so it appears the
@@ -115,7 +121,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
                                                          vo)));
         vx_buffer_swap(vb);
     }
-
+    
     image_u32_destroy(im);
 
     return 1;
