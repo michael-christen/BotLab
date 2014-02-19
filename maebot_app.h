@@ -51,7 +51,7 @@ typedef struct
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
 
-    int running;
+    int running, displayStarted, displayFinished;
 
     getopt_t * gopt;
     char * url;

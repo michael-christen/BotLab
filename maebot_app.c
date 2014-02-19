@@ -110,8 +110,6 @@ int main(int argc, char ** argv)
 {
     vx_global_init();
 
-
-
     state_t * state = calloc(1, sizeof(state_t));
     global_state = state;
     state->gopt = getopt_create();
@@ -126,6 +124,7 @@ int main(int argc, char ** argv)
     state->veh.impl = state;
 
     state->running = 1;
+    state->displayStarted = state->displayFinished = 0;
     state->lcm = lcm_create(NULL);
     state->vw = vx_world_create();
     pthread_mutex_init(&state->layer_mutex, NULL);

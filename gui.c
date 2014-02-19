@@ -52,73 +52,58 @@ void display_started(vx_application_t * app, vx_display_t * disp)
     pthread_mutex_unlock(&state->layer_mutex);
 }
 
-void* run_camera(void * data)
-{
+int renderCameraPOVLayer(void *data) {
     state_t * state = data;
 
-    if (state->getopt_options.verbose) printf("Starting run_camera\n");
-
-    image_source_t *isrc = state->isrc;
-
-    while (state->running) {
-
-        image_u32_t *im = NULL;
-
-        {
-            image_source_data_t isdata;
-
-            int res = isrc->get_frame(isrc, &isdata);
-            if (!res) {
-                im = image_convert_u32(&isdata);
-            }
-            if (res)
-                goto error;
-
-            isrc->release_frame(isrc, &isdata);
-        }
-
-        if (state->getopt_options.verbose) printf("Got frame %p\n", im);
-        if (im != NULL) {
-
-            double decimate = state->getopt_options.decimate;
-            if (decimate != 1.0) {
-                image_u32_t * im2 = image_util_u32_decimate(im, decimate);
-                image_u32_destroy(im);
-                im = im2;
-            }
-
-            vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
-
-            // show downsampled image, but scale it so it appears the
-            // same size as the original
-            vx_buffer_t *vb = vx_world_get_buffer(state->vw, "image");
-            vx_buffer_add_back(vb, vxo_pix_coords(VX_ORIGIN_TOP_LEFT,
-                                                  vxo_chain (vxo_mat_scale(decimate),
-                                                             vxo_mat_translate3 (0, -im->height, 0),
-                                                             vo)));
-            vx_buffer_swap(vb);
-        }
-
-        image_u32_destroy(im);
-
+    if (state->getopt_options.verbose) {
+        printf("Starting run_camera\n");
     }
 
-  error:
-    isrc->stop(isrc);
-    printf("exiting\n");
-    return NULL;
+    image_source_t *isrc = state->isrc;
+    image_u32_t *im = NULL;
+    image_source_data_t isdata;
 
+    int res = isrc->get_frame(isrc, &isdata);
+    if (!res) {
+        im = image_convert_u32(&isdata);
+    } else {
+        return 0;
+    }
+
+    isrc->release_frame(isrc, &isdata);
+
+    if (state->getopt_options.verbose) {
+        printf("Got frame %p\n", im);
+    }
+
+    if (im != NULL) {
+        double decimate = state->getopt_options.decimate;
+
+        if (decimate != 1.0) {
+            image_u32_t * im2 = image_util_u32_decimate(im, decimate);
+            image_u32_destroy(im);
+            im = im2;
+        }
+
+        vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY, VX_TEX_MIN_FILTER);
+
+        // show downsampled image, but scale it so it appears the
+        // same size as the original
+        vx_buffer_t *vb = vx_world_get_buffer(state->vw, "image");
+        vx_buffer_add_back(vb, vxo_pix_coords(VX_ORIGIN_TOP_LEFT,
+                                              vxo_chain (vxo_mat_scale(decimate),
+                                                         vxo_mat_translate3 (0, -im->height, 0),
+                                                         vo)));
+        vx_buffer_swap(vb);
+    }
+
+    image_u32_destroy(im);
+
+    return 1;
 }
 
-void* gui_create(void * data) {
+int initCameraPOVLayer(void *data) {
     state_t * state = data;
-
-    vx_remote_display_source_attr_t remote_attr;
-    vx_remote_display_source_attr_init(&remote_attr);
-    remote_attr.max_bandwidth_KBs = state->getopt_options.limitKBs;
-    remote_attr.advertise_name = "Maebot Teleop";
-
-    vx_remote_display_source_t * remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
 
     if (!state->getopt_options.no_video) {
         const zarray_t *args = getopt_get_extra_args(state->gopt);
@@ -136,7 +121,7 @@ void* gui_create(void * data) {
 
             if (zarray_size(urls) == 0) {
                 printf("No cameras found.\n");
-                exit(0);
+                return 1;
             }
             zarray_get(urls, 0, &state->url);
         }
@@ -144,19 +129,63 @@ void* gui_create(void * data) {
         state->isrc = image_source_open(state->url);
         if (state->isrc == NULL) {
             printf("Unable to open device %s\n", state->url);
-            exit(-1);
+            return 1;
         }
 
         image_source_t *isrc = state->isrc;
 
-        if (isrc->start(isrc))
-            exit(-1);
-        run_camera(state);
-
-        isrc->close(isrc);
-    } else {
-        while (1) sleep(1);
+        if (isrc->start(isrc)) {
+            return 1;
+        }
     }
+
+    return 0;
+}
+
+void destroyCameraPOVLayer(void *data) {
+    state_t * state = data;
+
+    if (!state->getopt_options.no_video) {
+        state->isrc->close(state->isrc);
+    }
+}
+
+void* renderLayers(void *data) {
+    state_t * state = data;
+
+    // initWorldLayer(&state);
+
+    if (!initCameraPOVLayer(&state)) {
+        printf("Failed to init CameraPOVLayer");
+        return NULL;
+    }
+
+    // initWorldPOVLayer(&state);
+
+    while(state->running) {
+        // renderWorldLayer(&state);
+        renderCameraPOVLayer(&state);
+        // renderWorldPOVLayer(&state);
+    }
+
+    // destroyWorldLayer(&state);
+    destroyCameraPOVLayer(&state);
+    // destroyWorldPOVLayer(&state);
+
+    return NULL;
+}
+
+void* gui_create(void *data) {
+    state_t * state = data;
+
+    vx_remote_display_source_attr_t remote_attr;
+    vx_remote_display_source_attr_init(&remote_attr);
+    remote_attr.max_bandwidth_KBs = state->getopt_options.limitKBs;
+    remote_attr.advertise_name = "Maebot Teleop";
+
+    vx_remote_display_source_t * remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
+
+    renderLayers(data);
 
     vx_remote_display_source_destroy(remote);
 
