@@ -168,7 +168,8 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             image_u32_destroy(im);
             im = im2;
         }
-
+	
+	correctDistortion(im, state->lookupTable);
         num_balls = blob_detection(im, balls);
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
 		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
