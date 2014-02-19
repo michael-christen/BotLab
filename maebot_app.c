@@ -17,6 +17,66 @@
 #include "imagesource/image_convert.h"
 
 #include "lcmtypes/maebot_diff_drive_t.h"
+#include "lcmtypes/maebot_laser_t.h"
+
+#define NUM_BLINKS 3
+#define FORWARD 0
+#define BACKWARD 1
+#define LEFT 2
+#define RIGHT 3
+#define STOP 4
+
+#define FBDIV 10
+#define LRDIV 100
+
+void setLaser(state_t* state, int lsr_val){
+//lsr_val == 1 ? laser is on : laser is off
+	pthread_mutex_lock(&state->lsr_mutex);
+	state->lsr.laser_power = lsr_val;
+	pthread_mutex_unlock(&state->lsr_mutex);
+}
+
+void fireLaser(state_t* state){
+	setLaser(state, 1);
+	usleep(250000);
+
+	int i;
+	for(i = 1; i < NUM_BLINKS; i++){
+		setLaser(state, 0);
+		usleep(250000);
+	
+		setLaser(state, 1);
+		usleep(250000);
+	}
+
+	setLaser(state, 0);
+}
+
+void moveBot(state_t* state, int cmd_val){
+	pthread_mutex_lock(&state->cmd_mutex);
+	switch(cmd_val){
+		case FORWARD:
+			state->cmd.motor_left_speed = MAX_FORWARD_SPEED/FBDIV;
+			state->cmd.motor_right_speed = MAX_FORWARD_SPEED/FBDIV;
+			break;
+		case BACKWARD:
+			state->cmd.motor_left_speed = MAX_REVERSE_SPEED/FBDIV;
+			state->cmd.motor_right_speed = MAX_REVERSE_SPEED/FBDIV;
+			break;
+		case LEFT:
+			state->cmd.motor_left_speed = MAX_REVERSE_SPEED/LRDIV;
+			state->cmd.motor_right_speed = MAX_FORWARD_SPEED/LRDIV;
+			break;
+		case RIGHT:
+			state->cmd.motor_left_speed = MAX_FORWARD_SPEED/LRDIV;
+			state->cmd.motor_right_speed = MAX_REVERSE_SPEED/LRDIV;
+			break;
+		default:
+			state->cmd.motor_left_speed = 0;
+			state->cmd.motor_right_speed = 0;
+	}
+	pthread_mutex_unlock(&state->cmd_mutex);
+}
 
 static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_touch_event_t * mouse)
 {
@@ -32,34 +92,41 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
     state_t *state = vh->impl;
 
 
-    pthread_mutex_lock(&state->cmd_mutex);
+   // pthread_mutex_lock(&state->cmd_mutex);
     if (!key->released) {
-	double divisor = 10.0;
-	double tdivisor = 100.0;
+	//double divisor = 10.0;
+	//double tdivisor = 100.0;
         if (key->key_code == 'w' || key->key_code == 'W') {
             // forward
-            state->cmd.motor_left_speed = MAX_FORWARD_SPEED/divisor;
-            state->cmd.motor_right_speed = MAX_FORWARD_SPEED/divisor;
+           // state->cmd.motor_left_speed = MAX_FORWARD_SPEED/divisor;
+           // state->cmd.motor_right_speed = MAX_FORWARD_SPEED/divisor;
+			moveBot(state, FORWARD);
         } else if (key->key_code == 'a' || key->key_code == 'A' ) {
             // turn left
-            state->cmd.motor_left_speed = MAX_REVERSE_SPEED/tdivisor;
-            state->cmd.motor_right_speed = MAX_FORWARD_SPEED/tdivisor;
+           // state->cmd.motor_left_speed = MAX_REVERSE_SPEED/tdivisor;
+           // state->cmd.motor_right_speed = MAX_FORWARD_SPEED/tdivisor;
+			moveBot(state, LEFT);
 
         } else if (key->key_code == 's' || key->key_code == 'S') {
             // reverse
-            state->cmd.motor_left_speed = MAX_REVERSE_SPEED/divisor;
-            state->cmd.motor_right_speed = MAX_REVERSE_SPEED/divisor;
+           // state->cmd.motor_left_speed = MAX_REVERSE_SPEED/divisor;
+           // state->cmd.motor_right_speed = MAX_REVERSE_SPEED/divisor;
+			moveBot(state, BACKWARD);
         } else if (key->key_code == 'd' || key->key_code == 'D') {
             // turn right
-            state->cmd.motor_left_speed = MAX_FORWARD_SPEED/tdivisor;
-            state->cmd.motor_right_speed = MAX_REVERSE_SPEED/tdivisor;
-        }
+           // state->cmd.motor_left_speed = MAX_FORWARD_SPEED/tdivisor;
+           // state->cmd.motor_right_speed = MAX_REVERSE_SPEED/tdivisor;
+			moveBot(state, RIGHT);
+        } else if(key->key_code == 'l' || key->key_code == 'L') {
+			fireLaser(state);
+		}
     } else {
         // when key released, speeds default to 0
-        state->cmd.motor_left_speed = 0;
-        state->cmd.motor_right_speed = 0;
+       // state->cmd.motor_left_speed = 0;
+       // state->cmd.motor_right_speed = 0;
+		moveBot(state, STOP);
     }
-    pthread_mutex_unlock(&state->cmd_mutex);
+   // pthread_mutex_unlock(&state->cmd_mutex);
 
     return 0;
 }
@@ -101,6 +168,22 @@ static void * send_cmds(void * data)
     return NULL;
 }
 
+static void * send_lsr(void * data){
+	state_t * state = data;
+
+	while(state->running) {
+		pthread_mutex_lock(&state->lsr_mutex);
+		{
+			maebot_laser_t_publish(state->lcm, "MAEBOT_LASER", &state->lsr);
+		}
+		pthread_mutex_unlock(&state->lsr_mutex);
+
+		usleep(50000);
+	}
+
+	return NULL;
+}
+
 static void * driver_monitor(void *data) {
     int systemTry = system("bash driver_monitor.sh");
     if (systemTry) {} //ignore status
@@ -132,6 +215,10 @@ int main(int argc, char ** argv)
     state->vw = vx_world_create();
     pthread_mutex_init(&state->layer_mutex, NULL);
     pthread_mutex_init(&state->cmd_mutex, NULL);
+    pthread_mutex_init(&state->lsr_mutex, NULL);
+
+    //Turn off laser at beginning of run
+    setLaser(state, 0);
 
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
 
@@ -156,6 +243,7 @@ int main(int argc, char ** argv)
 
     pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
+	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
 
     pthread_join(state->gui_thread, NULL);

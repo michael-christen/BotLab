@@ -20,7 +20,7 @@
 
 // LCM
 #include "lcmtypes/maebot_diff_drive_t.h"
-
+#include "lcmtypes/maebot_laser_t.h"
 
 //////////////
 // CONSTANTS
@@ -50,6 +50,10 @@ typedef struct
     maebot_diff_drive_t cmd;
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
+
+    maebot_laser_t lsr;
+    pthread_mutex_t lsr_mutex;
+    pthread_t lsr_thread;
 
     int running;
 
