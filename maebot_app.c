@@ -222,7 +222,7 @@ int main(int argc, char ** argv)
     state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
     state->getopt_options.decimate = getopt_get_double(state->gopt, "decimate");
 
-    pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
+    //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
 	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
