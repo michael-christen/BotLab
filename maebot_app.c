@@ -28,11 +28,12 @@
 #include "lcmtypes/maebot_sensor_data_t.h"
 
 #define NUM_BLINKS 3
-#define FORWARD 0
-#define BACKWARD 1
-#define LEFT 2
-#define RIGHT 3
-#define STOP 4
+#define STOP 0
+//1-hot encoding
+#define FORWARD 1
+#define BACKWARD 2
+#define LEFT 4
+#define RIGHT 8
 
 #define LONG_SPEED 0.5
 #define ROT_SPEED 0.2
@@ -69,23 +70,30 @@ void fireLaser(state_t* state){
 }
 
 void moveBot(state_t* state, int cmd_val){
-	switch(cmd_val){
-		case FORWARD:
-		    driveStraight(state, LONG_SPEED);
-		    break;
-		case BACKWARD:
-		    driveStraight(state, -LONG_SPEED);
-		    break;
-		case LEFT:
-		    driveRot(state, -ROT_SPEED);
-		    break;
-		case RIGHT:
-		    driveRot(state, ROT_SPEED);
-		    break;
-		default:
-		    driveStop(state);
-		    break;
+    double arc_val = 5;
+    if (cmd_val & FORWARD) {
+	if(cmd_val & RIGHT) {
+	    driveRad(state, -arc_val, LONG_SPEED);
+	} else if(cmd_val & LEFT) {
+	    driveRad(state, arc_val, LONG_SPEED);
+	} else {
+	    driveRad(state, -100, LONG_SPEED);
 	}
+    } else if(cmd_val & BACKWARD) {
+	if(cmd_val & RIGHT) {
+	    driveRad(state, -arc_val, -LONG_SPEED);
+	} else if(cmd_val & LEFT) {
+	    driveRad(state, arc_val, -LONG_SPEED);
+	} else {
+	    driveStraight(state, -LONG_SPEED);
+	}
+    } else if(cmd_val & RIGHT) {
+	driveRot(state, -ROT_SPEED);
+    } else if(cmd_val & LEFT) {
+	driveRot(state, ROT_SPEED);
+    } else {
+	driveStop(state);
+    }
 }
 
 static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_touch_event_t * mouse)
@@ -101,33 +109,34 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 {
     state_t *state = vh->impl;
 
+    int cmd_val = 0;
     if (!key->released) {
+	// forward
         if (key->key_code == 'w' || key->key_code == 'W') {
-            // forward
-			moveBot(state, FORWARD);
-			LEDStatus(state, MOVE_FORWARD);
+	    cmd_val |= FORWARD;
         } else if (key->key_code == 'a' || key->key_code == 'A' ) {
-            // turn left
-			moveBot(state, LEFT);
-			LEDStatus(state, TURN_LEFT);
+	    cmd_val |= LEFT;
         } else if (key->key_code == 's' || key->key_code == 'S') {
-            // reverse
-			moveBot(state, BACKWARD);
-			LEDStatus(state, MOVE_BACKWARD);
+	    cmd_val |= BACKWARD;
         } else if (key->key_code == 'd' || key->key_code == 'D') {
-            // turn right
-			moveBot(state, RIGHT);
-			LEDStatus(state, TURN_RIGHT);
-        } else if(key->key_code == 'l' || key->key_code == 'L') {
-			// fire laser
-			fireLaser(state);
-		}
-    } else {
-        // when key released, speeds default to 0
-		moveBot(state, STOP);
-		LEDStatus(state, NONE);
+	    cmd_val |= RIGHT;
+	} else if(key->key_code == 'l' || key->key_code == 'L') {
+	    // fire laser
+	    fireLaser(state);
+	}
     }
-
+    moveBot(state, cmd_val);
+    if (cmd_val & FORWARD) {
+	LEDStatus(state, MOVE_FORWARD);
+    } else if(cmd_val & BACKWARD) {
+	LEDStatus(state, MOVE_BACKWARD);
+    } else if(cmd_val & RIGHT) {
+	LEDStatus(state, TURN_RIGHT);
+    } else if(cmd_val & LEFT) {
+	LEDStatus(state, TURN_LEFT);
+    } else {
+	LEDStatus(state, NONE);
+    }
     return 0;
 }
 
