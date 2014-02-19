@@ -17,13 +17,13 @@ void odometry_handler (
 	int32_t diff_left = msg->encoder_left_ticks - state->prev_left_ticks;
 	int32_t diff_right = msg->encoder_right_ticks - state->prev_right_ticks;
 	
-	double dL       = getDistFromTicks(diff_left);
-	double dR       = getDistFromTicks(diff_right);
-	double avg      = (dL + dR)/2.0;
+	double dL        = getDistFromTicks(diff_left);
+	double dR        = getDistFromTicks(diff_right);
+	double avg       = (dL + dR)/2.0;
 	//msg->motor_left_actual_speed;
-	state->pos_x    += avg * sin(state->pos_theta);
-	state->pos_y    += avg * cos(state->pos_theta);
-	state->pos_theta+= (dR - dL) / DIST_BETWEEN_WHEELS;
+	state->pos_x     += avg * sin(state->pos_theta);
+	state->pos_y     += avg * cos(state->pos_theta);
+	state->pos_theta += (dL - dR) / DIST_BETWEEN_WHEELS;
     } else {
 	state->odometry_seen = 1;
     }

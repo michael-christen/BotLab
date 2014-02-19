@@ -287,12 +287,12 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world,
 	    "error_ellipse");
     vo = vxo_chain(
-	vxo_mat_rotate_z(phi),
 	vxo_mat_translate3(
 	    state->pos_x, 
 	    state->pos_y, 
 	    state->pos_z
 	),
+	vxo_mat_rotate_z(phi - state->pos_theta),
 	vxo_lines( 
 	    vx_resc_copyf(points, npoints*3),
 	    npoints,
