@@ -162,6 +162,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 
     if (im != NULL) {
 		correctDistortion(im, state->lookupTable);
+
         double decimate = state->getopt_options.decimate;
 
         if (decimate != 1.0) {

@@ -4,6 +4,7 @@
 #include "odometry.h"
 #include "pid_ctrl.h"
 #include "drive_ctrl.h"
+#include "barrel_distortion.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -287,7 +288,7 @@ int main(int argc, char ** argv)
     state->pos_theta= 0;
     state->odometry_seen = 0;
 
-	state->lookupTable = getLookupTable(800,600);
+	state->lookupTable = getLookupTable(752,480);
 
     state->running = 1;
 
