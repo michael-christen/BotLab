@@ -90,7 +90,6 @@ static void * send_cmds(void * data)
         pthread_mutex_lock(&state->cmd_mutex);
         {
             //state->cmd.timestamp = utime_now();
-
             maebot_diff_drive_t_publish(state->lcm,  "MAEBOT_DIFF_DRIVE", &state->cmd);
         }
         pthread_mutex_unlock(&state->cmd_mutex);

@@ -223,7 +223,7 @@ static void * send_cmds(void * data)
 }
 
 static void * driver_monitor(void * data){
-	int systemTry = system("bash ~/ebolson/eecs467/bin/driver_monitor.sh");
+	int systemTry = system("bash driver_monitor.sh");
 	if(systemTry){}	//Ignore status
     return NULL;
 }

@@ -1,3 +1,5 @@
 *.o
+*.bmml
+*.png
 maebot_video_teleop
 
