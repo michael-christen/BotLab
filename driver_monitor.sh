@@ -6,7 +6,7 @@ while [ `pgrep -f "./maebot_app"` ]
 do
 	if [ ! `pgrep -f "./maebot_driver"` ]
 	then
-		~/ebolson/eecs467/bin/./maebot_driver
+		./maebot_driver
 	fi
 done
 

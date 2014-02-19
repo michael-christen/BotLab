@@ -34,23 +34,25 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 
     pthread_mutex_lock(&state->cmd_mutex);
     if (!key->released) {
+	double divisor = 10.0;
+	double tdivisor = 100.0;
         if (key->key_code == 'w' || key->key_code == 'W') {
             // forward
-            state->cmd.motor_left_speed = MAX_FORWARD_SPEED;
-            state->cmd.motor_right_speed = MAX_FORWARD_SPEED;
+            state->cmd.motor_left_speed = MAX_FORWARD_SPEED/divisor;
+            state->cmd.motor_right_speed = MAX_FORWARD_SPEED/divisor;
         } else if (key->key_code == 'a' || key->key_code == 'A' ) {
             // turn left
-            state->cmd.motor_left_speed = MAX_REVERSE_SPEED;
-            state->cmd.motor_right_speed = MAX_FORWARD_SPEED;
+            state->cmd.motor_left_speed = MAX_REVERSE_SPEED/tdivisor;
+            state->cmd.motor_right_speed = MAX_FORWARD_SPEED/tdivisor;
 
         } else if (key->key_code == 's' || key->key_code == 'S') {
             // reverse
-            state->cmd.motor_left_speed = MAX_REVERSE_SPEED;
-            state->cmd.motor_right_speed = MAX_REVERSE_SPEED;
+            state->cmd.motor_left_speed = MAX_REVERSE_SPEED/divisor;
+            state->cmd.motor_right_speed = MAX_REVERSE_SPEED/divisor;
         } else if (key->key_code == 'd' || key->key_code == 'D') {
             // turn right
-            state->cmd.motor_left_speed = MAX_REVERSE_SPEED;
-            state->cmd.motor_right_speed = MAX_FORWARD_SPEED;
+            state->cmd.motor_left_speed = MAX_FORWARD_SPEED/tdivisor;
+            state->cmd.motor_right_speed = MAX_REVERSE_SPEED/tdivisor;
         }
     } else {
         // when key released, speeds default to 0
