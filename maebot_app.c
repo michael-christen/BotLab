@@ -212,6 +212,53 @@ static void * driver_monitor(void *data) {
     return NULL;
 }
 
+void* lcm_handle_loop(void *data) {
+    state_t *state = data;
+
+    maebot_sensor_data_t_subscription_t * sensor_sub = 
+	maebot_sensor_data_t_subscribe(
+		state->lcm, "MAEBOT_SENSOR_DATA", 
+		&sensor_handler, state
+	); //subscribe to gyro/accelerometer data
+
+    maebot_sensor_data_t_subscription_t * odometry_sub =
+	maebot_motor_feedback_t_subscribe(state->lcm,
+		"MAEBOT_MOTOR_FEEDBACK", 
+		&odometry_handler, state); //subscribe to odometry data
+
+    int hz = 15;
+    while (1) {
+        // Set up the LCM file descriptor for waiting. This lets us monitor it
+        // until somethign is "ready" to happen. In this case, we are ready to
+        // receive a message.
+        int lcm_fd = lcm_get_fileno(state->lcm);
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(lcm_fd, &fds);
+		
+        // Handle message if appropriate
+        struct timeval timeout = {
+            0,              // Seconds
+            1000000/hz      // Microseconds
+        };
+		
+        int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
+		
+        if (0 == status) {
+            continue;
+        } else {
+            // LCM has events ready to be processed
+            lcm_handle(state->lcm);
+        }
+    }
+
+    //clean up
+    maebot_sensor_data_t_unsubscribe(state->lcm, sensor_sub); 
+    maebot_sensor_data_t_unsubscribe(state->lcm, odometry_sub);
+
+    return NULL;
+}
+
 int main(int argc, char ** argv)
 {
     vx_global_init();
@@ -247,15 +294,6 @@ int main(int argc, char ** argv)
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lsr_mutex, NULL);
 
-    maebot_sensor_data_t_subscription_t * sensor_sub = 
-	maebot_sensor_data_t_subscribe(
-		state->lcm, "MAEBOT_SENSOR_DATA", 
-		&sensor_handler, state
-	); //subscribe to gyro/accelerometer data
-    maebot_sensor_data_t_subscription_t * odometry_sub =
-	maebot_motor_feedback_t_subscribe(state->lcm,
-		"MAEBOT_MOTOR_FEEDBACK", 
-		&odometry_handler, state); //subscribe to odometry data
 
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
 
@@ -283,11 +321,8 @@ int main(int argc, char ** argv)
     pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
     pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
+    pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 
     pthread_join(state->gui_thread, NULL);
-
-    //clean up
-    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
-    //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     return 0;
 }

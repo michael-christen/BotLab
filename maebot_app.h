@@ -106,6 +106,8 @@ struct state_t {
 
     lcm_t * lcm;
 
+    pthread_t lcm_handle_thread;
+
     pthread_mutex_t layer_mutex;
     pthread_t gui_thread;
 
