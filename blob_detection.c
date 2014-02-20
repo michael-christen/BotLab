@@ -134,9 +134,13 @@ void unionLabels(Set *links[MAX_NUM_BALLS], int n_labels[MAX_NUM_NEIGHBORS],
     //Pass over twice
     //1st time gets all set to first neighbor
     //2nd updates rest
-    for(int i = 0; i < 2; ++i) {
-	for(int j = 1; j < len_neighbors; ++j) {
-	    set_union(links[n_labels[0]], links[n_labels[j]]);
+    if(links[n_labels[0]]) {
+	for(int i = 0; i < 2; ++i) {
+	    for(int j = 1; j < len_neighbors; ++j) {
+		if(links[n_labels[j]]) {
+		    set_union(links[n_labels[0]], links[n_labels[j]]);
+		}
+	    }
 	}
     }
 }
@@ -198,14 +202,13 @@ int blob_detection(image_u32_t *im, ball_t *final_balls) {
 	for(x = 0; x < im->width; ++x) {
 	    id = im->stride*y + x;
 	    px = im->buf[id];
-	    if(is_ball(px)){
+	    if(is_ball(px) && links[labels[id]]){
 		/*
 		if(!links[labels[id]]) {
 		    printf("id: %d, labels[id]: %d, links[labels[id]]: %d\n",
 			    id, labels[id], links[labels[id]]);
 		}
 		*/
-		assert(links[labels[id]]);
 		labels[id] = set_find(links[labels[id]])->val;
 		balls[labels[id]].x += x;
 		balls[labels[id]].y += y;

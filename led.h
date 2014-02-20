@@ -8,7 +8,7 @@
 #define BLUE 0x000010
 #define PURPLE 0x100010
 #define YELLOW 0x101000
-#define ORANGE 0x100100
+#define ORANGE 0x101000
 #define CYAN 0x001010
 #define WHITE 0x101010
 #define OFF 0x0
@@ -40,7 +40,7 @@ void LEDStatus(state_t* state, Status stat){
 			setLeds(state, ORANGE, BLUE);
 			break;
 		case TURN_RIGHT:
-			setLeds(state, ORANGE, BLUE);
+			setLeds(state, BLUE, ORANGE);
 			break;
 		case LASER_ON:
 			setLeds(state, RED, RED);

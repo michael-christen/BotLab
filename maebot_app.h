@@ -94,10 +94,14 @@ struct state_t {
     int gyro[3];
     int gyro_int[3];
     double gyro_0_bias, gyro_1_bias, gyro_2_bias;
+    const char *sensor_channel;
 
     //Position info from odometry
     double pos_x, pos_y;
     double pos_theta;
+    int32_t prev_left_ticks, prev_right_ticks;
+    int    odometry_seen;
+    const char *odometry_channel;
 
     getopt_t * gopt;
     char * url;
@@ -105,6 +109,8 @@ struct state_t {
     int fidx;
 
     lcm_t * lcm;
+
+    pthread_t lcm_handle_thread;
 
     pthread_mutex_t layer_mutex;
     pthread_t gui_thread;

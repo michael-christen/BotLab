@@ -15,6 +15,7 @@
 
 void set_union(Set *a, Set *b)
 {
+    assert(a && b);
     set_link(set_find(a), set_find(b));
     return;
 }
@@ -30,8 +31,10 @@ Set * set_init(int x) {
 Set* set_find(Set *a)
 {
     assert(a);
-    if(a->parent != a)
+    if(a->parent  && a->parent != a) {
+	assert(a->parent);
 	a->parent = set_find(a->parent);
+    }
     return a->parent;
 }
 

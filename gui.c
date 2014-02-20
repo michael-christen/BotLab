@@ -84,30 +84,30 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 
     const zarray_t *args = getopt_get_extra_args(state->gopt);
 
-    if (zarray_size(args) > 0) {
+    /*if (zarray_size(args) > 0) {
         zarray_get(args, 0, &state->url);
-    } else {
-        zarray_t *urls = image_source_enumerate();
+    } else {*/
+    zarray_t *urls = image_source_enumerate();
 
-        printf("Cameras:\n");
-        for (int i = 0; i < zarray_size(urls); i++) {
-            char *url;
-            zarray_get(urls, i, &url);
-            printf("  %3d: %s\n", i, url);
-        }
-
-        if (zarray_size(urls) == 0) {
-            printf("No cameras found.\n");
-            return 0;
-        }
-        zarray_get(urls, 0, &state->url);
+    printf("Cameras:\n");
+    for (int i = 0; i < zarray_size(urls); i++) {
+        char *url;
+        zarray_get(urls, i, &url);
+        printf("  %3d: %s\n", i, url);
     }
+
+    if (zarray_size(urls) == 0) {
+        printf("No cameras found.\n");
+        return 0;
+    }
+    zarray_get(urls, 0, &state->url);
+    //}
 
     state->isrc = image_source_open(state->url);
     if (state->isrc == NULL) {
         printf("Unable to open device %s\n", state->url);
         return 0;
-    }
+    //}
 
     image_source_t *isrc = state->isrc;
 
