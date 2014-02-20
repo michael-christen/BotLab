@@ -8,7 +8,7 @@ LIB = ../../lib
 
 all: $(BINARIES)
 
-../../bin/maebot_app: maebot_app.o gui.o disjoint.o blob_detection.o
+../../bin/maebot_app: maebot_app.o gui.o disjoint.o blob_detection.o calibration.o
 	@echo "\t$@"
 	@$(CC) -o $@ $^ $(LDFLAGS)
 

@@ -64,7 +64,6 @@ typedef struct
 	int acc[3];
 	int gyro[3];
 	int gyro_int[3];
-	double gyro_1_bias, gyro_2_bias, gyro_3_bias;
 
     int running;
 
