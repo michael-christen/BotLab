@@ -3,4 +3,5 @@
 *.png
 *~
 maebot_video_teleop
-
+*.swp
+*.orig
