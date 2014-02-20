@@ -21,7 +21,6 @@
 // LCM
 #include "lcmtypes/maebot_diff_drive_t.h"
 #include "lcmtypes/maebot_laser_t.h"
-#include "lcmtypes/maebot_leds_t.h"
 #include "lcmtypes/maebot_sensor_data_t.h"
 
 //////////////
@@ -79,9 +78,6 @@ struct state_t {
     pthread_mutex_t lsr_mutex;
     pthread_t lsr_thread;
 
-	maebot_leds_t led;
-	pthread_mutex_t led_mutex;
-	pthread_t led_thread;
 
 //		not sure if we need this?
 /*	 maebot_sensor_data_t sensor;
@@ -91,7 +87,8 @@ struct state_t {
 	int acc[3];
 	int gyro[3];
 	int gyro_int[3];
-	double gyro_0_bias, gyro_1_bias, gyro_2_bias;
+	double gyro_1_bias, gyro_2_bias, gyro_3_bias;
+
 
     getopt_t * gopt;
     char * url;

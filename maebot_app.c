@@ -1,5 +1,6 @@
 #include "maebot_app.h"
 #include "led.h"
+#include "calibration.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -20,6 +21,7 @@
 #include "lcmtypes/maebot_diff_drive_t.h"
 #include "lcmtypes/maebot_laser_t.h"
 #include "lcmtypes/maebot_leds_t.h"
+#include "lcmtypes/maebot_sensor_data_t.h"
 
 #define NUM_BLINKS 3
 #define FORWARD 0
@@ -226,12 +228,18 @@ int main(int argc, char ** argv)
     state->veh.impl = state;
 
     state->running = 1;
+
+	 lcm_t * lcm = lcm_create (NULL);
+    state->lcm = lcm;
+    state->vw = vx_world_create();
     state->displayStarted = state->displayFinished = 0;
-    state->lcm = lcm_create(NULL);
+
+
     pthread_mutex_init(&state->layer_mutex, NULL);
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lsr_mutex, NULL);
 
+	 maebot_sensor_data_t_subscription_t * sensor_sub = maebot_sensor_data_t_subscribe(lcm, "MAEBOT_SENSOR", &sensor_handler, state); //subscribe to gyro/accelerometer data
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
 
     signal(SIGINT, handler);
@@ -261,5 +269,7 @@ int main(int argc, char ** argv)
 
     pthread_join(state->gui_thread, NULL);
 
+
+    maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); //clean up
     return 0;
 }
