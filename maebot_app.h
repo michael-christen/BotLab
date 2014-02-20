@@ -12,6 +12,7 @@
 #include "vx/vx.h"
 
 // EECS 467 Libraries
+#include "eecs467_util.h"
 #include "common/getopt.h"
 #include "common/image_util.h"
 #include "common/timestamp.h"
@@ -28,7 +29,7 @@
 // CONSTANTS
 //////////////
 
-#define NUM_LAYERS 1
+#define NUM_LAYERS 3
 
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768
@@ -68,6 +69,7 @@ struct state_t {
     getopt_options_t  getopt_options;
     vx_application_t app;
     vx_event_handler_t veh;
+    parameter_gui_t  *pg;
 
     maebot_diff_drive_t cmd;
     pthread_mutex_t cmd_mutex;

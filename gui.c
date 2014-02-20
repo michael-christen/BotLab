@@ -17,6 +17,7 @@
 #include "vx/vx_remote_display_source.h"
 
 // EECS 467 Libraries
+#include "eecs467_util.h"
 #include "common/getopt.h"
 #include "common/image_util.h"
 #include "common/timestamp.h"
@@ -78,67 +79,6 @@ void display_started(vx_application_t * app, vx_display_t * disp)
     printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
-int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
-    if (state->getopt_options.verbose) {
-        printf("Starting run_camera\n");
-    }
-
-    image_source_t *isrc = state->isrc;
-    image_u32_t *im = NULL;
-    image_source_data_t isdata;
-
-    int res = isrc->get_frame(isrc, &isdata);
-    if (!res) {
-        im = image_convert_u32(&isdata);
-    } else {
-        return 0;
-    }
-
-    isrc->release_frame(isrc, &isdata);
-
-    if (state->getopt_options.verbose) {
-        printf("Got frame %p\n", im);
-    }
-
-    if (im != NULL) {
-        double decimate = state->getopt_options.decimate;
-
-        if (decimate != 1.0) {
-            image_u32_t * im2 = image_util_u32_decimate(im, decimate);
-            image_u32_destroy(im);
-            im = im2;
-        }
-
-        num_balls = blob_detection(im, balls);
-        vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
-		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
-
-        // show downsampled image, but scale it so it appears the
-        // same size as the original
-        vx_buffer_t *vb = vx_world_get_buffer(layerData->world, "image");
-        vx_buffer_add_back(vb, 
-		vxo_pix_coords(VX_ORIGIN_TOP_LEFT,
-		    vxo_chain(
-			vxo_mat_scale(decimate),
-			vxo_mat_translate3 (0, -im->height,0),
-			vo
-		    )
-		)
-	);
-        vx_buffer_swap(vb);
-    }
-    
-    image_u32_destroy(im);
-
-    return 1;
-}
-
-int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
-    vx_layer_set_viewport_rel(layerData->layer, layerData->position);
-    vx_layer_add_event_handler(layerData->layer, &state->veh);
-    vx_layer_camera_fit2D(layerData->layer, layerData->lowLeft, layerData->upRight, 1);
-}
-
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     layerData->world = vx_world_create();
 
@@ -179,11 +119,114 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     return 1;
 }
 
+int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
+    image_source_format_t isrc_format;
+    state->isrc->get_format(state->isrc, 0, &isrc_format);
+
+    float lowLeft[2] = {0, 0};
+    float upRight[2] = {isrc_format.width, isrc_format.height};
+
+    vx_layer_camera_fit2D(layerData->layer, lowLeft, upRight, 1);
+    vx_layer_set_viewport_rel(layerData->layer, layerData->position);
+    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    return 1;
+}
+
+int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
+    if (state->getopt_options.verbose) {
+        printf("Starting run_camera\n");
+    }
+
+    image_source_t *isrc = state->isrc;
+    image_u32_t *im = NULL;
+    image_source_data_t isdata;
+
+    int res = isrc->get_frame(isrc, &isdata);
+    if (!res) {
+        im = image_convert_u32(&isdata);
+    } else {
+        return 0;
+    }
+
+    isrc->release_frame(isrc, &isdata);
+
+    if (state->getopt_options.verbose) {
+        printf("Got frame %p\n", im);
+    }
+
+    if (im != NULL) {
+        double decimate = state->getopt_options.decimate;
+
+        if (decimate != 1.0) {
+            image_u32_t * im2 = image_util_u32_decimate(im, decimate);
+            image_u32_destroy(im);
+            im = im2;
+        }
+
+        num_balls = blob_detection(im, balls);
+        vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
+		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
+
+        // show downsampled image, but scale it so it appears the
+        // same size as the original
+        vx_buffer_t *vb = vx_world_get_buffer(layerData->world, "image");
+
+        vx_buffer_add_back(vb, vo);
+        vx_buffer_swap(vb);
+    }
+    
+    image_u32_destroy(im);
+
+    return 1;
+}
+
 int destroyCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     if (!state->getopt_options.no_video) {
         state->isrc->close(state->isrc);
     }
 
+    vx_world_destroy(layerData->world);
+    return 1;
+}
+
+int initWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+    layerData->world = state->vw;
+    return 1;
+}
+
+int displayInitWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+    vx_layer_set_viewport_rel(layerData->layer, layerData->position);
+    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    return 1;
+}
+
+int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+    vx_buffer_t *buf = vx_world_get_buffer(layerData->world, "grid");
+    vx_buffer_add_back(buf, vxo_grid());
+    vx_buffer_swap(buf);
+    return 1;
+}
+
+int destroyWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+    return 1;
+}
+
+int initWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+    layerData->world = state->vw;
+    return 1;
+}
+
+int displayInitWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+    vx_layer_set_viewport_rel(layerData->layer, layerData->position);
+    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    return 1;
+}
+
+int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+    return 1;
+}
+
+int destroyWorldPOVLayer(state_t *state, layer_data_t *layerData) {
     return 1;
 }
 
@@ -222,6 +265,15 @@ void* renderLayers(state_t *state) {
     return NULL;
 }
 
+void gui_param_changed(parameter_listener_t *pl, parameter_gui_t *pg, const char *name)
+{
+    if (!strcmp("sl1", name)) {
+        printf("sl1 = %f\n", pg_gd(pg, name));
+    } else {
+        printf("%s changed\n", name);
+    }
+}
+
 
 // Main Pthread  GUI funtion
 void* gui_create(void *data) {
@@ -234,22 +286,57 @@ void* gui_create(void *data) {
 
 
     // Init layer data structs
-    state->layers[0].enable = !state->getopt_options.no_video;
-    state->layers[0].name = "CameraPOV";
-    state->layers[0].position[0] = 0.666f;
-    state->layers[0].position[1] = 0.666f;
-    state->layers[0].position[2] = 0.333f;
-    state->layers[0].position[3] = 0.333f;
-    state->layers[0].lowLeft[0] = 0;
-    state->layers[0].lowLeft[1] = 0;
-    state->layers[0].upRight[0] = 1296;
-    state->layers[0].upRight[1] = 964;
-    state->layers[0].init = initCameraPOVLayer;
-    state->layers[0].displayInit = displayInitCameraPOVLayer;
-    state->layers[0].render = renderCameraPOVLayer;
-    state->layers[0].destroy = destroyCameraPOVLayer;
+    state->layers[0].enable = 1;
+    state->layers[0].name = "WorldTopDown";
+    state->layers[0].position[0] = 0;
+    state->layers[0].position[1] = 0.333f;
+    state->layers[0].position[2] = 0.666f;
+    state->layers[0].position[3] = 0.666f;
+    state->layers[0].init = initWorldTopDownLayer;
+    state->layers[0].displayInit = displayInitWorldTopDownLayer;
+    state->layers[0].render = renderWorldTopDownLayer;
+    state->layers[0].destroy = destroyWorldTopDownLayer;
+
+
+    state->layers[1].enable = !state->getopt_options.no_video;
+    state->layers[1].name = "CameraPOV";
+    state->layers[1].position[0] = 0.666f;
+    state->layers[1].position[1] = 0.5f;
+    state->layers[1].position[2] = 0.333f;
+    state->layers[1].position[3] = 0.5f;
+    state->layers[1].lowLeft[0] = 0;
+    state->layers[1].lowLeft[1] = 0;
+    state->layers[1].upRight[0] = 300;
+    state->layers[1].upRight[1] = 200;
+    state->layers[1].init = initCameraPOVLayer;
+    state->layers[1].displayInit = displayInitCameraPOVLayer;
+    state->layers[1].render = renderCameraPOVLayer;
+    state->layers[1].destroy = destroyCameraPOVLayer;
+
+    state->layers[2].name = "WorldPOV";
+    state->layers[2].position[0] = 0.666f;
+    state->layers[2].position[1] = 0;
+    state->layers[2].position[2] = 0.333f;
+    state->layers[2].position[3] = 0.5f;
+    state->layers[2].init = initWorldPOVLayer;
+    state->layers[2].displayInit = displayInitWorldPOVLayer;
+    state->layers[2].render = renderWorldPOVLayer;
+    state->layers[2].destroy = destroyWorldPOVLayer;
 
     vx_remote_display_source_t * remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
+
+    // Parameter GUI
+    parameter_gui_t *pg = pg_create();
+    pg_add_double_slider(pg, "sl1", "Barrel Distortion", 0, 100, 50);
+
+    parameter_listener_t *my_listener = calloc(1,sizeof(parameter_listener_t*));
+    my_listener->impl = state;
+    my_listener->param_changed = gui_param_changed;
+    pg_add_listener(pg, my_listener);
+
+    state->pg = pg;
+
+    //eecs467_gui_run(&state->app, state->pg, 800, 600);
 
     // Handles layer init, rendering, and destruction
     renderLayers(state);
