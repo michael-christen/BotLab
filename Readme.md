@@ -18,3 +18,9 @@ and do this on you machine
 ```
 /ebolson/eecs467/bin/vx_remote_viewer -a 192.168.3.106
 ```
+
+* To generate lcm data do this
+```
+cd eecs467/lcmtypes
+lcm-gen -c *.lcm
+```
