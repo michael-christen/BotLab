@@ -79,19 +79,23 @@ struct state_t {
     pthread_mutex_t lsr_mutex;
     pthread_t lsr_thread;
 
-	maebot_leds_t led;
-	pthread_mutex_t led_mutex;
-	pthread_t led_thread;
+    maebot_leds_t led;
+    pthread_mutex_t led_mutex;
+    pthread_t led_thread;
 
 //		not sure if we need this?
 /*	 maebot_sensor_data_t sensor;
     pthread_mutex_t sensor_mutex;
     pthread_t sensor_thread;	
 */ 
-	int acc[3];
-	int gyro[3];
-	int gyro_int[3];
-	double gyro_0_bias, gyro_1_bias, gyro_2_bias;
+    int acc[3];
+    int gyro[3];
+    int gyro_int[3];
+    double gyro_0_bias, gyro_1_bias, gyro_2_bias;
+
+    //Position info from odometry
+    double pos_x, pos_y;
+    double pos_theta;
 
     getopt_t * gopt;
     char * url;

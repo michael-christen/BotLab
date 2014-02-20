@@ -1,6 +1,7 @@
 #include "maebot_app.h"
 #include "led.h"
 #include "calibration.h"
+#include "odometry.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -19,6 +20,7 @@
 #include "imagesource/image_convert.h"
 
 #include "lcmtypes/maebot_diff_drive_t.h"
+#include "lcmtypes/maebot_motor_feedback_t.h"
 #include "lcmtypes/maebot_laser_t.h"
 #include "lcmtypes/maebot_leds_t.h"
 #include "lcmtypes/maebot_sensor_data_t.h"
@@ -226,10 +228,13 @@ int main(int argc, char ** argv)
     state->veh.key_event = key_event;
     state->veh.destroy = nodestroy;
     state->veh.impl = state;
+    state->pos_x    = 0;
+    state->pos_y    = 0;
+    state->pos_theta= 0;
 
     state->running = 1;
 
-	 lcm_t * lcm = lcm_create (NULL);
+    lcm_t * lcm = lcm_create (NULL);
     state->lcm = lcm;
     state->vw = vx_world_create();
     state->displayStarted = state->displayFinished = 0;
@@ -239,7 +244,11 @@ int main(int argc, char ** argv)
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lsr_mutex, NULL);
 
-	 maebot_sensor_data_t_subscription_t * sensor_sub = maebot_sensor_data_t_subscribe(lcm, "MAEBOT_SENSOR", &sensor_handler, state); //subscribe to gyro/accelerometer data
+    maebot_sensor_data_t_subscription_t * sensor_sub = maebot_sensor_data_t_subscribe(lcm, "MAEBOT_SENSOR", &sensor_handler, state); //subscribe to gyro/accelerometer data
+    maebot_sensor_data_t_subscription_t * odometry_sub =
+	maebot_motor_feedback_t_subscribe(lcm, "MAEBOT_ODOMETRY", 
+		&odometry_handler, state); //subscribe to odometry data
+
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
 
     signal(SIGINT, handler);
@@ -264,12 +273,13 @@ int main(int argc, char ** argv)
     pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
     pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-	pthread_create(&state->led_thread,  NULL, send_led, state);
+    pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
 
     pthread_join(state->gui_thread, NULL);
 
-
-    maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); //clean up
+    //clean up
+    maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
+    maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     return 0;
 }

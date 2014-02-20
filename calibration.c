@@ -45,6 +45,7 @@ void calibrate_gyros(void * data){
 	int orig_1 = state->gyro_int[1];
 	int orig_2 = state->gyro_int[2];
 
+	//???Do you really think it's necessary to wait 3 minutes
 	sleep(180);
 
 	int biased_0 = state->gyro_int[0];
@@ -52,9 +53,9 @@ void calibrate_gyros(void * data){
 	int biased_2 = state->gyro_int[2];
 
 	//some rise/run stuff
-	double slope_0 = (biased_0 - orig_0)/180;
-	double slope_1 = (biased_1 - orig_1)/180;
-	double slope_2 = (biased_2 - orig_2)/180;
+	double slope_0 = (biased_0 - orig_0)/180.0;
+	double slope_1 = (biased_1 - orig_1)/180.0;
+	double slope_2 = (biased_2 - orig_2)/180.0;
 
 	state->gyro_0_bias = slope_0;	
 	state->gyro_1_bias = slope_1;	
