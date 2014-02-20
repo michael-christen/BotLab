@@ -21,6 +21,7 @@
 // LCM
 #include "lcmtypes/maebot_diff_drive_t.h"
 #include "lcmtypes/maebot_laser_t.h"
+#include "lcmtypes/maebot_leds_t.h"
 
 //////////////
 // CONSTANTS
@@ -76,6 +77,10 @@ struct state_t {
     maebot_laser_t lsr;
     pthread_mutex_t lsr_mutex;
     pthread_t lsr_thread;
+
+	maebot_leds_t led;
+	pthread_mutex_t led_mutex;
+	pthread_t led_thread;
 
     getopt_t * gopt;
     char * url;

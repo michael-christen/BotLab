@@ -1,4 +1,5 @@
 #include "maebot_app.h"
+#include "led.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -18,6 +19,7 @@
 
 #include "lcmtypes/maebot_diff_drive_t.h"
 #include "lcmtypes/maebot_laser_t.h"
+#include "lcmtypes/maebot_leds_t.h"
 
 #define NUM_BLINKS 3
 #define FORWARD 0
@@ -42,18 +44,22 @@ void setLaser(state_t* state, int lsr_val){
 void fireLaser(state_t* state){
 	printf("pew pew\n");
 	setLaser(state, 1);
+	LEDStatus(state, LASER_ON);
 	usleep(200000);
 
 	int i;
 	for(i = 1; i < NUM_BLINKS; i++){
 		setLaser(state, 0);
+		LEDStatus(state, NONE);
 		usleep(150000);
 	
 		setLaser(state, 1);
+		LEDStatus(state, LASER_ON);
 		usleep(200000);
 	}
 
 	setLaser(state, 0);
+	LEDStatus(state, NONE);
 }
 
 void moveBot(state_t* state, int cmd_val){
@@ -100,15 +106,19 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
         if (key->key_code == 'w' || key->key_code == 'W') {
             // forward
 			moveBot(state, FORWARD);
+			LEDStatus(state, MOVE_FORWARD);
         } else if (key->key_code == 'a' || key->key_code == 'A' ) {
             // turn left
 			moveBot(state, LEFT);
+			LEDStatus(state, TURN_LEFT);
         } else if (key->key_code == 's' || key->key_code == 'S') {
             // reverse
 			moveBot(state, BACKWARD);
+			LEDStatus(state, MOVE_BACKWARD);
         } else if (key->key_code == 'd' || key->key_code == 'D') {
             // turn right
 			moveBot(state, RIGHT);
+			LEDStatus(state, TURN_RIGHT);
         } else if(key->key_code == 'l' || key->key_code == 'L') {
 			// fire laser
 			fireLaser(state);
@@ -116,6 +126,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
     } else {
         // when key released, speeds default to 0
 		moveBot(state, STOP);
+		LEDStatus(state, NONE);
     }
 
     return 0;
@@ -167,6 +178,22 @@ static void * send_lsr(void * data){
 			maebot_laser_t_publish(state->lcm, "MAEBOT_LASER", &state->lsr);
 		}
 		pthread_mutex_unlock(&state->lsr_mutex);
+
+		usleep(50000);
+	}
+
+	return NULL;
+}
+
+static void * send_led(void * data){
+	state_t * state = data;
+
+	while(state->running){
+		pthread_mutex_lock(&state->led_mutex);
+		{
+			maebot_leds_t_publish(state->lcm, "MAEBOT_LEDS", &state->led);
+		}
+		pthread_mutex_unlock(&state->led_mutex);
 
 		usleep(50000);
 	}
@@ -229,6 +256,7 @@ int main(int argc, char ** argv)
     pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
     pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
+	pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
 
     pthread_join(state->gui_thread, NULL);
