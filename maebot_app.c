@@ -247,17 +247,15 @@ int main(int argc, char ** argv)
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lsr_mutex, NULL);
 
-    /*
     maebot_sensor_data_t_subscription_t * sensor_sub = 
 	maebot_sensor_data_t_subscribe(
-		state->lcm, "MAEBOT_SENSOR", 
+		state->lcm, "MAEBOT_SENSOR_DATA", 
 		&sensor_handler, state
 	); //subscribe to gyro/accelerometer data
     maebot_sensor_data_t_subscription_t * odometry_sub =
 	maebot_motor_feedback_t_subscribe(state->lcm,
-		"MAEBOT_ODOMETRY", 
+		"MAEBOT_MOTOR_FEEDBACK", 
 		&odometry_handler, state); //subscribe to odometry data
-		*/
 
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
 
@@ -289,9 +287,7 @@ int main(int argc, char ** argv)
     pthread_join(state->gui_thread, NULL);
 
     //clean up
-    /*
-    maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
-    maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
-    */
+    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
+    //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     return 0;
 }
