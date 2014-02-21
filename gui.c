@@ -21,7 +21,6 @@
 #include "vx/default_camera_mgr.h"
 
 // EECS 467 Libraries
-#include "eecs467_util.h"
 #include "common/getopt.h"
 #include "common/image_util.h"
 #include "common/timestamp.h"
