@@ -149,7 +149,7 @@ int blob_detection(image_u32_t *im, ball_t *final_balls) {
     //aka max #labels
     //list of links b/t labels
     //Array of Set *
-    Set * links [MAX_NUM_BALLS];
+    Set * links [MAX_NUM_BALLS] = {0};
     ball_t balls [MAX_NUM_BALLS];
     int final_num_balls = 0;
     int num_links = 0;

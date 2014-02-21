@@ -10,7 +10,11 @@
 #define COLOR_THRESHOLD 50.0
 //ABGR
 //#define TEMPLATE_PX 0xff1e2a25
-#define TEMPLATE_PX 0xff2c3f34
+//#define TEMPLATE_PX 0xff2c3f34
+//Green
+//#define TEMPLATE_PX 0xff1d4a33
+//Blue
+#define TEMPLATE_PX 0xff243733
 //#define TEMPLATE_PX 0xff243128
 #define SHOW_PX 0xffe127ff
 #define MIN_PXS 75
