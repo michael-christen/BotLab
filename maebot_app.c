@@ -2,6 +2,7 @@
 #include "led.h"
 #include "calibration.h"
 #include "odometry.h"
+#include "pid_ctrl.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -68,7 +69,6 @@ void fireLaser(state_t* state){
 
 void moveBot(state_t* state, int cmd_val){
 	pthread_mutex_lock(&state->cmd_mutex);
-	printf("max_rev: %d, max_fwd: %d\n",MAX_REVERSE_SPEED,MAX_FORWARD_SPEED);
 	switch(cmd_val){
 		case FORWARD:
 			state->cmd.motor_left_speed = LONG_SPEED;
@@ -205,12 +205,14 @@ static void * send_led(void * data){
 	return NULL;
 }
 
+/*
 static void * driver_monitor(void *data) {
     //int systemTry = system("./maebot_driver");
     //if (systemTry) {} //ignore status
 
     return NULL;
 }
+*/
 
 void* lcm_handle_loop(void *data) {
     state_t *state = data;
@@ -221,7 +223,7 @@ void* lcm_handle_loop(void *data) {
 		&sensor_handler, state
 	); //subscribe to gyro/accelerometer data
 
-    maebot_sensor_data_t_subscription_t * odometry_sub =
+    maebot_motor_feedback_t_subscription_t * odometry_sub =
 	maebot_motor_feedback_t_subscribe(state->lcm,
 		"MAEBOT_MOTOR_FEEDBACK", 
 		&odometry_handler, state); //subscribe to odometry data
@@ -254,7 +256,7 @@ void* lcm_handle_loop(void *data) {
 
     //clean up
     maebot_sensor_data_t_unsubscribe(state->lcm, sensor_sub); 
-    maebot_sensor_data_t_unsubscribe(state->lcm, odometry_sub);
+    maebot_motor_feedback_t_unsubscribe(state->lcm, odometry_sub);
 
     return NULL;
 }

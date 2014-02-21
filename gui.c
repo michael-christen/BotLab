@@ -39,7 +39,7 @@ void display_finished(vx_application_t * app, vx_display_t * disp)
 
     state_t * state = app->impl;
 
-    printf("disp end: %d\n", disp);
+    //printf("disp end: %d\n", disp);
 
     zhash_iterator_init(state->layer_map, &it);
 
@@ -61,7 +61,7 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 
     state_t * state = app->impl;
 
-    printf("disp start: %d\n", disp);
+    //printf("disp start: %d\n", disp);
 
     for (i = 0; i < NUM_LAYERS; i++) {
         layer_data_t *layerData = &(state->layers[i]);
@@ -85,9 +85,9 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     layerData->world = vx_world_create();
 
+    /*
     const zarray_t *args = getopt_get_extra_args(state->gopt);
-
-    /*if (zarray_size(args) > 0) {
+    if (zarray_size(args) > 0) {
         zarray_get(args, 0, &state->url);
     } else {*/
     zarray_t *urls = image_source_enumerate();

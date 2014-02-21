@@ -24,7 +24,6 @@ void odometry_handler (
 	state->pos_x    += avg * sin(state->pos_theta);
 	state->pos_y    += avg * cos(state->pos_theta);
 	state->pos_theta+= (dR - dL) / DIST_BETWEEN_WHEELS;
-	printf("x: %f\ty: %f\ttheta: %f\n",state->pos_x, state->pos_y, state->pos_theta);
     } else {
 	state->odometry_seen = 1;
     }
