@@ -65,19 +65,21 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 
     for (i = 0; i < NUM_LAYERS; i++) {
         layer_data_t *layerData = &(state->layers[i]);
+        if (layerData->enable == 1) {
 
-        vx_layer_t * layer = vx_layer_create(layerData->world);
+            vx_layer_t * layer = vx_layer_create(layerData->world);
 
-        layerData->layer = layer;
+            layerData->layer = layer;
 
-        vx_layer_set_display(layer, disp);
+            vx_layer_set_display(layer, disp);
 
-        pthread_mutex_lock(&state->layer_mutex);
-        // store a reference to the world and layer that we associate with each vx_display_t
-        zhash_put(state->layer_map, &disp, &layer, NULL, NULL);
-        pthread_mutex_unlock(&state->layer_mutex);
+            pthread_mutex_lock(&state->layer_mutex);
+            // store a reference to the world and layer that we associate with each vx_display_t
+            zhash_put(state->layer_map, &disp, &layer, NULL, NULL);
+            pthread_mutex_unlock(&state->layer_mutex);
 
-        layerData->displayInit(state, layerData);
+            layerData->displayInit(state, layerData);
+        }
     }
     printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
@@ -211,7 +213,8 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_object_t *vo = vxo_chain(
                                 vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z),
                                 vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
-                                vxo_cylinder(vxo_mesh_style(vx_blue))                                    
+                                vxo_mat_rotate_x(-M_PI/2),
+                                vxo_square_pyramid(vxo_mesh_style(vx_blue))                                    
                                 );
     vx_buffer_add_back(bruceBuff, vo);
 
@@ -247,35 +250,73 @@ int destroyWorldPOVLayer(state_t *state, layer_data_t *layerData) {
     return 1;
 }
 
+int initDebugLayer(state_t *state, layer_data_t *layerData) {
+    layerData->world = vx_world_create();
+    return 1;
+}
+
+int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
+    //const double eye[3] = {state->pos_x, state->pos_y, state->pos_z};
+    //const double lookat[3] = {state->pos_x, state->pos_y, state->pos_z};
+    //const double up[3] = {0, 0, 1};
+    float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    vx_layer_set_background_color(layerData->layer, black);
+    vx_layer_set_viewport_rel(layerData->layer, layerData->position);
+    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    //vx_layer_camera_lookat(layerData->layer, &eye, &lookat, &up, 1);
+    return 1;
+}
+
+int renderDebugLayer(state_t *state, layer_data_t *layerData) {
+    vx_buffer_t *textBuff = vx_world_get_buffer(layerData->world, "text");
+    vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT,
+                        "<<left,#ffffff,serif>>Example Text");
+    vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));
+    vx_buffer_swap(textBuff);
+    return 1;
+}
+
+int destroyDebugLayer(state_t *state, layer_data_t *layerData) {
+    return 1;
+}
+
 void* renderLayers(state_t *state) {
     int i;
 
     // Init
+    printf("Entering layer init\n");
     for (i = 0; i < NUM_LAYERS; i++) {
         layer_data_t *layer = &(state->layers[i]);
-        if (!layer->init(state, layer)) {
-            printf("Failed to init layer: %s\n", layer->name);
-            return NULL;
-        }
-    }
-
-    // Render Loop
-    while(state->running) {
-        for (i = 0; i < NUM_LAYERS; i++) {
-            layer_data_t *layer = &(state->layers[i]);
-            if (layer->enable && !layer->render(state, layer)) {
-                printf("Failed to render layer: %s\n", layer->name);
+        if (layer->enable == 1) {
+            if (layer->init(state, layer) == 0) {
+                printf("Failed to init layer: %s\n", layer->name);
                 return NULL;
             }
         }
     }
-
+    printf("Entering render loop\n");
+    // Render Loop
+    while(state->running) {
+        for (i = 0; i < NUM_LAYERS; i++) {
+            layer_data_t *layer = &(state->layers[i]);
+            //printf("layer %d enable %d\n", i, layer->enable);
+            if (layer->enable == 1) {
+                if (layer->render(state, layer) == 0) {
+                    printf("Failed to render layer: %s\n", layer->name);
+                    return NULL;
+                }
+            }
+        }
+    }
+    printf("Entering layer destroy\n");
     // Destroy/Clean up
     for (i = 0; i < NUM_LAYERS; i++) {
         layer_data_t *layer = &(state->layers[i]);
-        if (!layer->destroy(state, layer)) {
-            printf("Failed to destroy layer: %s\n", layer->name);
-            return NULL;
+        if (layer->enable == 1) {
+            if (layer->destroy(state, layer) == 0) {
+                printf("Failed to destroy layer: %s\n", layer->name);
+                return NULL;
+            }
         }
     }
 
@@ -305,21 +346,19 @@ void* gui_create(void *data) {
     state->layers[0].destroy = destroyWorldTopDownLayer;
 
 
-    state->layers[1].enable = !state->getopt_options.no_video;
+    //state->layers[1].enable = !state->getopt_options.no_video;
+    state->layers[1].enable = 1;
     state->layers[1].name = "CameraPOV";
     state->layers[1].position[0] = 0.666f;
     state->layers[1].position[1] = 0.5f;
     state->layers[1].position[2] = 0.333f;
     state->layers[1].position[3] = 0.5f;
-    state->layers[1].lowLeft[0] = 0;
-    state->layers[1].lowLeft[1] = 0;
-    state->layers[1].upRight[0] = 300;
-    state->layers[1].upRight[1] = 200;
     state->layers[1].init = initCameraPOVLayer;
     state->layers[1].displayInit = displayInitCameraPOVLayer;
     state->layers[1].render = renderCameraPOVLayer;
     state->layers[1].destroy = destroyCameraPOVLayer;
 
+    state->layers[2].enable = 1;
     state->layers[2].name = "WorldPOV";
     state->layers[2].position[0] = 0.666f;
     state->layers[2].position[1] = 0;
@@ -329,6 +368,17 @@ void* gui_create(void *data) {
     state->layers[2].displayInit = displayInitWorldPOVLayer;
     state->layers[2].render = renderWorldPOVLayer;
     state->layers[2].destroy = destroyWorldPOVLayer;
+
+    state->layers[3].enable = 1;
+    state->layers[3].name = "Debug";
+    state->layers[3].position[0] = 0;
+    state->layers[3].position[1] = 0;
+    state->layers[3].position[2] = 0.666f;
+    state->layers[3].position[3] = 0.333f;
+    state->layers[3].init = initDebugLayer;
+    state->layers[3].displayInit = displayInitDebugLayer;
+    state->layers[3].render = renderDebugLayer;
+    state->layers[3].destroy = destroyDebugLayer;
 
     vx_remote_display_source_t * remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
 
