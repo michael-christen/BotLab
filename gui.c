@@ -15,6 +15,10 @@
 #include "vx/vx.h"
 #include "vx/vxo_drawables.h"
 #include "vx/vx_remote_display_source.h"
+#include "vx/vx_types.h"
+#include "vx/vx_event.h"
+#include "vx/vx_event_handler.h"
+#include "vx/default_camera_mgr.h"
 
 // EECS 467 Libraries
 #include "eecs467_util.h"
@@ -107,7 +111,7 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     if (state->isrc == NULL) {
         printf("Unable to open device %s\n", state->url);
         return 0;
-    //}
+    }
 
     image_source_t *isrc = state->isrc;
 
@@ -201,9 +205,19 @@ int displayInitWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
-    vx_buffer_t *buf = vx_world_get_buffer(layerData->world, "grid");
-    vx_buffer_add_back(buf, vxo_grid());
-    vx_buffer_swap(buf);
+    vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
+    vx_buffer_add_back(gridBuff, vxo_grid());
+
+    vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
+    vx_object_t *vo = vxo_chain(
+                                vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z),
+                                vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
+                                vxo_cylinder(vxo_mesh_style(vx_blue))                                    
+                                );
+    vx_buffer_add_back(bruceBuff, vo);
+
+    vx_buffer_swap(gridBuff);
+    vx_buffer_swap(bruceBuff);
     return 1;
 }
 
@@ -217,8 +231,12 @@ int initWorldPOVLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int displayInitWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+    //const double eye[3] = {state->pos_x, state->pos_y, state->pos_z};
+    //const double lookat[3] = {state->pos_x, state->pos_y, state->pos_z};
+    //const double up[3] = {0, 0, 1};
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
     vx_layer_add_event_handler(layerData->layer, &state->veh);
+    //vx_layer_camera_lookat(layerData->layer, &eye, &lookat, &up, 1);
     return 1;
 }
 
@@ -264,16 +282,6 @@ void* renderLayers(state_t *state) {
 
     return NULL;
 }
-
-void gui_param_changed(parameter_listener_t *pl, parameter_gui_t *pg, const char *name)
-{
-    if (!strcmp("sl1", name)) {
-        printf("sl1 = %f\n", pg_gd(pg, name));
-    } else {
-        printf("%s changed\n", name);
-    }
-}
-
 
 // Main Pthread  GUI funtion
 void* gui_create(void *data) {
@@ -324,19 +332,6 @@ void* gui_create(void *data) {
     state->layers[2].destroy = destroyWorldPOVLayer;
 
     vx_remote_display_source_t * remote = vx_remote_display_source_create_attr(&state->app, &remote_attr);
-
-    // Parameter GUI
-    parameter_gui_t *pg = pg_create();
-    pg_add_double_slider(pg, "sl1", "Barrel Distortion", 0, 100, 50);
-
-    parameter_listener_t *my_listener = calloc(1,sizeof(parameter_listener_t*));
-    my_listener->impl = state;
-    my_listener->param_changed = gui_param_changed;
-    pg_add_listener(pg, my_listener);
-
-    state->pg = pg;
-
-    //eecs467_gui_run(&state->app, state->pg, 800, 600);
 
     // Handles layer init, rendering, and destruction
     renderLayers(state);

@@ -262,7 +262,6 @@ void* lcm_handle_loop(void *data) {
 int main(int argc, char ** argv)
 {
     vx_global_init();
-    eecs467_init(argc, argv);
 
     state_t * state = calloc(1, sizeof(state_t));
     global_state = state;
@@ -278,6 +277,7 @@ int main(int argc, char ** argv)
     state->veh.impl = state;
     state->pos_x    = 0;
     state->pos_y    = 0;
+    state->pos_z    = BRUCE_HEIGHT/2;
     state->pos_theta= 0;
     state->odometry_seen = 0;
 
@@ -329,8 +329,8 @@ int main(int argc, char ** argv)
 
     // clean up
     vx_world_destroy(state->vw);
-    maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
-    maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
+    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
+    //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
 
     return 0;
