@@ -3,6 +3,7 @@
 #include "calibration.h"
 #include "odometry.h"
 #include "pid_ctrl.h"
+#include "drive_ctrl.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -68,29 +69,23 @@ void fireLaser(state_t* state){
 }
 
 void moveBot(state_t* state, int cmd_val){
-	pthread_mutex_lock(&state->cmd_mutex);
 	switch(cmd_val){
 		case FORWARD:
-			state->cmd.motor_left_speed = LONG_SPEED;
-			state->cmd.motor_right_speed = LONG_SPEED;
-			break;
+		    driveStraight(state, LONG_SPEED);
+		    break;
 		case BACKWARD:
-			state->cmd.motor_left_speed = -LONG_SPEED;
-			state->cmd.motor_right_speed = -LONG_SPEED;
-			break;
+		    driveStraight(state, -LONG_SPEED);
+		    break;
 		case LEFT:
-			state->cmd.motor_left_speed = -ROT_SPEED;
-			state->cmd.motor_right_speed = ROT_SPEED;
-			break;
+		    driveRot(state, -ROT_SPEED);
+		    break;
 		case RIGHT:
-			state->cmd.motor_left_speed = ROT_SPEED;
-			state->cmd.motor_right_speed = -ROT_SPEED;
-			break;
+		    driveRot(state, ROT_SPEED);
+		    break;
 		default:
-			state->cmd.motor_left_speed = 0;
-			state->cmd.motor_right_speed = 0;
+		    driveStop(state);
+		    break;
 	}
-	pthread_mutex_unlock(&state->cmd_mutex);
 }
 
 static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_touch_event_t * mouse)

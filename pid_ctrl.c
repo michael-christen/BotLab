@@ -1,4 +1,4 @@
-#include "pid.h"
+#include "pid_ctrl.h"
 void pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal) {
     pid_update_pid(pid, P, I, D);
     pid_update_goal(pid, goal);
@@ -16,11 +16,12 @@ void pid_update_goal(pid_ctrl_t *pid, double goal) {
     pid->goal       = goal;
     //Shouldn't be used first time
     pid->prev_clk   = clock();
+    pid->prev_err   = 0;
 }
 
 double pid_get_output(pid_ctrl_t *pid, double meas) {
     clock_t cur_clock = clock();
-    double dt         = (double(cur_clock - pid->prev_clk))/CLOCKS_PER_SEC;
+    double dt         = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
     double err      = pid->goal - meas;
     double derivative = 0;
 
@@ -28,7 +29,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 	pid->first_meas = 0;
     } else {
 	pid->integral += err*dt;
-	derivative     = (err - prev_err)/dt;
+	derivative     = (err - pid->prev_err)/dt;
     }
 
     double output     = pid->P*err + 

@@ -9,6 +9,7 @@ struct pid {
 
     double integral;
     clock_t prev_clk;
+    double  prev_err;
 
     //Boolean to not evaluate integral or derivative on first attempt
     int first_meas;
