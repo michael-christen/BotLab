@@ -218,7 +218,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
                                 );
     vx_buffer_add_back(bruceBuff, vo);
 
-    //vx_buffer_swap(gridBuff);
+    vx_buffer_swap(gridBuff);
     vx_buffer_swap(bruceBuff);
     return 1;
 }
