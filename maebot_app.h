@@ -28,7 +28,7 @@
 // CONSTANTS
 //////////////
 
-#define NUM_LAYERS 3
+#define NUM_LAYERS 4
 #define BRUCE_DIAMETER 1.2
 #define BRUCE_HEIGHT 0.8
 
@@ -57,8 +57,6 @@ struct layer_data_t {
     vx_world_t *world;
     vx_layer_t *layer;
     float position[4];
-    float lowLeft[2];
-    float upRight[2];
 
     int (*init)(state_t *state, layer_data_t *layerData);
     int (*displayInit)(state_t *state, layer_data_t *layerData);
