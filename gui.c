@@ -214,12 +214,14 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_add_back(gridBuff, vxo_lines(verts, npoints, GL_LINES, vxo_points_style(vx_red, 2.0f)));
 
     vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
+
     vx_object_t *vo = vxo_chain(
-                                vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z),
-                                vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
+                                vxo_mat_translate3(state->pos_x, state->pos_y - BRUCE_LENGTH/2, state->pos_z),
+                                vxo_mat_scale3(BRUCE_WIDTH, BRUCE_LENGTH, BRUCE_HEIGHT),
                                 vxo_mat_rotate_z(state->pos_theta),
                                 vxo_mat_rotate_x(-M_PI/2),
-                                vxo_square_pyramid(vxo_mesh_style(vx_blue))                                    
+                                vxo_square_pyramid(vxo_mesh_style(vx_blue),
+                                                    vxo_lines_style(vx_cyan, 2.0f))                                 
                                 );
     vx_buffer_add_back(bruceBuff, vo);
 
@@ -363,7 +365,7 @@ void* gui_create(void *data) {
     state->layers[1].render = renderCameraPOVLayer;
     state->layers[1].destroy = destroyCameraPOVLayer;
 
-    state->layers[2].enable = 1;
+    state->layers[2].enable = 0;
     state->layers[2].name = "WorldPOV";
     state->layers[2].position[0] = 0.666f;
     state->layers[2].position[1] = 0;

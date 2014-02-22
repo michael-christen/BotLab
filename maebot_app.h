@@ -29,8 +29,9 @@
 //////////////
 
 #define NUM_LAYERS 4
-#define BRUCE_DIAMETER 1.2
-#define BRUCE_HEIGHT 0.8
+#define BRUCE_WIDTH 1
+#define BRUCE_HEIGHT 1
+#define BRUCE_LENGTH 2
 
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768
