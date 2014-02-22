@@ -217,6 +217,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_object_t *vo = vxo_chain(
                                 vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z),
                                 vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
+                                vxo_mat_rotate_z(state->pos_theta),
                                 vxo_mat_rotate_x(-M_PI/2),
                                 vxo_square_pyramid(vxo_mesh_style(vx_blue))                                    
                                 );
