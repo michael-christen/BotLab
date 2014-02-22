@@ -208,6 +208,10 @@ int displayInitWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
     vx_buffer_add_back(gridBuff, vxo_grid());
+    int npoints = 4;
+    float axes[12] = {-1000, 0, 0, 1000, 0, 0, 0, -1000, 0, 0, 1000, 0};
+    vx_resc_t *verts = vx_resc_copyf(axes, npoints*3);
+    vx_buffer_add_back(gridBuff, vxo_lines(verts, npoints, GL_LINES, vxo_points_style(vx_red, 2.0f)));
 
     vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
     vx_object_t *vo = vxo_chain(
