@@ -276,8 +276,11 @@ int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
 
 int renderDebugLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *textBuff = vx_world_get_buffer(layerData->world, "text");
-    vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT,
-                        "<<left,#ffffff,serif>>Example Text");
+
+    char debugText[80];
+    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f";
+    sprintf(debugText, formatting, state->pos_x, state->pos_y, state->pos_theta);
+    vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT, debugText);
     vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));
     vx_buffer_swap(textBuff);
     return 1;
