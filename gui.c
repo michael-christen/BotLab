@@ -206,15 +206,16 @@ int displayInitWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+    //Draw Grid
     vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
     vx_buffer_add_back(gridBuff, vxo_grid());
+    //Draw Axes
     int npoints = 4;
     float axes[12] = {-1000, 0, 0, 1000, 0, 0, 0, -1000, 0, 0, 1000, 0};
     vx_resc_t *verts = vx_resc_copyf(axes, npoints*3);
     vx_buffer_add_back(gridBuff, vxo_lines(verts, npoints, GL_LINES, vxo_points_style(vx_red, 2.0f)));
-
+    //Draw Bruce
     vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
-
     vx_object_t *vo = vxo_chain(
                                 vxo_mat_translate3(state->pos_x, state->pos_y - BRUCE_LENGTH/2, state->pos_z),
                                 vxo_mat_rotate_z(-state->pos_theta),
@@ -225,8 +226,41 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
                                 );
     vx_buffer_add_back(bruceBuff, vo);
 
+    //Draw Gaussian Ellipse
+    npoints = 35;
+    float points[npoints*3];
+    for (int i = 0; i < npoints; i++) {
+	float angle = 2*M_PI*i/npoints;
+
+	float x = 5.0f*cosf(angle);
+	float y = 8.0f*sinf(angle);
+	float z = 0.0f;
+
+	points[3*i + 0] = x;
+	points[3*i + 1] = y;
+	points[3*i + 2] = z;
+    }
+    vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world,
+	    "error_ellipse");
+    vo = vxo_chain(
+	vxo_mat_translate3(
+	    state->pos_x, 
+	    state->pos_y - BRUCE_LENGTH/2, 
+	    state->pos_z
+	),
+	vxo_lines( 
+	    vx_resc_copyf(points, npoints*3),
+	    npoints,
+	    GL_LINE_LOOP,
+	    vxo_lines_style(vx_purple, 1.0f)
+	)
+    );
+    vx_buffer_add_back(ellipseBuff, vo);
+
+    //Swap buffers
     vx_buffer_swap(gridBuff);
     vx_buffer_swap(bruceBuff);
+    vx_buffer_swap(ellipseBuff);
     return 1;
 }
 
