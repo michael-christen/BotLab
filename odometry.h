@@ -4,6 +4,7 @@
 #include <math.h>
 
 #define DIST_BETWEEN_WHEELS 8.1
+#define WHEEL_CIRCUMFERENCE 10
 #define TICKS_PER_CM        45.3 
 
 void odometry_handler (
