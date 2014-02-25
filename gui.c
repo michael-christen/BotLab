@@ -24,6 +24,7 @@
 #include "common/getopt.h"
 #include "common/image_util.h"
 #include "common/timestamp.h"
+#include "common/matd.h"
 #include "imagesource/image_source.h"
 #include "imagesource/image_convert.h"
 
@@ -233,9 +234,17 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     scalefactor = 10;
     double covX = 1.0;
     double covY = 0.5;
-    //Eigen Values
-    double eigX = 1.0;
-    double eigY = .25;
+    matd_t *covMatrix = matd_create(2,2);
+    matd_put(covMatrix, 0, 0, pow(covX, 2));
+    matd_put(covMatrix, 0, 1, covX * covY);
+    matd_put(covMatrix, 1, 0, pow(covY, 2));
+    matd_put(covMatrix, 1, 1, covY * covX);
+    //Calculate Eigen Values with quadratic formula
+    double trace = matd_get(covMatrix, 0,0) + matd_get(covMatrix, 1,1);
+    double gap   = sqrt(pow(trace,2) - 4 * matd_det(covMatrix));
+    double eigX = (trace + gap)/2;
+    double eigY = (trace - gap)/2;
+    matd_destroy(covMatrix);
     double min_eig = (eigX < eigY) ? eigX : eigY;
     double max_eig = (eigX == min_eig) ? eigY : eigX;
     //Semi-major -> x, Semi-minor -> y, axes
