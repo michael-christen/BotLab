@@ -287,6 +287,8 @@ int main(int argc, char ** argv)
     state->pos_theta= 0;
     state->odometry_seen = 0;
 
+	state->lookupTable = getLookupTable(800,600);
+
     state->running = 1;
 
     lcm_t * lcm = lcm_create (NULL);
@@ -335,6 +337,7 @@ int main(int argc, char ** argv)
 
     // clean up
     vx_world_destroy(state->vw);
+	destroyLookupTable(state->lookupTable);
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
