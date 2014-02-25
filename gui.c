@@ -227,13 +227,48 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_add_back(bruceBuff, vo);
 
     //Draw Gaussian Ellipse
+    //95% confidence ellipse from 1-sigma error ellipse
+    double scalefactor = 2.4477;
+    //just for show now
+    scalefactor = 10;
+    double covX = 1.0;
+    double covY = 0.5;
+    //Eigen Values
+    double eigX = 1.0;
+    double eigY = .25;
+    double min_eig = (eigX < eigY) ? eigX : eigY;
+    double max_eig = (eigX == min_eig) ? eigY : eigX;
+    //Semi-major -> x, Semi-minor -> y, axes
+    //lengths = sqrt(eigenvalues), larger eigenvalue -> larger uncertainty
+    //therefore
+    double semi_major_length = sqrt(max_eig) * scalefactor;
+    double semi_minor_length = sqrt(min_eig) * scalefactor;
+    double x_length, y_length;
+    double aspect_ratio      = 0.5;
+    double sig_xy = 0.5, sig_x = 0.25, sig_y = 0.125;
+    if(covX > covY) {
+	x_length = semi_major_length;
+	y_length = semi_minor_length;
+    } else {
+	x_length = semi_minor_length;
+	y_length = semi_major_length;
+    }
+    //rotate phi ccw from original orientation
+    double phi = 1/2 * atan( 
+	    (1/aspect_ratio) * 
+	    ( (2*sig_xy) / 
+	      ( pow(sig_x,2)-pow(sig_y,2) ) 
+	    )
+    );
+    phi = M_PI/2;
+
     npoints = 35;
     float points[npoints*3];
     for (int i = 0; i < npoints; i++) {
 	float angle = 2*M_PI*i/npoints;
 
-	float x = 5.0f*cosf(angle);
-	float y = 8.0f*sinf(angle);
+	float x = x_length*cosf(angle);
+	float y = y_length*sinf(angle);
 	float z = 0.0f;
 
 	points[3*i + 0] = x;
@@ -243,9 +278,10 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world,
 	    "error_ellipse");
     vo = vxo_chain(
+	vxo_mat_rotate_z(phi),
 	vxo_mat_translate3(
 	    state->pos_x, 
-	    state->pos_y - BRUCE_LENGTH/2, 
+	    state->pos_y, 
 	    state->pos_z
 	),
 	vxo_lines( 
