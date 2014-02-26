@@ -223,6 +223,14 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //Draw Grid
     vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
     vx_buffer_add_back(gridBuff, vxo_grid());
+    printf("stride %d\n", state->gridMap.image->stride);
+    vx_object_t *vo = vxo_chain(
+                                vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+                                vxo_mat_translate3(-state->gridMap.width/2, -state->gridMap.height/2, -1),
+                                vxo_image_from_u32(state->gridMap.image, 0, 0)
+                                );
+
+    vx_buffer_add_back(gridBuff, vo);
     //Draw Axes
     int npoints = 4;
     float axes[12] = {-1000, 0, 0, 1000, 0, 0, 0, -1000, 0, 0, 1000, 0};
@@ -231,7 +239,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //Draw Bruce
     vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
 
-    vx_object_t *vo = vxo_chain(
+    vo = vxo_chain(
                                 vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
                                 vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z + BRUCE_HEIGHT / 2),
                                 vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),

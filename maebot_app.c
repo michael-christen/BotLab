@@ -322,6 +322,8 @@ int main(int argc, char ** argv)
     state->odometry_seen = 0;
     state->init_last_mouse = 0;
 
+    grid_map_init(&state->gridMap, GRID_MAP_MAX_WIDTH, GRID_MAP_MAX_HEIGHT);
+
 	state->lookupTable = getLookupTable(752,480);
 
     state->running = 1;
@@ -375,6 +377,7 @@ int main(int argc, char ** argv)
     // clean up
     vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
+    grid_map_destroy(&state->gridMap);
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
