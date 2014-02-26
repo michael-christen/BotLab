@@ -31,7 +31,7 @@
 #include "blob_detection.h"
 
 ball_t balls[MAX_NUM_BALLS];
-int num_balls;
+int num_balls, displayCount;
 
 void display_finished(vx_application_t * app, vx_display_t * disp)
 {
@@ -50,6 +50,7 @@ void display_finished(vx_application_t * app, vx_display_t * disp)
         vx_layer_destroy(value);
         zhash_iterator_remove(&it);
     }
+    displayCount--;
 
     pthread_mutex_unlock(&state->layer_mutex);
 
@@ -82,6 +83,7 @@ void display_started(vx_application_t * app, vx_display_t * disp)
             layerData->displayInit(state, layerData);
         }
     }
+    displayCount++;
     printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
@@ -201,8 +203,13 @@ int initWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int displayInitWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+    const float eye[3] = {0, 0, 20};
+    const float lookat[3] = {0, 0, 0};
+    const float up[3] = {0, 1, 0};
+
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
     vx_layer_add_event_handler(layerData->layer, &state->veh);
+    vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
     return 1;
 }
 
@@ -217,14 +224,26 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_add_back(gridBuff, vxo_lines(verts, npoints, GL_LINES, vxo_points_style(vx_red, 2.0f)));
     //Draw Bruce
     vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
+
     vx_object_t *vo = vxo_chain(
-                                vxo_mat_translate3(state->pos_x, state->pos_y - BRUCE_LENGTH/2, state->pos_z),
-                                vxo_mat_rotate_z(-state->pos_theta),
-                                vxo_mat_rotate_x(-M_PI/2),
-				vxo_mat_scale3(BRUCE_WIDTH, BRUCE_HEIGHT, BRUCE_LENGTH),
-                                vxo_square_pyramid(vxo_mesh_style(vx_blue),
-                                                    vxo_lines_style(vx_cyan, 2.0f))                                 
+                                vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+                                vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z + BRUCE_HEIGHT / 2),
+                                vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
+                                vxo_cylinder(vxo_mesh_style(vx_blue),
+                                                vxo_lines_style(vx_cyan, 2.0f))                                 
                                 );
+
+    vx_buffer_add_back(bruceBuff, vo);
+
+    vo = vxo_chain(
+                    vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+                    vxo_mat_translate3(state->pos_x, state->pos_y - BRUCE_DIAMETER / 2,state->pos_z + BRUCE_HEIGHT + 0.1),
+                    vxo_mat_rotate_z(-state->pos_theta),
+                    vxo_mat_rotate_x(-M_PI/2),
+                    vxo_mat_scale3(BRUCE_DIAMETER / 2, 1, BRUCE_DIAMETER),
+                    vxo_square_pyramid(vxo_mesh_style(vx_red))
+                  );
+    
     vx_buffer_add_back(bruceBuff, vo);
 
     //Draw Gaussian Ellipse
@@ -287,6 +306,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world,
 	    "error_ellipse");
     vo = vxo_chain(
+    vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
 	vxo_mat_translate3(
 	    state->pos_x, 
 	    state->pos_y, 
@@ -319,16 +339,27 @@ int initWorldPOVLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int displayInitWorldPOVLayer(state_t *state, layer_data_t *layerData) {
-    //const double eye[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double lookat[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double up[3] = {0, 0, 1};
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
     vx_layer_add_event_handler(layerData->layer, &state->veh);
-    //vx_layer_camera_lookat(layerData->layer, &eye, &lookat, &up, 1);
     return 1;
 }
 
 int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+    const float distBehind = 5 * BRUCE_DIAMETER / 2.0f;
+    const float distAbove = BRUCE_HEIGHT;
+    float eye[3];
+    float lookat[3];
+    float up[3];
+    eye[0] = (state->pos_x + (distBehind * sin(state->pos_theta))) * CM_TO_VX;
+    eye[1] = (state->pos_y - (distBehind * cos(state->pos_theta))) * CM_TO_VX;
+    eye[2] = (state->pos_z + BRUCE_HEIGHT + distAbove) * CM_TO_VX;
+    lookat[0] = state->pos_x * CM_TO_VX;
+    lookat[1] = state->pos_y * CM_TO_VX;
+    lookat[2] = (state->pos_z + BRUCE_HEIGHT) * CM_TO_VX;
+    up[0] = lookat[0] - eye[0];
+    up[1] = lookat[1] - eye[1];
+    up[2] = eye[2] + distAbove;
+    vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
     return 1;
 }
 
@@ -342,14 +373,10 @@ int initDebugLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
-    //const double eye[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double lookat[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double up[3] = {0, 0, 1};
     float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     vx_layer_set_background_color(layerData->layer, black);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
     vx_layer_add_event_handler(layerData->layer, &state->veh);
-    //vx_layer_camera_lookat(layerData->layer, &eye, &lookat, &up, 1);
     return 1;
 }
 
@@ -389,7 +416,7 @@ void* renderLayers(state_t *state) {
         for (i = 0; i < NUM_LAYERS; i++) {
             layer_data_t *layer = &(state->layers[i]);
             //printf("layer %d enable %d\n", i, layer->enable);
-            if (layer->enable == 1) {
+            if (layer->enable == 1 && displayCount > 0) {
                 if (layer->render(state, layer) == 0) {
                     printf("Failed to render layer: %s\n", layer->name);
                     return NULL;
@@ -447,7 +474,7 @@ void* gui_create(void *data) {
     state->layers[1].render = renderCameraPOVLayer;
     state->layers[1].destroy = destroyCameraPOVLayer;
 
-    state->layers[2].enable = 0;
+    state->layers[2].enable = 1;
     state->layers[2].name = "WorldPOV";
     state->layers[2].position[0] = 0.666f;
     state->layers[2].position[1] = 0;

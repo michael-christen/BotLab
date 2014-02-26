@@ -283,7 +283,7 @@ int main(int argc, char ** argv)
     state->veh.impl = state;
     state->pos_x    = 0;
     state->pos_y    = 0;
-    state->pos_z    = BRUCE_HEIGHT/2;
+    state->pos_z    = 0;
     state->pos_theta= 0;
     state->odometry_seen = 0;
 
