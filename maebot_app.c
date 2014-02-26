@@ -42,6 +42,8 @@
 #define FBDIV 100000.0
 #define LRDIV 100000.0
 
+#define MOUSE_MOVE_THRESHOLD 10
+
 void setLaser(state_t* state, int lsr_val){
 //lsr_val == 1 ? laser is on : laser is off
 	pthread_mutex_lock(&state->lsr_mutex);
@@ -103,6 +105,31 @@ static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 }
 static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_mouse_event_t * mouse)
 {
+    state_t * state = vh->impl;
+    vx_mouse_event_t last_mouse;
+    if (state->init_last_mouse) {
+        memcpy(&last_mouse, &state->last_mouse, sizeof(vx_mouse_event_t));
+        memcpy(&state->last_mouse, mouse, sizeof(vx_mouse_event_t));
+    } else {
+        memcpy(&state->last_mouse, mouse, sizeof(vx_mouse_event_t));
+        state->init_last_mouse = 1;
+        return 0;
+    }
+
+    int diff_button = mouse->button_mask ^ last_mouse.button_mask;
+    int button_up = diff_button & last_mouse.button_mask;
+    int mouseMoveDist = sqrt(pow(last_mouse.x - mouse->x, 2) + pow(last_mouse.y - mouse->y, 2));
+    if (button_up && mouseMoveDist < MOUSE_MOVE_THRESHOLD) {
+        double man_point[3];
+        vx_ray3_t ray;
+        vx_camera_pos_compute_ray(pos, mouse->x, mouse->y, &ray);
+        vx_ray3_intersect_xy(&ray, 0, man_point);
+
+        //man_point[1] = 964 - man_point[1];
+        printf("realx: %f, realy: %f\n", mouse->x, mouse->y);
+        printf("x: %f, y: %f, z: %f\n", man_point[0], man_point[1], man_point[2]);
+    }
+
     return 0;
 }
 
@@ -287,6 +314,7 @@ int main(int argc, char ** argv)
     state->pos_z    = 0;
     state->pos_theta= 0;
     state->odometry_seen = 0;
+    state->init_last_mouse = 0;
 
 	state->lookupTable = getLookupTable(752,480);
 

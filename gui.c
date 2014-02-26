@@ -136,7 +136,7 @@ int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 
     vx_layer_camera_fit2D(layerData->layer, lowLeft, upRight, 1);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
-    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    //vx_layer_add_event_handler(layerData->layer, &state->veh);
     return 1;
 }
 
@@ -343,7 +343,7 @@ int initWorldPOVLayer(state_t *state, layer_data_t *layerData) {
 
 int displayInitWorldPOVLayer(state_t *state, layer_data_t *layerData) {
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
-    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    //vx_layer_add_event_handler(layerData->layer, &state->veh);
     return 1;
 }
 
@@ -379,7 +379,7 @@ int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
     float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     vx_layer_set_background_color(layerData->layer, black);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
-    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    //vx_layer_add_event_handler(layerData->layer, &state->veh);
     return 1;
 }
 

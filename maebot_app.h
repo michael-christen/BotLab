@@ -123,6 +123,9 @@ struct state_t {
     vx_world_t * vw;
     zhash_t *layer_map; // <display, layer>
 
+    int init_last_mouse;
+    vx_mouse_event_t last_mouse;
+
     pthread_t dmon_thread;
 
 	pixel_t* lookupTable;
