@@ -11,6 +11,9 @@
 // VX
 #include "vx/vx.h"
 
+// MAEBOT
+#include "barrel_distortion.h"
+
 // EECS 467 Libraries
 #include "common/getopt.h"
 #include "common/image_util.h"
@@ -121,6 +124,8 @@ struct state_t {
     zhash_t *layer_map; // <display, layer>
 
     pthread_t dmon_thread;
+
+	pixel_t* lookupTable;
 };
 
 //////////////
