@@ -13,6 +13,7 @@
 
 // MAEBOT
 #include "barrel_distortion.h"
+#include "grid_map.h"
 
 // EECS 467 Libraries
 #include "common/getopt.h"
@@ -30,7 +31,6 @@
 //////////////
 // CONSTANTS
 //////////////
-
 #define NUM_LAYERS 4
 #define BRUCE_DIAMETER 10.5
 #define BRUCE_HEIGHT 10
@@ -51,7 +51,7 @@ typedef struct getopt_options_t getopt_options_t;
 
 
 struct getopt_options_t {
-    int verbose, no_video, limitKBs;
+    int verbose, no_video, limitKBs, autoCamera;
     double decimate;
 };
 
@@ -123,12 +123,18 @@ struct state_t {
     vx_world_t * vw;
     zhash_t *layer_map; // <display, layer>
 
+    // Mouse event stuff
     int init_last_mouse;
     vx_mouse_event_t last_mouse;
+    double mouseDownX, mouseDownY;
+    double goalMouseX, goalMouseY;
 
     pthread_t dmon_thread;
 
 	pixel_t* lookupTable;
+
+    // Grid map
+    grid_map_t gridMap;
 };
 
 //////////////

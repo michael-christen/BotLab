@@ -117,18 +117,24 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
     }
 
     int diff_button = mouse->button_mask ^ last_mouse.button_mask;
+    int button_down = diff_button & (!last_mouse.button_mask);
     int button_up = diff_button & last_mouse.button_mask;
-    int mouseMoveDist = sqrt(pow(last_mouse.x - mouse->x, 2) + pow(last_mouse.y - mouse->y, 2));
-    if (button_up && mouseMoveDist < MOUSE_MOVE_THRESHOLD) {
-        double man_point[3];
-        vx_ray3_t ray;
-        vx_camera_pos_compute_ray(pos, mouse->x, mouse->y, &ray);
-        vx_ray3_intersect_xy(&ray, 0, man_point);
-
-        //man_point[1] = 964 - man_point[1];
-        printf("realx: %f, realy: %f\n", mouse->x, mouse->y);
-        printf("x: %f, y: %f, z: %f\n", man_point[0], man_point[1], man_point[2]);
+    if (button_down) {
+        state->mouseDownX = mouse->x;
+        state->mouseDownY = mouse->y;
+    } else if (button_up) {
+        int mouseMoveDist = sqrt(pow(state->mouseDownX - mouse->x, 2) + pow(state->mouseDownY - mouse->y, 2));
+        if (mouseMoveDist < MOUSE_MOVE_THRESHOLD) {
+            double man_point[3];
+            vx_ray3_t ray;
+            vx_camera_pos_compute_ray(pos, mouse->x, mouse->y, &ray);
+            vx_ray3_intersect_xy(&ray, 0, man_point);
+            // Add state machine flag here
+            state->goalMouseX = man_point[0];
+            state->goalMouseY = man_point[1];
+        }
     }
+    
 
     return 0;
 }
@@ -340,6 +346,7 @@ int main(int argc, char ** argv)
 
     getopt_add_bool(state->gopt, 'h', "help", 0, "Show this help");
     getopt_add_bool(state->gopt, 'v', "verbose", 0, "Show extra debugging output");
+    getopt_add_bool(state->gopt, 'c', "auto-camera", 0, "Automatically detect which camera to use");
     getopt_add_bool(state->gopt, '\0', "no-video", 0, "Disable video");
     getopt_add_int (state->gopt, 'l', "limitKBs", "-1", "Remote display bandwidth limit. < 0: unlimited.");
     getopt_add_double (state->gopt, 'd', "decimate", "1", "Decimate image by this amount before showing in vx");
@@ -351,6 +358,7 @@ int main(int argc, char ** argv)
     }
 
     state->getopt_options.verbose = getopt_get_bool(state->gopt, "verbose");
+    state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
     state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
     state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
     state->getopt_options.decimate = getopt_get_double(state->gopt, "decimate");

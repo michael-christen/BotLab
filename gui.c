@@ -110,8 +110,11 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     }
     zarray_get(urls, 0, &state->url);
     //}
-    state->url =
-	"dc1394://b09d01008e366c?fidx=0&white-balance-manual=1&white-balance-red=400&white-balance-blue=714";
+    if (!state->getopt_options.autoCamera) {
+        state->url =
+    "dc1394://b09d01008e366c?fidx=0&white-balance-manual=1&white-balance-red=400&white-balance-blue=714";
+    }
+    
     state->isrc = image_source_open(state->url);
     if (state->isrc == NULL) {
         printf("Unable to open device %s\n", state->url);
@@ -354,8 +357,8 @@ int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
     float eye[3];
     float lookat[3];
     float up[3];
-    eye[0] = (state->pos_x + (distBehind * sin(state->pos_theta))) * CM_TO_VX;
-    eye[1] = (state->pos_y - (distBehind * cos(state->pos_theta))) * CM_TO_VX;
+    eye[0] = (state->pos_x + (distBehind * sin(-state->pos_theta))) * CM_TO_VX;
+    eye[1] = (state->pos_y - (distBehind * cos(-state->pos_theta))) * CM_TO_VX;
     eye[2] = (state->pos_z + BRUCE_HEIGHT + distAbove) * CM_TO_VX;
     lookat[0] = state->pos_x * CM_TO_VX;
     lookat[1] = state->pos_y * CM_TO_VX;
