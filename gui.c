@@ -162,6 +162,8 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     }
 
     if (im != NULL) {
+		correctDistortion(im, state->lookupTable);
+
         double decimate = state->getopt_options.decimate;
 
         if (decimate != 1.0) {
@@ -169,7 +171,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             image_u32_destroy(im);
             im = im2;
         }
-
+	
         num_balls = blob_detection(im, balls);
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
 		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
