@@ -110,7 +110,8 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     }
     zarray_get(urls, 0, &state->url);
     //}
-
+    state->url =
+	"dc1394://b09d01008e366c?fidx=0&white-balance-manual=1&white-balance-red=400&white-balance-blue=714";
     state->isrc = image_source_open(state->url);
     if (state->isrc == NULL) {
         printf("Unable to open device %s\n", state->url);
