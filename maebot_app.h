@@ -48,6 +48,7 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
+typedef enum stateType state_type_t;
 
 
 struct getopt_options_t {
@@ -72,6 +73,8 @@ struct state_t {
     getopt_options_t  getopt_options;
     vx_application_t app;
     vx_event_handler_t veh;
+
+	pthread_t fsm_thread;
 
     maebot_diff_drive_t cmd;
     pthread_mutex_t cmd_mutex;
@@ -137,6 +140,16 @@ struct state_t {
     // Grid map
     grid_map_t gridMap;
 };
+
+enum stateType{
+	stop,
+	move_forward,
+	analyze,
+	zap_diamond,
+	take_branch
+};
+	
+	
 
 //////////////
 // FUNCTIONS
