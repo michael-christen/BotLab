@@ -310,50 +310,104 @@ void* lcm_handle_loop(void *data) {
 
 void* FSM(void* data){
 	state_t* state = data;
-/*
-	state_type_t curState, nextState;
+
+	stateType_t curState, nextState;
 	curState = stop;
 	nextState = curState;
+	int threshold = 0.3;
+	int rthreshold = 0.1;
+	int timesRotated45 = 0;
 	while(state->running){
 
 	switch(curState){
-		stop://stop
+		case stop:
+			moveBot(state, STOP);
 			nextState = analyze;
 			break;
-		move_forward:
-			//move forward
+		case move_forward:
+			moveBot(state, FORWARD);
 			nextState = analyze;
 			break;
-		analyze:
-			if(new_diamond_in_area){
+		case analyze:{
+			if(1){//new_diamond_in_view){
 				nextState = zap_diamond;
-			}else if(new_branch_in_area){
+				timesRotated45--; //in case diamond is opposite the turns
+			}else if(1){//new_branch_in_view){
 				nextState = take_branch;
-			}else if(bot_is_stopped){
-				//rotate 90 degrees, then analyze again
+				timesRotated45 = 0;
+			}else if(!state->moving){
+				if(timesRotated45 == 3){
+					return NULL;	//nowhere to go
+				}
+				driveToTheta(state, state->pos_theta - M_PI/4.0);
+				timesRotated45++;
 			}
-			break;
-		zap_diamond:
-			if(bot_is_moving){
-				//stop bot
+			break;}
+		case zap_diamond:{
+			int wasMoving = 0;
+			if(!state->moving){
+				wasMoving = 1;
+				moveBot(state, STOP);
 			}
+			//Still need to get diamond coords
+			double diamond_x, diamond_y;
+			double dx = diamond_x - state->pos_x;
+			double dy = diamond_y - state->pos_y;
+			double 	dtheta = atan2(dy, dx);
+			double originalTheta = state->pos_theta;
 			//rotate toward diamond
+			driveToTheta(state, dtheta);
+			while(abs(state->pos_theta - dtheta) > rthreshold){
+				usleep(1000);
+			}
+
+			//shoot diamond
 			fireLaser(state);
 			//update diamond to zapped
-			if(bot_was_moving){
-				//rotate back to original position
-				//move forward
+
+			if(wasMoving){
+				//return to original theta
+				driveToTheta(state, originalTheta);
+				while(abs(state->pos_theta - originalTheta) > rthreshold){
+					usleep(1000);
+				}
+				moveBot(state, FORWARD);
 			}
 			nextState = analyze;
-			break;
-		take_branch:
-			//drive forward to route
-			//rotate bot to face route
+			break;}
+		case take_branch:{
+			//Assuming branch is defined as in free space - no collisions
+			double branch_x, branch_y;
+			double dx = branch_x - state->pos_x;
+			double dy = branch_y - state->pos_y;
+			double dtheta = atan2(dy, dx);
+
+			//rotate bot toward branch opening
+			driveToTheta(state, dtheta);
+			while(abs(state->pos_theta - dtheta) > rthreshold){
+				usleep(1000);
+			}
+			
+			//drive forward to branch
+			moveBot(state, FORWARD);
+			while(abs(state->pos_x - branch_x) > threshold && abs(state->pos_y - branch_y) > threshold){
+				usleep(1000);
+			}
+			moveBot(state, STOP);
+
+			//rotate bot to face branch
+			double branch_theta;	//Theta between current hall and branch
+			driveToTheta(state, branch_theta);
+			while(abs(state->pos_theta - branch_theta) > rthreshold){
+				usleep(1000);
+			}
 			nextState = move_forward;
-			break;
+			break;}
+		default: nextState = curState;
 		}
-		state = nextState;
-	}	*/
+		curState = nextState;
+	}	
+	return NULL;
 }
 
 int main(int argc, char ** argv)
