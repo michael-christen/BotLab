@@ -13,7 +13,11 @@ void odometry_handler (
     //y += 0               --> sin(theta) * that
     //theta += (dR - dL)/b --> same
     //printf("left: %d\tright: %d\n",msg->encoder_left_ticks, msg->encoder_right_ticks);
-    if(state->odometry_seen) {
+    if(state->odometry_seen){
+	state->last_x = state->pos_x;
+	state->last_y = state->last_y;
+	state->last_theta = state->pos_theta;
+
 	int32_t diff_left = msg->encoder_left_ticks - state->prev_left_ticks;
 	int32_t diff_right = msg->encoder_right_ticks - state->prev_right_ticks;
 	
@@ -24,6 +28,24 @@ void odometry_handler (
 	state->pos_x     += avg * sin(state->pos_theta);
 	state->pos_y     += avg * cos(state->pos_theta);
 	state->pos_theta += (dL - dR) / DIST_BETWEEN_WHEELS;
+	
+	double threshold = 1.0;
+	double rthreshold = 0.1;
+	if(abs(state->pos_x - state->last_x) > threshold ||
+		abs(state->pos_y - state->last_y) > threshold){
+		state->translating = 1;
+	} else{
+		state->translating = 0;
+	}
+	
+	if(abs(state->pos_theta - state->last_theta) > rthreshold){
+		state->rotating = 1;
+	}else{
+		state->rotating = 0;
+	}
+	
+	state->moving = (state->translating | state->rotating);
+
     } else {
 	state->odometry_seen = 1;
     }

@@ -48,7 +48,7 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
-typedef enum stateType state_type_t;
+typedef enum stateType stateType_t;
 
 
 struct getopt_options_t {
@@ -103,10 +103,17 @@ struct state_t {
 
     //Position info from odometry
     double pos_x, pos_y, pos_z;
+	double last_x, last_y;
     double pos_theta;
+	double last_theta;
     int32_t prev_left_ticks, prev_right_ticks;
     int    odometry_seen;
     const char *odometry_channel;
+
+	//bot is moving forward or back
+	int translating;
+	int rotating;
+	int moving;
 
     getopt_t * gopt;
     char * url;

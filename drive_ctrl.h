@@ -20,6 +20,8 @@ void driveStraight(state_t * state, double speed);
 //we need to view it differently
 void driveRot(state_t * state, double omega);
 
+void driveToTheta(state_t * state, double theta);
+
 void driveStop(state_t * state);
 
 #endif

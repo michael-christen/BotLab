@@ -35,6 +35,10 @@ void driveRot(state_t * state, double omega) {
     driveRad(state, 0, omega);
 }
 
+void driveToTheta(state_t * state, double theta) {
+	//Rotate to theta
+}
+
 void driveStop(state_t * state) {
     driveRad(state, 0, 0);
 }
