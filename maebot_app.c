@@ -308,6 +308,54 @@ void* lcm_handle_loop(void *data) {
     return NULL;
 }
 
+void* FSM(void* data){
+	state_t* state = data;
+/*
+	state_type_t curState, nextState;
+	curState = stop;
+	nextState = curState;
+	while(state->running){
+
+	switch(curState){
+		stop://stop
+			nextState = analyze;
+			break;
+		move_forward:
+			//move forward
+			nextState = analyze;
+			break;
+		analyze:
+			if(new_diamond_in_area){
+				nextState = zap_diamond;
+			}else if(new_branch_in_area){
+				nextState = take_branch;
+			}else if(bot_is_stopped){
+				//rotate 90 degrees, then analyze again
+			}
+			break;
+		zap_diamond:
+			if(bot_is_moving){
+				//stop bot
+			}
+			//rotate toward diamond
+			fireLaser(state);
+			//update diamond to zapped
+			if(bot_was_moving){
+				//rotate back to original position
+				//move forward
+			}
+			nextState = analyze;
+			break;
+		take_branch:
+			//drive forward to route
+			//rotate bot to face route
+			nextState = move_forward;
+			break;
+		}
+		state = nextState;
+	}	*/
+}
+
 int main(int argc, char ** argv)
 {
     vx_global_init();
@@ -365,7 +413,7 @@ int main(int argc, char ** argv)
     getopt_add_bool(state->gopt, 'c', "auto-camera", 0, "Automatically detect which camera to use");
     getopt_add_bool(state->gopt, '\0', "no-video", 0, "Disable video");
     getopt_add_int (state->gopt, 'l', "limitKBs", "-1", "Remote display bandwidth limit. < 0: unlimited.");
-    getopt_add_double (state->gopt, 'd', "decimate", "1", "Decimate image by this amount before showing in vx");
+    getopt_add_double (state->gopt, 'd', "decimate", "0", "Decimate image by this amount before showing in vx");
 
     if (!getopt_parse(state->gopt, argc, argv, 0) ||
         getopt_get_bool(state->gopt,"help")) {
@@ -377,7 +425,7 @@ int main(int argc, char ** argv)
     state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
     state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
     state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
-    state->getopt_options.decimate = getopt_get_double(state->gopt, "decimate");
+    state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
 
     //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
@@ -385,7 +433,9 @@ int main(int argc, char ** argv)
     //pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
+	pthread_create(&state->fsm_thread, NULL, FSM, state);
 
+	pthread_join(state->fsm_thread, NULL);
     pthread_join(state->gui_thread, NULL);
 
     // clean up

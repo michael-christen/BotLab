@@ -129,15 +129,20 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         return 0;
     }
 
+    image_source_format_t isrc_format;
+    state->isrc->get_format(state->isrc, 0, &isrc_format);
+    state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
+
     return 1;
 }
 
 int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     image_source_format_t isrc_format;
+    double decimate = state->getopt_options.decimate;
     state->isrc->get_format(state->isrc, 0, &isrc_format);
 
     float lowLeft[2] = {0, 0};
-    float upRight[2] = {isrc_format.width, isrc_format.height};
+    float upRight[2] = {isrc_format.width / decimate, isrc_format.height / decimate};
 
     vx_layer_camera_fit2D(layerData->layer, lowLeft, upRight, 1);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
