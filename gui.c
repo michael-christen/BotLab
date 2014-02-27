@@ -29,6 +29,7 @@
 #include "imagesource/image_convert.h"
 
 #include "blob_detection.h"
+#include "line_detection.h"
 
 ball_t balls[MAX_NUM_BALLS];
 int num_balls, displayCount;
@@ -177,17 +178,15 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             im = im2;
         }
 
-        num_balls = blob_detection(im, balls,
-                        0xff514430, 0xff0127ff,
-                        50.0);
+	//Blue
+	state->num_pts_tape = 
+	    line_detection(im, state->tape);
         //might wanna make diff d.s.
         //Also, gonna need to copy image
         //Green
-        /*
         num_balls = blob_detection(im, balls,
                         0xff394d2c, 0xffe127ff,
                         100.0);
-                        */
 
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
 		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);

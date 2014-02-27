@@ -333,7 +333,11 @@ int main(int argc, char ** argv)
 
     grid_map_init(&state->gridMap, GRID_MAP_MAX_WIDTH, GRID_MAP_MAX_HEIGHT);
 
-	state->lookupTable = getLookupTable(752,480);
+    state->lookupTable = getLookupTable(752,480);
+
+    //Should be width
+    state->tape = calloc(1000, sizeof(pixel_t));
+    state->num_pts_tape = 0;
 
     state->running = 1;
 
