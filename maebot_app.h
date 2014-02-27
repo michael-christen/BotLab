@@ -13,6 +13,7 @@
 
 // MAEBOT
 #include "barrel_distortion.h"
+#include "pixel.h"
 #include "grid_map.h"
 
 // EECS 467 Libraries
@@ -142,10 +143,14 @@ struct state_t {
 
     pthread_t dmon_thread;
 
-	pixel_t* lookupTable;
+    pixel_t* lookupTable;
 
     // Grid map
     grid_map_t gridMap;
+
+    //Tape data
+    pixel_t* tape;
+    unsigned int num_pts_tape;
 };
 
 enum stateType{

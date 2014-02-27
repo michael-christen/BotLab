@@ -435,7 +435,11 @@ int main(int argc, char ** argv)
 
     grid_map_init(&state->gridMap, GRID_MAP_MAX_WIDTH, GRID_MAP_MAX_HEIGHT);
 
-	state->lookupTable = getLookupTable(752,480);
+    state->lookupTable = getLookupTable(752,480);
+
+    //Should be width
+    state->tape = calloc(1000, sizeof(pixel_t));
+    state->num_pts_tape = 0;
 
     state->running = 1;
 
@@ -463,7 +467,7 @@ int main(int argc, char ** argv)
     getopt_add_bool(state->gopt, 'c', "auto-camera", 0, "Automatically detect which camera to use");
     getopt_add_bool(state->gopt, '\0', "no-video", 0, "Disable video");
     getopt_add_int (state->gopt, 'l', "limitKBs", "-1", "Remote display bandwidth limit. < 0: unlimited.");
-    getopt_add_double (state->gopt, 'd', "decimate", "1", "Decimate image by this amount before showing in vx");
+    getopt_add_double (state->gopt, 'd', "decimate", "0", "Decimate image by this amount before showing in vx");
 
     if (!getopt_parse(state->gopt, argc, argv, 0) ||
         getopt_get_bool(state->gopt,"help")) {
@@ -475,7 +479,7 @@ int main(int argc, char ** argv)
     state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
     state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
     state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
-    state->getopt_options.decimate = getopt_get_double(state->gopt, "decimate");
+    state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
 
     //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);

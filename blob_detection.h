@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "image.h"
 
 #define COLOR_THRESHOLD 37.0
 //ABGR
@@ -27,8 +28,6 @@ struct ball {
     double x, y;
     int num_px;
 };
-
-double color_dist(uint32_t p1, uint32_t p2);
 
 unsigned int is_ball(double color_threshold,
                     uint32_t template_px, uint32_t px);

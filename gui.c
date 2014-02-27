@@ -29,6 +29,7 @@
 #include "imagesource/image_convert.h"
 
 #include "blob_detection.h"
+#include "line_detection.h"
 
 ball_t balls[MAX_NUM_BALLS];
 int num_balls, displayCount;
@@ -128,15 +129,20 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         return 0;
     }
 
+    image_source_format_t isrc_format;
+    state->isrc->get_format(state->isrc, 0, &isrc_format);
+    state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
+
     return 1;
 }
 
 int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     image_source_format_t isrc_format;
+    double decimate = state->getopt_options.decimate;
     state->isrc->get_format(state->isrc, 0, &isrc_format);
 
     float lowLeft[2] = {0, 0};
-    float upRight[2] = {isrc_format.width, isrc_format.height};
+    float upRight[2] = {isrc_format.width / decimate, isrc_format.height / decimate};
 
     vx_layer_camera_fit2D(layerData->layer, lowLeft, upRight, 1);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
@@ -177,17 +183,18 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             im = im2;
         }
 
-        num_balls = blob_detection(im, balls,
-                        0xff514430, 0xff0127ff,
-                        50.0);
+	//Blue
+	state->num_pts_tape =
+	    line_detection(im, state->tape);
+	printf("Pts: %d\n",state->num_pts_tape);
         //might wanna make diff d.s.
         //Also, gonna need to copy image
         //Green
-        /*
+	/*
         num_balls = blob_detection(im, balls,
                         0xff394d2c, 0xffe127ff,
                         100.0);
-                        */
+			*/
 
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
 		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
