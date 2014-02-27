@@ -425,8 +425,8 @@ int main(int argc, char ** argv)
 
     //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
-//    pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-//    pthread_create(&state->led_thread,  NULL, send_led, state);
+    pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
+    //pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	pthread_create(&state->fsm_thread, NULL, FSM, state);

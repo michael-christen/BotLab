@@ -114,7 +114,7 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         state->url =
     "dc1394://b09d01008e366c?fidx=0&white-balance-manual=1&white-balance-red=400&white-balance-blue=714";
     }
-    
+
     state->isrc = image_source_open(state->url);
     if (state->isrc == NULL) {
         printf("Unable to open device %s\n", state->url);
@@ -176,8 +176,19 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             image_u32_destroy(im);
             im = im2;
         }
-	
-        num_balls = blob_detection(im, balls);
+
+        num_balls = blob_detection(im, balls,
+                        0xff514430, 0xff0127ff,
+                        50.0);
+        //might wanna make diff d.s.
+        //Also, gonna need to copy image
+        //Green
+        /*
+        num_balls = blob_detection(im, balls,
+                        0xff394d2c, 0xffe127ff,
+                        100.0);
+                        */
+
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
 		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
 
@@ -188,7 +199,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         vx_buffer_add_back(vb, vo);
         vx_buffer_swap(vb);
     }
-    
+
     image_u32_destroy(im);
 
     return 1;
@@ -223,7 +234,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //Draw Grid
     vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
     vx_buffer_add_back(gridBuff, vxo_grid());
-    printf("stride %d\n", state->gridMap.image->stride);
+    //printf("stride %d\n", state->gridMap.image->stride);
     vx_object_t *vo = vxo_chain(
                                 vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
                                 vxo_mat_translate3(-state->gridMap.width/2, -state->gridMap.height/2, -1),
@@ -244,7 +255,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
                                 vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z + BRUCE_HEIGHT / 2),
                                 vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
                                 vxo_cylinder(vxo_mesh_style(vx_blue),
-                                                vxo_lines_style(vx_cyan, 2.0f))                                 
+                                                vxo_lines_style(vx_cyan, 2.0f))
                                 );
 
     vx_buffer_add_back(bruceBuff, vo);
@@ -258,7 +269,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
                     vxo_mat_scale3(BRUCE_DIAMETER / 2, 1, BRUCE_DIAMETER),
                     vxo_square_pyramid(vxo_mesh_style(vx_red))
                   );
-    
+
     vx_buffer_add_back(bruceBuff, vo);
 
     //Draw Gaussian Ellipse
@@ -297,10 +308,10 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	y_length = semi_major_length;
     }
     //rotate phi ccw from original orientation
-    double phi = 1/2 * atan( 
-	    (1/aspect_ratio) * 
-	    ( (2*sig_xy) / 
-	      ( pow(sig_x,2)-pow(sig_y,2) ) 
+    double phi = 1/2 * atan(
+	    (1/aspect_ratio) *
+	    ( (2*sig_xy) /
+	      ( pow(sig_x,2)-pow(sig_y,2) )
 	    )
     );
     phi = M_PI/2;
@@ -323,12 +334,12 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vo = vxo_chain(
     vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
 	vxo_mat_translate3(
-	    state->pos_x, 
-	    state->pos_y, 
+	    state->pos_x,
+	    state->pos_y,
 	    state->pos_z
 	),
 	vxo_mat_rotate_z(phi - state->pos_theta),
-	vxo_lines( 
+	vxo_lines(
 	    vx_resc_copyf(points, npoints*3),
 	    npoints,
 	    GL_LINE_LOOP,
@@ -398,9 +409,9 @@ int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
 int renderDebugLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *textBuff = vx_world_get_buffer(layerData->world, "text");
 
-    char debugText[80];
-    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f";
-    sprintf(debugText, formatting, state->pos_x, state->pos_y, state->pos_theta);
+    char debugText[100];
+    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\n";
+    sprintf(debugText, formatting, state->pos_x, state->pos_y, state->pos_theta, state->gyro[0]);
     vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT, debugText);
     vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));
     vx_buffer_swap(textBuff);

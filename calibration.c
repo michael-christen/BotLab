@@ -8,7 +8,7 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
     //do i need to be using mutex?
 
     state_t * state = data;
-
+/*
     printf ("Received message on channel \"%s\":\n", channel);
     printf ("  timestamp   = %lld\n", msg->utime);
     printf ("  acceleration    = (%d, %d, %d)\n",
@@ -20,6 +20,7 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
     printf ("  line sensor values= (%d, %d, %d)\n",
             msg->line_sensors[0], msg->line_sensors[1], msg->line_sensors[2]);
     printf(" range value = (%d)\n", msg->range);
+*/
 
     for( int i = 0; i < 3; i++){
 	state->acc[i]  = msg->accel[i];
