@@ -81,7 +81,6 @@ void moveBot(state_t* state, int cmd_val){
 	} else if(cmd_val & LEFT) {
 	    driveRad(state, arc_val, LONG_SPEED);
 	} else {
-        state->pos_y++;
 	    driveRad(state, -1000, LONG_SPEED);
 	}
     } else if(cmd_val & BACKWARD) {
@@ -90,7 +89,6 @@ void moveBot(state_t* state, int cmd_val){
 	} else if(cmd_val & LEFT) {
 	    driveRad(state, arc_val, -LONG_SPEED);
 	} else {
-        state->pos_y--;
 	    driveStraight(state, -LONG_SPEED);
 	}
     } else if(cmd_val & RIGHT) {
