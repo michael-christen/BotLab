@@ -29,6 +29,7 @@
 #include "imagesource/image_convert.h"
 
 #include "blob_detection.h"
+#include "line_detection.h"
 
 ball_t balls[MAX_NUM_BALLS];
 int num_balls, displayCount;
@@ -181,6 +182,31 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 
     if (im != NULL) {
 		correctDistortion(im, state->lookupTable);
+	//Blue
+	state->num_pts_tape =
+	    line_detection(im, state->tape);
+	printf("Pts: %d\n",state->num_pts_tape);
+        //might wanna make diff d.s.
+        //Also, gonna need to copy image
+        //Green
+	uint32_t color_detect = state->red | state->green << 8 |
+	    state->blue << 16 | 0xff << 24;
+	printf("color: %x\n",color_detect);
+	printf("thresh: %f\n",state->thresh);
+        num_balls = blob_detection(im, balls,
+			color_detect,
+			0xff039dfd,
+                        state->thresh);
+	printf("num_balls: %d\n",num_balls);
+	if(num_balls) {
+	    double diff_x = im->width/2.0 - balls[0].x;
+	    printf("x: %f\n", diff_x);
+	    im->buf[(int) (im->stride*balls[0].y + balls[0].x)] = 0xffff0000;
+	    double pid_out = pid_get_output(
+				state->green_pid,diff_x);
+	    state->green_pid_out = pid_out;
+	    printf("pid_out: %f\n",pid_out);
+	}
 
         double decimate = state->getopt_options.decimate;
 
@@ -189,18 +215,6 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             image_u32_destroy(im);
             im = im2;
         }
-
-        num_balls = blob_detection(im, balls,
-                        0xff514430, 0xff0127ff,
-                        50.0);
-        //might wanna make diff d.s.
-        //Also, gonna need to copy image
-        //Green
-        /*
-        num_balls = blob_detection(im, balls,
-                        0xff394d2c, 0xffe127ff,
-                        100.0);
-                        */
 
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
 		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);

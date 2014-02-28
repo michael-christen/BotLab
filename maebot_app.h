@@ -13,7 +13,9 @@
 
 // MAEBOT
 #include "barrel_distortion.h"
+#include "pixel.h"
 #include "grid_map.h"
+#include "pid_ctrl.h"
 
 // EECS 467 Libraries
 #include "common/getopt.h"
@@ -51,7 +53,7 @@ typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
 typedef struct position_t position_t;
-typedef enum stateType state_type_t;
+typedef enum stateType stateType_t;
 
 struct position_t {
     double x, y;
@@ -111,10 +113,17 @@ struct state_t {
     int positionQueueP, positionQueueCount;
     position_t positionQueue[MAX_POS_SAMPLES];
     double pos_x, pos_y, pos_z;
+	double last_x, last_y;
     double pos_theta;
+	double last_theta;
     int32_t prev_left_ticks, prev_right_ticks;
     int    odometry_seen;
     const char *odometry_channel;
+
+	//bot is moving forward or back
+	int translating;
+	int rotating;
+	int moving;
 
     getopt_t * gopt;
     char * url;
@@ -145,10 +154,20 @@ struct state_t {
 
     pthread_t dmon_thread;
 
-	pixel_t* lookupTable;
+    pixel_t* lookupTable;
 
     // Grid map
     grid_map_t gridMap;
+
+    //Tape data
+    pixel_t* tape;
+    unsigned int num_pts_tape;
+
+    uint32_t red, green, blue;
+    double thresh;
+
+    pid_ctrl_t *green_pid;
+    double      green_pid_out;
 };
 
 enum stateType{
@@ -158,8 +177,8 @@ enum stateType{
 	zap_diamond,
 	take_branch
 };
-	
-	
+
+
 
 //////////////
 // FUNCTIONS
