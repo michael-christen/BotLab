@@ -32,12 +32,18 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 	derivative     = (err - pid->prev_err)/dt;
     }
 
-    double output     = pid->P*err + 
-	                pid->I*pid->integral + 
+    double output     = pid->P*err +
+	                pid->I*pid->integral +
 			pid->D*derivative;
 
-    pid->prev_err     = err; 
+    pid->prev_err     = err;
     pid->prev_clk     = cur_clock;
     return output;
 }
 
+double pid_to_rot(double pid_out) {
+    if(abs(pid_out) > 1) {
+	pid_out /= abs(pid_out);
+    }
+    return pid_out;
+}

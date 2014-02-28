@@ -19,4 +19,5 @@ void   pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal);
 void   pid_update_pid(pid_ctrl_t *pid, double P, double I, double D);
 void   pid_update_goal(pid_ctrl_t *pid, double goal);
 double pid_get_output(pid_ctrl_t *pid, double meas);
+double pid_to_rot(double pid_out);
 #endif

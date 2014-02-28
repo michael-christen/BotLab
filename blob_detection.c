@@ -97,7 +97,12 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
     for(y = 0; y < im->height; ++y) {
             for(x = 0; x < im->width; ++x) {
                 id = im->stride*y + x;
-            px = im->buf[id];
+		px = im->buf[id];
+		/*
+		im->buf[id] = dist_to_grey(color_dist(template_px, px));
+	    }
+    }
+	    */
             if(is_ball(color_threshold,template_px,px)){
                 len_neighbors = getNeighbors(im, x, y, neighbors,
                                     template_px, color_threshold);
@@ -134,12 +139,6 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 	    px = im->buf[id];
 	    if(is_ball(color_threshold,template_px,px)
            && links[labels[id]]){
-		/*
-		if(!links[labels[id]]) {
-		    printf("id: %d, labels[id]: %d, links[labels[id]]: %d\n",
-			    id, labels[id], links[labels[id]]);
-		}
-		*/
 		labels[id] = set_find(links[labels[id]])->val;
 		balls[labels[id]].x += x;
 		balls[labels[id]].y += y;
