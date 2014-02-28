@@ -31,6 +31,8 @@
 //////////////
 // CONSTANTS
 //////////////
+#define MAX_POS_SAMPLES 20
+#define POS_SAMPLES_INTERVAL 500000
 #define NUM_LAYERS 4
 #define BRUCE_DIAMETER 10.5
 #define BRUCE_HEIGHT 10
@@ -48,8 +50,12 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
+typedef struct position_t position_t;
 typedef enum stateType state_type_t;
 
+struct position_t {
+    double x, y;
+};
 
 struct getopt_options_t {
     int verbose, no_video, limitKBs, autoCamera;
@@ -102,6 +108,8 @@ struct state_t {
     const char *sensor_channel;
 
     //Position info from odometry
+    int positionQueueP, positionQueueCount;
+    position_t positionQueue[MAX_POS_SAMPLES];
     double pos_x, pos_y, pos_z;
     double pos_theta;
     int32_t prev_left_ticks, prev_right_ticks;
@@ -117,8 +125,10 @@ struct state_t {
     pthread_mutex_t lcm_mutex;
 
     pthread_t lcm_handle_thread;
+    pthread_t position_tracker_thread;
 
     pthread_mutex_t layer_mutex;
+    pthread_mutex_t running_mutex;
     pthread_t gui_thread;
 
     int layerCount;

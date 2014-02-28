@@ -35,6 +35,7 @@ int num_balls, displayCount;
 
 void display_finished(vx_application_t * app, vx_display_t * disp)
 {
+    //printf("Top of display finished\n");
     zhash_iterator_t it;
     vx_layer_t *value;
 
@@ -50,9 +51,16 @@ void display_finished(vx_application_t * app, vx_display_t * disp)
         vx_layer_destroy(value);
         zhash_iterator_remove(&it);
     }
-    displayCount--;
 
     pthread_mutex_unlock(&state->layer_mutex);
+
+    displayCount--;
+    if (displayCount <= 0) {
+        pthread_mutex_lock(&state->running_mutex);
+        printf("Last display quit, end program\n");
+        state->running = 0;
+        pthread_mutex_unlock(&state->running_mutex);
+    }
 
     printf("hash table size after remove: %d\n", zhash_size(state->layer_map));
 }
@@ -206,7 +214,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     }
 
     image_u32_destroy(im);
-
+    //printf("endRender cameraPOV\n");
     return 1;
 }
 
@@ -248,10 +256,9 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 
     vx_buffer_add_back(gridBuff, vo);
     //Draw Axes
-    int npoints = 4;
     float axes[12] = {-1000, 0, 0, 1000, 0, 0, 0, -1000, 0, 0, 1000, 0};
-    vx_resc_t *verts = vx_resc_copyf(axes, npoints*3);
-    vx_buffer_add_back(gridBuff, vxo_lines(verts, npoints, GL_LINES, vxo_points_style(vx_red, 2.0f)));
+    vx_resc_t *verts = vx_resc_copyf(axes, 12);
+    vx_buffer_add_back(gridBuff, vxo_lines(verts, 4, GL_LINES, vxo_points_style(vx_red, 2.0f)));
     //Draw Bruce
     vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
 
@@ -276,6 +283,26 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
                   );
 
     vx_buffer_add_back(bruceBuff, vo);
+
+    //Draw Actual Trajectory
+    vx_buffer_t *aTrajBuff = vx_world_get_buffer(layerData->world, "actual-trajectory");
+    //Draw Axes
+    float aTraj[MAX_POS_SAMPLES * 3];
+    int i;
+    int posIndex = state->positionQueueP;
+    for (i = 0; i < state->positionQueueCount; i++) {
+        aTraj[i*3] = state->positionQueue[posIndex].x * CM_TO_VX;
+        aTraj[i*3 + 1] = state->positionQueue[posIndex].y * CM_TO_VX;
+        aTraj[i*3 + 2] = 0.5;
+        posIndex--;
+
+        if (posIndex < 0) {
+            posIndex = MAX_POS_SAMPLES - 1;
+        }
+    }
+
+    vx_resc_t *posPoints = vx_resc_copyf(aTraj, state->positionQueueCount * 3);
+    vx_buffer_add_back(aTrajBuff, vxo_lines(posPoints, state->positionQueueCount, GL_LINES, vxo_points_style(vx_blue, 2.0f)));
 
     //Draw Gaussian Ellipse
     //95% confidence ellipse from 1-sigma error ellipse
@@ -321,7 +348,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     );
     phi = M_PI/2;
 
-    npoints = 35;
+    int npoints = 35;
     float points[npoints*3];
     for (int i = 0; i < npoints; i++) {
 	float angle = 2*M_PI*i/npoints;
@@ -356,7 +383,9 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //Swap buffers
     vx_buffer_swap(gridBuff);
     vx_buffer_swap(bruceBuff);
+    vx_buffer_swap(aTrajBuff);
     vx_buffer_swap(ellipseBuff);
+    //printf("endRender TOPDOWN\n");
     return 1;
 }
 
@@ -391,6 +420,7 @@ int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
     up[1] = lookat[1] - eye[1];
     up[2] = eye[2] + distAbove;
     vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
+    //printf("endRender worldPOV\n");
     return 1;
 }
 
@@ -420,6 +450,7 @@ int renderDebugLayer(state_t *state, layer_data_t *layerData) {
     vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT, debugText);
     vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));
     vx_buffer_swap(textBuff);
+    //printf("endRender DEBUG\n");
     return 1;
 }
 
@@ -447,12 +478,18 @@ void* renderLayers(state_t *state) {
         for (i = 0; i < NUM_LAYERS; i++) {
             layer_data_t *layer = &(state->layers[i]);
             //printf("layer %d enable %d\n", i, layer->enable);
-            if (layer->enable == 1 && displayCount > 0) {
-                if (layer->render(state, layer) == 0) {
-                    printf("Failed to render layer: %s\n", layer->name);
-                    return NULL;
+            pthread_mutex_lock(&state->running_mutex);
+            if (state->running) {
+                if (layer->enable == 1 && displayCount > 0) {
+                    if (layer->render(state, layer) == 0) {
+                        printf("Failed to render layer: %s\n", layer->name);
+                        return NULL;
+                    }
                 }
+            } else {\
+                break;
             }
+            pthread_mutex_unlock(&state->running_mutex);
         }
     }
     printf("Entering layer destroy\n");

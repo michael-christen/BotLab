@@ -80,6 +80,7 @@ void moveBot(state_t* state, int cmd_val){
 	} else if(cmd_val & LEFT) {
 	    driveRad(state, arc_val, LONG_SPEED);
 	} else {
+        state->pos_y++;
 	    driveRad(state, -1000, LONG_SPEED);
 	}
     } else if(cmd_val & BACKWARD) {
@@ -88,6 +89,7 @@ void moveBot(state_t* state, int cmd_val){
 	} else if(cmd_val & LEFT) {
 	    driveRad(state, arc_val, -LONG_SPEED);
 	} else {
+        state->pos_y--;
 	    driveStraight(state, -LONG_SPEED);
 	}
     } else if(cmd_val & RIGHT) {
@@ -186,7 +188,9 @@ static void handler(int signum)
     {
         case SIGINT:
         case SIGQUIT:
+            pthread_mutex_lock(&global_state->running_mutex);
             global_state->running = 0;
+            pthread_mutex_unlock(&global_state->running_mutex);
             break;
         default:
             break;
@@ -356,6 +360,26 @@ void* FSM(void* data){
 	}	*/
 }
 
+void* position_tracker(void *data) {
+    state_t *state = data;
+
+    while (state->running) {
+        state->positionQueue[state->positionQueueP].x = state->pos_x;
+        state->positionQueue[state->positionQueueP].y = state->pos_y;
+        state->positionQueueP++;
+
+        if (state->positionQueueP > MAX_POS_SAMPLES) {
+            state->positionQueueP = 0;
+        }
+
+        if (state->positionQueueCount < MAX_POS_SAMPLES) {
+            state->positionQueueCount++;
+        }
+        usleep(POS_SAMPLES_INTERVAL);
+    }
+    return NULL;
+}
+
 int main(int argc, char ** argv)
 {
     vx_global_init();
@@ -378,6 +402,8 @@ int main(int argc, char ** argv)
     state->pos_theta= 0;
     state->odometry_seen = 0;
     state->init_last_mouse = 0;
+    state->positionQueueP = 0;
+    state->positionQueueCount = 0;
 
     grid_map_init(&state->gridMap, GRID_MAP_MAX_WIDTH, GRID_MAP_MAX_HEIGHT);
 
@@ -396,6 +422,7 @@ int main(int argc, char ** argv)
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lsr_mutex, NULL);
     pthread_mutex_init(&state->lcm_mutex, NULL);
+    pthread_mutex_init(&state->running_mutex, NULL);
 
 
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
@@ -424,18 +451,20 @@ int main(int argc, char ** argv)
     //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
     pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-    //pthread_create(&state->led_thread,  NULL, send_led, state);
+    pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
-	pthread_create(&state->fsm_thread, NULL, FSM, state);
+	//pthread_create(&state->fsm_thread, NULL, FSM, state);
+    pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 
-	pthread_join(state->fsm_thread, NULL);
+	//pthread_join(state->fsm_thread, NULL);
     pthread_join(state->gui_thread, NULL);
 
     // clean up
     vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
     grid_map_destroy(&state->gridMap);
+    printf("Exited Cleanly!\n");
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
