@@ -10,6 +10,12 @@
 #include"time.h"
 #include "vx/vx.h"
 
+// MAEBOT
+#include "barrel_distortion.h"
+#include "pixel.h"
+#include "grid_map.h"
+#include "pid_ctrl.h"
+
 // EECS 467 Libraries
 #include "common/getopt.h"
 #include "common/image_util.h"
@@ -27,15 +33,16 @@
 //////////////
 // CONSTANTS
 //////////////
-
+#define MAX_POS_SAMPLES 20
+#define POS_SAMPLES_INTERVAL 500000
 #define NUM_LAYERS 4
-#define BRUCE_WIDTH 1
-#define BRUCE_HEIGHT 1
-#define BRUCE_LENGTH 2
+#define BRUCE_DIAMETER 10.5
+#define BRUCE_HEIGHT 10
 
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768
 #define MAX_FORWARD_SPEED 32767
+#define CM_TO_VX 0.1
 
 
 //////////////
@@ -45,10 +52,15 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
+typedef struct position_t position_t;
+typedef enum stateType stateType_t;
 
+struct position_t {
+    double x, y;
+};
 
 struct getopt_options_t {
-    int verbose, no_video, limitKBs;
+    int verbose, no_video, limitKBs, autoCamera;
     double decimate;
 };
 
@@ -77,6 +89,8 @@ struct state_t {
     vx_application_t app;
     vx_event_handler_t veh;
 
+	pthread_t fsm_thread;
+
     maebot_diff_drive_t cmd;
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
@@ -91,6 +105,7 @@ struct state_t {
     pthread_mutex_t led_mutex;
     pthread_t led_thread;
 
+
     int acc[3];
     int gyro[3];
     int gyro_int[3];
@@ -98,8 +113,12 @@ struct state_t {
     const char *sensor_channel;
 
     //Position info from odometry
+    int positionQueueP, positionQueueCount;
+    position_t positionQueue[MAX_POS_SAMPLES];
     double pos_x, pos_y, pos_z;
+	double last_x, last_y;
     double pos_theta;
+	double last_theta;
     int32_t prev_left_ticks, prev_right_ticks;
     int    odometry_seen;
     const char *odometry_channel;
@@ -107,16 +126,25 @@ struct state_t {
 	//map
 	grid_cell obstacle_map[200][200]; //10cm x 10 cm
 
+	//bot is moving forward or back
+	int translating;
+	int rotating;
+	int moving;
+
+
     getopt_t * gopt;
     char * url;
     image_source_t *isrc;
     int fidx;
 
     lcm_t * lcm;
+    pthread_mutex_t lcm_mutex;
 
     pthread_t lcm_handle_thread;
+    pthread_t position_tracker_thread;
 
     pthread_mutex_t layer_mutex;
+    pthread_mutex_t running_mutex;
     pthread_t gui_thread;
 
     int layerCount;
@@ -125,8 +153,39 @@ struct state_t {
     vx_world_t * vw;
     zhash_t *layer_map; // <display, layer>
 
+    // Mouse event stuff
+    int init_last_mouse;
+    vx_mouse_event_t last_mouse;
+    double mouseDownX, mouseDownY;
+    double goalMouseX, goalMouseY;
+
     pthread_t dmon_thread;
+
+    pixel_t* lookupTable;
+
+    // Grid map
+    grid_map_t gridMap;
+
+    //Tape data
+    pixel_t* tape;
+    unsigned int num_pts_tape;
+
+    uint32_t red, green, blue;
+    double thresh;
+
+    pid_ctrl_t *green_pid;
+    double      green_pid_out;
 };
+
+enum stateType{
+	stop,
+	move_forward,
+	analyze,
+	zap_diamond,
+	take_branch
+};
+
+
 
 //////////////
 // FUNCTIONS

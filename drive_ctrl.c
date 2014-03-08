@@ -12,11 +12,11 @@ void driveRad(state_t * state, double radius, double speed) {
 	r_speed  = temp;
     }
     //Normalize so greatest = 1
-    double max = (l_speed > r_speed ) ? 
+    double max = (l_speed > r_speed ) ?
 		    l_speed : r_speed ;
     l_speed  /= max;
-    r_speed  /= max; 
-    
+    r_speed  /= max;
+
     //Factor by speed
     l_speed  *= speed;
     r_speed  *= speed;
@@ -33,6 +33,10 @@ void driveStraight(state_t * state, double speed) {
 
 void driveRot(state_t * state, double omega) {
     driveRad(state, 0, omega);
+}
+
+void driveToTheta(state_t * state, double theta) {
+	//Rotate to theta
 }
 
 void driveStop(state_t * state) {

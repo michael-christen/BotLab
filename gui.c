@@ -29,12 +29,14 @@
 #include "imagesource/image_convert.h"
 
 #include "blob_detection.h"
+#include "line_detection.h"
 
 ball_t balls[MAX_NUM_BALLS];
-int num_balls;
+int num_balls, displayCount;
 
 void display_finished(vx_application_t * app, vx_display_t * disp)
 {
+    //printf("Top of display finished\n");
     zhash_iterator_t it;
     vx_layer_t *value;
 
@@ -52,6 +54,14 @@ void display_finished(vx_application_t * app, vx_display_t * disp)
     }
 
     pthread_mutex_unlock(&state->layer_mutex);
+
+    displayCount--;
+    if (displayCount <= 0) {
+        pthread_mutex_lock(&state->running_mutex);
+        printf("Last display quit, end program\n");
+        state->running = 0;
+        pthread_mutex_unlock(&state->running_mutex);
+    }
 
     printf("hash table size after remove: %d\n", zhash_size(state->layer_map));
 }
@@ -82,6 +92,7 @@ void display_started(vx_application_t * app, vx_display_t * disp)
             layerData->displayInit(state, layerData);
         }
     }
+    displayCount++;
     printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
@@ -108,6 +119,10 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     }
     zarray_get(urls, 0, &state->url);
     //}
+    if (!state->getopt_options.autoCamera) {
+        state->url =
+    "dc1394://b09d01008e366c?fidx=0&white-balance-manual=1&white-balance-red=400&white-balance-blue=714";
+    }
 
     state->isrc = image_source_open(state->url);
     if (state->isrc == NULL) {
@@ -122,19 +137,24 @@ int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         return 0;
     }
 
+    image_source_format_t isrc_format;
+    state->isrc->get_format(state->isrc, 0, &isrc_format);
+    state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
+
     return 1;
 }
 
 int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     image_source_format_t isrc_format;
+    double decimate = state->getopt_options.decimate;
     state->isrc->get_format(state->isrc, 0, &isrc_format);
 
     float lowLeft[2] = {0, 0};
-    float upRight[2] = {isrc_format.width, isrc_format.height};
+    float upRight[2] = {isrc_format.width / decimate, isrc_format.height / decimate};
 
     vx_layer_camera_fit2D(layerData->layer, lowLeft, upRight, 1);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
-    vx_layer_add_event_handler(layerData->layer, &state->veh);
+    //vx_layer_add_event_handler(layerData->layer, &state->veh);
     return 1;
 }
 
@@ -161,6 +181,33 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     }
 
     if (im != NULL) {
+		correctDistortion(im, state->lookupTable);
+	//Blue
+	state->num_pts_tape =
+	    line_detection(im, state->tape);
+	printf("Pts: %d\n",state->num_pts_tape);
+        //might wanna make diff d.s.
+        //Also, gonna need to copy image
+        //Green
+	uint32_t color_detect = state->red | state->green << 8 |
+	    state->blue << 16 | 0xff << 24;
+	printf("color: %x\n",color_detect);
+	printf("thresh: %f\n",state->thresh);
+        num_balls = blob_detection(im, balls,
+			color_detect,
+			0xff039dfd,
+                        state->thresh);
+	printf("num_balls: %d\n",num_balls);
+	if(num_balls) {
+	    double diff_x = im->width/2.0 - balls[0].x;
+	    printf("x: %f\n", diff_x);
+	    im->buf[(int) (im->stride*balls[0].y + balls[0].x)] = 0xffff0000;
+	    double pid_out = pid_get_output(
+				state->green_pid,diff_x);
+	    state->green_pid_out = pid_out;
+	    printf("pid_out: %f\n",pid_out);
+	}
+
         double decimate = state->getopt_options.decimate;
 
         if (decimate != 1.0) {
@@ -169,7 +216,6 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
             im = im2;
         }
 
-        num_balls = blob_detection(im, balls);
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
 		VX_TEX_MIN_FILTER | VX_TEX_MAG_FILTER);
 
@@ -180,9 +226,9 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         vx_buffer_add_back(vb, vo);
         vx_buffer_swap(vb);
     }
-    
-    image_u32_destroy(im);
 
+    image_u32_destroy(im);
+    //printf("endRender cameraPOV\n");
     return 1;
 }
 
@@ -201,8 +247,13 @@ int initWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int displayInitWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+    const float eye[3] = {0, 0, 20};
+    const float lookat[3] = {0, 0, 0};
+    const float up[3] = {0, 1, 0};
+
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
     vx_layer_add_event_handler(layerData->layer, &state->veh);
+    vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
     return 1;
 }
 
@@ -210,22 +261,62 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //Draw Grid
     vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
     vx_buffer_add_back(gridBuff, vxo_grid());
+    //printf("stride %d\n", state->gridMap.image->stride);
+    vx_object_t *vo = vxo_chain(
+                                vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+                                vxo_mat_translate3(-state->gridMap.width/2, -state->gridMap.height/2, -1),
+                                vxo_image_from_u32(state->gridMap.image, 0, 0)
+                                );
+
+    vx_buffer_add_back(gridBuff, vo);
     //Draw Axes
-    int npoints = 4;
     float axes[12] = {-1000, 0, 0, 1000, 0, 0, 0, -1000, 0, 0, 1000, 0};
-    vx_resc_t *verts = vx_resc_copyf(axes, npoints*3);
-    vx_buffer_add_back(gridBuff, vxo_lines(verts, npoints, GL_LINES, vxo_points_style(vx_red, 2.0f)));
+    vx_resc_t *verts = vx_resc_copyf(axes, 12);
+    vx_buffer_add_back(gridBuff, vxo_lines(verts, 4, GL_LINES, vxo_points_style(vx_red, 2.0f)));
     //Draw Bruce
     vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
-    vx_object_t *vo = vxo_chain(
-                                vxo_mat_translate3(state->pos_x, state->pos_y - BRUCE_LENGTH/2, state->pos_z),
-                                vxo_mat_rotate_z(-state->pos_theta),
-                                vxo_mat_rotate_x(-M_PI/2),
-				vxo_mat_scale3(BRUCE_WIDTH, BRUCE_HEIGHT, BRUCE_LENGTH),
-                                vxo_square_pyramid(vxo_mesh_style(vx_blue),
-                                                    vxo_lines_style(vx_cyan, 2.0f))                                 
+
+    vo = vxo_chain(
+                                vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+                                vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z + BRUCE_HEIGHT / 2),
+                                vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
+                                vxo_cylinder(vxo_mesh_style(vx_blue),
+                                                vxo_lines_style(vx_cyan, 2.0f))
                                 );
+
     vx_buffer_add_back(bruceBuff, vo);
+
+    vo = vxo_chain(
+                    vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+                    vxo_mat_translate3(state->pos_x, state->pos_y ,state->pos_z + BRUCE_HEIGHT + 0.1),
+                    vxo_mat_rotate_z(-state->pos_theta),
+                    vxo_mat_translate3(0, -BRUCE_DIAMETER / 2, 0),
+                    vxo_mat_rotate_x(-M_PI/2),
+                    vxo_mat_scale3(BRUCE_DIAMETER / 2, 1, BRUCE_DIAMETER),
+                    vxo_square_pyramid(vxo_mesh_style(vx_red))
+                  );
+
+    vx_buffer_add_back(bruceBuff, vo);
+
+    //Draw Actual Trajectory
+    vx_buffer_t *aTrajBuff = vx_world_get_buffer(layerData->world, "actual-trajectory");
+    //Draw Axes
+    float aTraj[MAX_POS_SAMPLES * 3];
+    int i;
+    int posIndex = state->positionQueueP;
+    for (i = 0; i < state->positionQueueCount; i++) {
+        aTraj[i*3] = state->positionQueue[posIndex].x * CM_TO_VX;
+        aTraj[i*3 + 1] = state->positionQueue[posIndex].y * CM_TO_VX;
+        aTraj[i*3 + 2] = 0.5;
+        posIndex--;
+
+        if (posIndex < 0) {
+            posIndex = MAX_POS_SAMPLES - 1;
+        }
+    }
+
+    vx_resc_t *posPoints = vx_resc_copyf(aTraj, state->positionQueueCount * 3);
+    vx_buffer_add_back(aTrajBuff, vxo_lines(posPoints, state->positionQueueCount, GL_LINES, vxo_points_style(vx_blue, 2.0f)));
 
     //Draw Gaussian Ellipse
     //95% confidence ellipse from 1-sigma error ellipse
@@ -263,15 +354,15 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	y_length = semi_major_length;
     }
     //rotate phi ccw from original orientation
-    double phi = 1/2 * atan( 
-	    (1/aspect_ratio) * 
-	    ( (2*sig_xy) / 
-	      ( pow(sig_x,2)-pow(sig_y,2) ) 
+    double phi = 1/2 * atan(
+	    (1/aspect_ratio) *
+	    ( (2*sig_xy) /
+	      ( pow(sig_x,2)-pow(sig_y,2) )
 	    )
     );
     phi = M_PI/2;
 
-    npoints = 35;
+    int npoints = 35;
     float points[npoints*3];
     for (int i = 0; i < npoints; i++) {
 	float angle = 2*M_PI*i/npoints;
@@ -287,13 +378,14 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world,
 	    "error_ellipse");
     vo = vxo_chain(
+    vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
 	vxo_mat_translate3(
-	    state->pos_x, 
-	    state->pos_y, 
+	    state->pos_x,
+	    state->pos_y,
 	    state->pos_z
 	),
 	vxo_mat_rotate_z(phi - state->pos_theta),
-	vxo_lines( 
+	vxo_lines(
 	    vx_resc_copyf(points, npoints*3),
 	    npoints,
 	    GL_LINE_LOOP,
@@ -305,7 +397,9 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //Swap buffers
     vx_buffer_swap(gridBuff);
     vx_buffer_swap(bruceBuff);
+    vx_buffer_swap(aTrajBuff);
     vx_buffer_swap(ellipseBuff);
+    //printf("endRender TOPDOWN\n");
     return 1;
 }
 
@@ -319,16 +413,28 @@ int initWorldPOVLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int displayInitWorldPOVLayer(state_t *state, layer_data_t *layerData) {
-    //const double eye[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double lookat[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double up[3] = {0, 0, 1};
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
-    vx_layer_add_event_handler(layerData->layer, &state->veh);
-    //vx_layer_camera_lookat(layerData->layer, &eye, &lookat, &up, 1);
+    //vx_layer_add_event_handler(layerData->layer, &state->veh);
     return 1;
 }
 
 int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+    const float distBehind = 5 * BRUCE_DIAMETER / 2.0f;
+    const float distAbove = BRUCE_HEIGHT;
+    float eye[3];
+    float lookat[3];
+    float up[3];
+    eye[0] = (state->pos_x + (distBehind * sin(-state->pos_theta))) * CM_TO_VX;
+    eye[1] = (state->pos_y - (distBehind * cos(-state->pos_theta))) * CM_TO_VX;
+    eye[2] = (state->pos_z + BRUCE_HEIGHT + distAbove) * CM_TO_VX;
+    lookat[0] = state->pos_x * CM_TO_VX;
+    lookat[1] = state->pos_y * CM_TO_VX;
+    lookat[2] = (state->pos_z + BRUCE_HEIGHT) * CM_TO_VX;
+    up[0] = lookat[0] - eye[0];
+    up[1] = lookat[1] - eye[1];
+    up[2] = eye[2] + distAbove;
+    vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
+    //printf("endRender worldPOV\n");
     return 1;
 }
 
@@ -342,26 +448,23 @@ int initDebugLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
-    //const double eye[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double lookat[3] = {state->pos_x, state->pos_y, state->pos_z};
-    //const double up[3] = {0, 0, 1};
     float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     vx_layer_set_background_color(layerData->layer, black);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
-    vx_layer_add_event_handler(layerData->layer, &state->veh);
-    //vx_layer_camera_lookat(layerData->layer, &eye, &lookat, &up, 1);
+    //vx_layer_add_event_handler(layerData->layer, &state->veh);
     return 1;
 }
 
 int renderDebugLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *textBuff = vx_world_get_buffer(layerData->world, "text");
 
-    char debugText[80];
-    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f";
-    sprintf(debugText, formatting, state->pos_x, state->pos_y, state->pos_theta);
+    char debugText[100];
+    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\n";
+    sprintf(debugText, formatting, state->pos_x, state->pos_y, state->pos_theta, state->gyro[0]);
     vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT, debugText);
     vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));
     vx_buffer_swap(textBuff);
+    //printf("endRender DEBUG\n");
     return 1;
 }
 
@@ -389,12 +492,18 @@ void* renderLayers(state_t *state) {
         for (i = 0; i < NUM_LAYERS; i++) {
             layer_data_t *layer = &(state->layers[i]);
             //printf("layer %d enable %d\n", i, layer->enable);
-            if (layer->enable == 1) {
-                if (layer->render(state, layer) == 0) {
-                    printf("Failed to render layer: %s\n", layer->name);
-                    return NULL;
+            pthread_mutex_lock(&state->running_mutex);
+            if (state->running) {
+                if (layer->enable == 1 && displayCount > 0) {
+                    if (layer->render(state, layer) == 0) {
+                        printf("Failed to render layer: %s\n", layer->name);
+                        return NULL;
+                    }
                 }
+            } else {\
+                break;
             }
+            pthread_mutex_unlock(&state->running_mutex);
         }
     }
     printf("Entering layer destroy\n");
@@ -435,8 +544,8 @@ void* gui_create(void *data) {
     state->layers[0].destroy = destroyWorldTopDownLayer;
 
 
-    //state->layers[1].enable = !state->getopt_options.no_video;
-    state->layers[1].enable = 1;
+    state->layers[1].enable = !state->getopt_options.no_video;
+    //state->layers[1].enable = 1;
     state->layers[1].name = "CameraPOV";
     state->layers[1].position[0] = 0.666f;
     state->layers[1].position[1] = 0.5f;
@@ -447,7 +556,7 @@ void* gui_create(void *data) {
     state->layers[1].render = renderCameraPOVLayer;
     state->layers[1].destroy = destroyCameraPOVLayer;
 
-    state->layers[2].enable = 0;
+    state->layers[2].enable = 1;
     state->layers[2].name = "WorldPOV";
     state->layers[2].position[0] = 0.666f;
     state->layers[2].position[1] = 0;

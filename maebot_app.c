@@ -4,6 +4,7 @@
 #include "odometry.h"
 #include "pid_ctrl.h"
 #include "drive_ctrl.h"
+#include "barrel_distortion.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -34,12 +35,15 @@
 #define BACKWARD 2
 #define LEFT 4
 #define RIGHT 8
+#define PID 16
 
 #define LONG_SPEED 0.5
 #define ROT_SPEED 0.2
 
 #define FBDIV 100000.0
 #define LRDIV 100000.0
+
+#define MOUSE_MOVE_THRESHOLD 10
 
 void setLaser(state_t* state, int lsr_val){
 //lsr_val == 1 ? laser is on : laser is off
@@ -59,7 +63,7 @@ void fireLaser(state_t* state){
 		setLaser(state, 0);
 		LEDStatus(state, NONE);
 		usleep(150000);
-	
+
 		setLaser(state, 1);
 		LEDStatus(state, LASER_ON);
 		usleep(200000);
@@ -77,7 +81,7 @@ void moveBot(state_t* state, int cmd_val){
 	} else if(cmd_val & LEFT) {
 	    driveRad(state, arc_val, LONG_SPEED);
 	} else {
-	    driveRad(state, -100, LONG_SPEED);
+	    driveRad(state, -1000, LONG_SPEED);
 	}
     } else if(cmd_val & BACKWARD) {
 	if(cmd_val & RIGHT) {
@@ -91,6 +95,9 @@ void moveBot(state_t* state, int cmd_val){
 	driveRot(state, -ROT_SPEED);
     } else if(cmd_val & LEFT) {
 	driveRot(state, ROT_SPEED);
+    } else if(cmd_val & PID) {
+	double rot = pid_to_rot(state->green_pid_out);
+	driveRot(state, rot);
     } else {
 	driveStop(state);
     }
@@ -102,6 +109,37 @@ static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 }
 static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_mouse_event_t * mouse)
 {
+    state_t * state = vh->impl;
+    vx_mouse_event_t last_mouse;
+    if (state->init_last_mouse) {
+        memcpy(&last_mouse, &state->last_mouse, sizeof(vx_mouse_event_t));
+        memcpy(&state->last_mouse, mouse, sizeof(vx_mouse_event_t));
+    } else {
+        memcpy(&state->last_mouse, mouse, sizeof(vx_mouse_event_t));
+        state->init_last_mouse = 1;
+        return 0;
+    }
+
+    int diff_button = mouse->button_mask ^ last_mouse.button_mask;
+    int button_down = diff_button & (!last_mouse.button_mask);
+    int button_up = diff_button & last_mouse.button_mask;
+    if (button_down) {
+        state->mouseDownX = mouse->x;
+        state->mouseDownY = mouse->y;
+    } else if (button_up) {
+        int mouseMoveDist = sqrt(pow(state->mouseDownX - mouse->x, 2) + pow(state->mouseDownY - mouse->y, 2));
+        if (mouseMoveDist < MOUSE_MOVE_THRESHOLD) {
+            double man_point[3];
+            vx_ray3_t ray;
+            vx_camera_pos_compute_ray(pos, mouse->x, mouse->y, &ray);
+            vx_ray3_intersect_xy(&ray, 0, man_point);
+            // Add state machine flag here
+            state->goalMouseX = man_point[0];
+            state->goalMouseY = man_point[1];
+        }
+    }
+
+
     return 0;
 }
 
@@ -123,7 +161,30 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 	} else if(key->key_code == 'l' || key->key_code == 'L') {
 	    // fire laser
 	    fireLaser(state);
+	} else if(key->key_code == 'r') {
+	    state->red ++;
+	} else if(key->key_code == 'g') {
+	    state->green ++;
+	} else if(key->key_code == 'b') {
+	    state->blue ++;
+	} else if(key->key_code == 't') {
+	    state->red --;
+	} else if(key->key_code == 'h') {
+	    state->green --;
+	} else if(key->key_code == 'n') {
+	    state->blue --;
+	} else if(key->key_code == 'y') {
+	    state->thresh ++;
+	} else if(key->key_code == 'u') {
+	    state->thresh --;
+	} else if(key->key_code == 'p') {
+	    cmd_val = PID;
+	} else if(key->key_code == '0') {
+	    cmd_val |= ~PID;
 	}
+	state->red &= 0xff;
+	state->green &= 0xff;
+	state->blue &= 0xff;
     }
     moveBot(state, cmd_val);
     if (cmd_val & FORWARD) {
@@ -152,7 +213,9 @@ static void handler(int signum)
     {
         case SIGINT:
         case SIGQUIT:
+            pthread_mutex_lock(&global_state->running_mutex);
             global_state->running = 0;
+            pthread_mutex_unlock(&global_state->running_mutex);
             break;
         default:
             break;
@@ -165,12 +228,14 @@ static void * send_cmds(void * data)
 
     while (state->running) {
 
+        pthread_mutex_lock(&state->lcm_mutex);
         pthread_mutex_lock(&state->cmd_mutex);
         {
             //state->cmd.timestamp = utime_now();
-            maebot_diff_drive_t_publish(state->lcm,  "MAEBOT_DIFF_DRIVE", &state->cmd);
+            maebot_diff_drive_t_publish(state->lcm,  "MAEBOT_DIFF_DRIVE", &(state->cmd));
         }
         pthread_mutex_unlock(&state->cmd_mutex);
+        pthread_mutex_unlock(&state->lcm_mutex);
 
         usleep(50000); // send at 20 hz
     }
@@ -181,11 +246,13 @@ static void * send_lsr(void * data){
 	state_t * state = data;
 
 	while(state->running) {
+        pthread_mutex_lock(&state->lcm_mutex);
 		pthread_mutex_lock(&state->lsr_mutex);
 		{
-			maebot_laser_t_publish(state->lcm, "MAEBOT_LASER", &state->lsr);
+			maebot_laser_t_publish(state->lcm, "MAEBOT_LASER", &(state->lsr));
 		}
 		pthread_mutex_unlock(&state->lsr_mutex);
+        pthread_mutex_unlock(&state->lcm_mutex);
 
 		usleep(50000);
 	}
@@ -197,11 +264,13 @@ static void * send_led(void * data){
 	state_t * state = data;
 
 	while(state->running){
+        pthread_mutex_lock(&state->lcm_mutex);
 		pthread_mutex_lock(&state->led_mutex);
 		{
 			maebot_leds_t_publish(state->lcm, "MAEBOT_LEDS", &state->led);
 		}
 		pthread_mutex_unlock(&state->led_mutex);
+        pthread_mutex_unlock(&state->lcm_mutex);
 
 		usleep(50000);
 	}
@@ -221,47 +290,172 @@ static void * driver_monitor(void *data) {
 void* lcm_handle_loop(void *data) {
     state_t *state = data;
 
-    maebot_sensor_data_t_subscription_t * sensor_sub = 
+    maebot_sensor_data_t_subscription_t * sensor_sub =
 	maebot_sensor_data_t_subscribe(
-		state->lcm, "MAEBOT_SENSOR_DATA", 
+		state->lcm, "MAEBOT_SENSOR_DATA",
 		&sensor_handler, state
 	); //subscribe to gyro/accelerometer data
 
     maebot_motor_feedback_t_subscription_t * odometry_sub =
 	maebot_motor_feedback_t_subscribe(state->lcm,
-		"MAEBOT_MOTOR_FEEDBACK", 
+		"MAEBOT_MOTOR_FEEDBACK",
 		&odometry_handler, state); //subscribe to odometry data
 
     int hz = 15;
-    while (1) {
+    while (state->running) {
         // Set up the LCM file descriptor for waiting. This lets us monitor it
         // until somethign is "ready" to happen. In this case, we are ready to
         // receive a message.
+        lcm_handle(state->lcm);
+        /*
         int lcm_fd = lcm_get_fileno(state->lcm);
         fd_set fds;
         FD_ZERO(&fds);
         FD_SET(lcm_fd, &fds);
-		
+
         // Handle message if appropriate
         struct timeval timeout = {
             0,              // Seconds
             1000000/hz      // Microseconds
         };
-		
+
         int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
-		
+
         if (0 == status) {
             continue;
         } else {
             // LCM has events ready to be processed
             lcm_handle(state->lcm);
         }
+        */
     }
 
     //clean up
-    maebot_sensor_data_t_unsubscribe(state->lcm, sensor_sub); 
+    maebot_sensor_data_t_unsubscribe(state->lcm, sensor_sub);
     maebot_motor_feedback_t_unsubscribe(state->lcm, odometry_sub);
 
+    return NULL;
+}
+
+void* FSM(void* data){
+	state_t* state = data;
+
+	stateType_t curState, nextState;
+	curState = stop;
+	nextState = curState;
+	int threshold = 0.3;
+	int rthreshold = 0.1;
+	int timesRotated45 = 0;
+	while(state->running){
+
+	switch(curState){
+		case stop:
+			moveBot(state, STOP);
+			nextState = analyze;
+			break;
+		case move_forward:
+			moveBot(state, FORWARD);
+			nextState = analyze;
+			break;
+		case analyze:{
+			if(1){//new_diamond_in_view){
+				nextState = zap_diamond;
+				timesRotated45--; //in case diamond is opposite the turns
+			}else if(1){//new_branch_in_view){
+				nextState = take_branch;
+				timesRotated45 = 0;
+			}else if(!state->moving){
+				if(timesRotated45 == 3){
+					return NULL;	//nowhere to go
+				}
+				driveToTheta(state, state->pos_theta - M_PI/4.0);
+				timesRotated45++;
+			}
+			break;}
+		case zap_diamond:{
+			int wasMoving = 0;
+			if(!state->moving){
+				wasMoving = 1;
+				moveBot(state, STOP);
+			}
+			//Still need to get diamond coords
+			double diamond_x, diamond_y;
+			double dx = diamond_x - state->pos_x;
+			double dy = diamond_y - state->pos_y;
+			double 	dtheta = atan2(dy, dx);
+			double originalTheta = state->pos_theta;
+			//rotate toward diamond
+			driveToTheta(state, dtheta);
+			while(abs(state->pos_theta - dtheta) > rthreshold){
+				usleep(1000);
+			}
+
+			//shoot diamond
+			fireLaser(state);
+			//update diamond to zapped
+
+			if(wasMoving){
+				//return to original theta
+				driveToTheta(state, originalTheta);
+				while(abs(state->pos_theta - originalTheta) > rthreshold){
+					usleep(1000);
+				}
+				moveBot(state, FORWARD);
+			}
+			nextState = analyze;
+			break;}
+		case take_branch:{
+			//Assuming branch is defined as in free space - no collisions
+			double branch_x, branch_y;
+			double dx = branch_x - state->pos_x;
+			double dy = branch_y - state->pos_y;
+			double dtheta = atan2(dy, dx);
+
+			//rotate bot toward branch opening
+			driveToTheta(state, dtheta);
+			while(abs(state->pos_theta - dtheta) > rthreshold){
+				usleep(1000);
+			}
+			
+			//drive forward to branch
+			moveBot(state, FORWARD);
+			while(abs(state->pos_x - branch_x) > threshold && abs(state->pos_y - branch_y) > threshold){
+				usleep(1000);
+			}
+			moveBot(state, STOP);
+
+			//rotate bot to face branch
+			double branch_theta;	//Theta between current hall and branch
+			driveToTheta(state, branch_theta);
+			while(abs(state->pos_theta - branch_theta) > rthreshold){
+				usleep(1000);
+			}
+			nextState = move_forward;
+			break;}
+		default: nextState = curState;
+		}
+		curState = nextState;
+	}	
+	return NULL;
+}
+
+void* position_tracker(void *data) {
+    state_t *state = data;
+
+    while (state->running) {
+        state->positionQueue[state->positionQueueP].x = state->pos_x;
+        state->positionQueue[state->positionQueueP].y = state->pos_y;
+        state->positionQueueP++;
+
+        if (state->positionQueueP > MAX_POS_SAMPLES) {
+            state->positionQueueP = 0;
+        }
+
+        if (state->positionQueueCount < MAX_POS_SAMPLES) {
+            state->positionQueueCount++;
+        }
+        usleep(POS_SAMPLES_INTERVAL);
+    }
     return NULL;
 }
 
@@ -283,16 +477,34 @@ int main(int argc, char ** argv)
     state->veh.impl = state;
     state->pos_x    = 0;
     state->pos_y    = 0;
-    state->pos_z    = BRUCE_HEIGHT/2;
+    state->pos_z    = 0;
     state->pos_theta= 0;
     state->odometry_seen = 0;
+    state->init_last_mouse = 0;
+    state->positionQueueP = 0;
+    state->positionQueueCount = 0;
+    state->red = 0x3a;
+    state->green = 0x76;
+    state->blue = 0x41;
+    state->thresh = 52.0;
+    state->green_pid = malloc(sizeof(pid_ctrl_t));
+    state->green_pid_out = 0;
+    pid_init(state->green_pid, 1, 0, 0, 0);
+
+    grid_map_init(&state->gridMap, GRID_MAP_MAX_WIDTH, GRID_MAP_MAX_HEIGHT);
+
+    state->lookupTable = getLookupTable(752,480);
+
+    //Should be width
+    state->tape = calloc(1000, sizeof(pixel_t));
+    state->num_pts_tape = 0;
 
     state->running = 1;
 
     lcm_t * lcm = lcm_create (NULL);
     state->lcm = lcm;
-    state->sensor_channel = "MAEBOT_SENSOR"; 
-    state->odometry_channel = "MAEBOT_ODOMETRY"; 
+    state->sensor_channel = "MAEBOT_SENSOR";
+    state->odometry_channel = "MAEBOT_ODOMETRY";
 
 
     int i, j;
@@ -310,6 +522,8 @@ int main(int argc, char ** argv)
     pthread_mutex_init(&state->layer_mutex, NULL);
     pthread_mutex_init(&state->cmd_mutex, NULL);
     pthread_mutex_init(&state->lsr_mutex, NULL);
+    pthread_mutex_init(&state->lcm_mutex, NULL);
+    pthread_mutex_init(&state->running_mutex, NULL);
 
 
     state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
@@ -318,9 +532,10 @@ int main(int argc, char ** argv)
 
     getopt_add_bool(state->gopt, 'h', "help", 0, "Show this help");
     getopt_add_bool(state->gopt, 'v', "verbose", 0, "Show extra debugging output");
+    getopt_add_bool(state->gopt, 'c', "auto-camera", 0, "Automatically detect which camera to use");
     getopt_add_bool(state->gopt, '\0', "no-video", 0, "Disable video");
     getopt_add_int (state->gopt, 'l', "limitKBs", "-1", "Remote display bandwidth limit. < 0: unlimited.");
-    getopt_add_double (state->gopt, 'd', "decimate", "1", "Decimate image by this amount before showing in vx");
+    getopt_add_double (state->gopt, 'd', "decimate", "0", "Decimate image by this amount before showing in vx");
 
     if (!getopt_parse(state->gopt, argc, argv, 0) ||
         getopt_get_bool(state->gopt,"help")) {
@@ -329,22 +544,29 @@ int main(int argc, char ** argv)
     }
 
     state->getopt_options.verbose = getopt_get_bool(state->gopt, "verbose");
+    state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
     state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
     state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
-    state->getopt_options.decimate = getopt_get_double(state->gopt, "decimate");
+    state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
 
     //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
     pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-    pthread_create(&state->led_thread,  NULL, send_led, state);
+    //pthread_create(&state->led_thread,  NULL, send_led, state);
     pthread_create(&state->gui_thread,  NULL, gui_create, state);
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
+	//pthread_create(&state->fsm_thread, NULL, FSM, state);
+    pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 
+	//pthread_join(state->fsm_thread, NULL);
     pthread_join(state->gui_thread, NULL);
 
     // clean up
     vx_world_destroy(state->vw);
-    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub); 
+	destroyLookupTable(state->lookupTable);
+    grid_map_destroy(&state->gridMap);
+    printf("Exited Cleanly!\n");
+    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
 

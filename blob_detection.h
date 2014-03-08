@@ -6,17 +6,18 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "image.h"
 
-#define COLOR_THRESHOLD 100.0
+#define COLOR_THRESHOLD 37.0
 //ABGR
 //#define TEMPLATE_PX 0xff1e2a25
 //#define TEMPLATE_PX 0xff2c3f34
 //Green
-//#define TEMPLATE_PX 0xff328263
+//#define TEMPLATE_PX 0xff394d2c
 //Blue
-#define TEMPLATE_PX 0xff36564e
-//#define TEMPLATE_PX 0xff242428
-#define SHOW_PX 0xffe127ff
+//#define TEMPLATE_PX 0xff4f4029
+//#define TEMPLATE_PX 0xff514430
+//#define SHOW_PX 0xffe127ff
 #define MIN_PXS 75
 #define MAX_PXS 400
 #define MAX_NUM_NEIGHBORS 8
@@ -28,15 +29,15 @@ struct ball {
     int num_px;
 };
 
-unsigned int color_dist(uint32_t p1, uint32_t p2);
-
-unsigned int is_ball(uint32_t px);
+unsigned int is_ball(double color_threshold,
+                    uint32_t template_px, uint32_t px);
 
 
 //Returns number of neighbors, modifies neighbors array to
 //contain their position in the buf
-unsigned int getNeighbors(image_u32_t *im, int x, int y, 
-	int neighbors[MAX_NUM_NEIGHBORS]);
+unsigned int getNeighbors(image_u32_t *im, int x, int y,
+	int neighbors[MAX_NUM_NEIGHBORS],
+    uint32_t template_px, double color_threshold);
 
 void getNLabels(int n_labels[], int labels[], int neighbors[], int
 	len_neighbors);
@@ -46,9 +47,11 @@ int minLabel(int n_labels[], int len_labels);
 
 
 void unionLabels(Set *links[MAX_NUM_BALLS], int n_labels[MAX_NUM_NEIGHBORS],
-	int len_neighbors); 
+	int len_neighbors);
 
-int blob_detection(image_u32_t *im, ball_t *final_balls);
+int blob_detection(image_u32_t *im, ball_t *final_balls,
+                   uint32_t template_px, uint32_t show_px,
+                   double color_threshold);
 
 
 #endif
