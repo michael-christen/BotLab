@@ -7,8 +7,7 @@
 
 // C Libraries
 #include <pthread.h>
-
-// VX
+#include"time.h"
 #include "vx/vx.h"
 
 // MAEBOT
@@ -26,6 +25,7 @@
 #include "common/timestamp.h"
 #include "imagesource/image_source.h"
 #include "imagesource/image_convert.h"
+#include "common/matd.h"
 
 // LCM
 #include "lcmtypes/maebot_diff_drive_t.h"
@@ -76,6 +76,13 @@ struct layer_data_t {
     int (*destroy)(state_t *state, layer_data_t *layerData);
 };
 
+typedef enum {UNKNOWN, OCCUPIED, UNOCCUPIED} grid_status;
+
+typedef struct grid_cell{
+	grid_status status;
+	clock_t created;
+} grid_cell;
+
 struct state_t {
     getopt_options_t  getopt_options;
     vx_application_t app;
@@ -97,11 +104,7 @@ struct state_t {
     pthread_mutex_t led_mutex;
     pthread_t led_thread;
 
-//		not sure if we need this?
-/*	 maebot_sensor_data_t sensor;
-    pthread_mutex_t sensor_mutex;
-    pthread_t sensor_thread;
-*/
+
     int acc[3];
     int gyro[3];
     int gyro_int[3];
@@ -119,10 +122,14 @@ struct state_t {
     int    odometry_seen;
     const char *odometry_channel;
 
+	//map
+	grid_cell obstacle_map[200][200]; //10cm x 10 cm
+
 	//bot is moving forward or back
 	int translating;
 	int rotating;
 	int moving;
+
 
     getopt_t * gopt;
     char * url;

@@ -506,6 +506,15 @@ int main(int argc, char ** argv)
     state->sensor_channel = "MAEBOT_SENSOR";
     state->odometry_channel = "MAEBOT_ODOMETRY";
 
+
+    int i, j;
+	 for(i = 0; i < 200; i++){
+		for( j = 0; j < 200; j++){
+			state->obstacle_map[i][j].status = UNKNOWN;
+			state->obstacle_map[i][j].created = clock();
+	   }
+	 }
+
     state->vw = vx_world_create();
     state->displayStarted = state->displayFinished = 0;
 
