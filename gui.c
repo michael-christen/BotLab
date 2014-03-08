@@ -264,8 +264,8 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //printf("stride %d\n", state->gridMap.image->stride);
     vx_object_t *vo = vxo_chain(
                                 vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-                                vxo_mat_translate3(-state->gridMap.width/2, -state->gridMap.height/2, -1),
-                                vxo_image_from_u32(state->gridMap.image, 0, 0)
+                                vxo_mat_translate3(-state->hazMap.width/2, -state->hazMap.height/2, -1),
+                                vxo_image_from_u32(state->hazMap.image, 0, 0)
                                 );
 
     vx_buffer_add_back(gridBuff, vo);
@@ -433,7 +433,7 @@ int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
     up[0] = lookat[0] - eye[0];
     up[1] = lookat[1] - eye[1];
     up[2] = eye[2] + distAbove;
-    vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
+    //vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
     //printf("endRender worldPOV\n");
     return 1;
 }

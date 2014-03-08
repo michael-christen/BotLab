@@ -14,8 +14,11 @@
 // MAEBOT
 #include "barrel_distortion.h"
 #include "pixel.h"
-#include "grid_map.h"
+#include "haz_map.h"
 #include "pid_ctrl.h"
+#include "path.h"
+#include "haz_map.h"
+#include "world_map.h"
 
 // EECS 467 Libraries
 #include "common/getopt.h"
@@ -52,12 +55,8 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
-typedef struct position_t position_t;
 typedef enum stateType stateType_t;
 
-struct position_t {
-    double x, y;
-};
 
 struct getopt_options_t {
     int verbose, no_video, limitKBs, autoCamera;
@@ -156,8 +155,8 @@ struct state_t {
 
     pixel_t* lookupTable;
 
-    // Grid map
-    grid_map_t gridMap;
+    // Haz map
+    haz_map_t hazMap;
 
     //Tape data
     pixel_t* tape;
