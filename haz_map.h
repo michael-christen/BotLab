@@ -10,6 +10,7 @@
 #define HAZ_MAP_OBSTACLE 2
 #define HAZ_MAP_IMPASSABLE 3
 #define HAZ_MAP_UNIT_TO_CM 1
+#define HAZ_MAP_CONFIG_RAIDUS 15
 
 typedef struct haz_map_t haz_map_t;
 

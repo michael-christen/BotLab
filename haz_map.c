@@ -1,6 +1,13 @@
 #include "haz_map.h"
+#include <math.h>
+#include <stdio.h>
 
 // Haz Map origin at bottom left corner
+
+double map(double x, double in_min, double in_max, double out_min, double out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 void haz_map_init(haz_map_t *hm, int w, int h) {
 	hm->image = image_u32_create(w, h);
@@ -20,6 +27,28 @@ void haz_map_set(haz_map_t *hm, int x, int y, int type) {
 
 	hm->hazMap[y*hm->width + x] = type;
 
+	// Set Circle around to impassible or free or unknown
+	int maxU, minU;
+	double mapAngle;
+	int maxV = fmin(y + HAZ_MAP_CONFIG_RAIDUS, hm->height - 1);
+	int minV = fmax(y - HAZ_MAP_CONFIG_RAIDUS, 0);
+
+
+	int u, v, tile;
+	if (type == HAZ_MAP_OBSTACLE) {
+		for (v = minV; v <= maxV; v++) {
+			mapAngle = map(v, minV, maxV, 0, M_PI);
+			maxU = fmin(x + HAZ_MAP_CONFIG_RAIDUS * sin(mapAngle), hm->width - 1);
+			minU = fmax(x - HAZ_MAP_CONFIG_RAIDUS * sin(mapAngle), 0);
+			for (u = minU; u <= maxU; u++) {
+				tile = haz_map_get(hm, u, v);
+				if (tile == HAZ_MAP_UNKNOWN || tile == HAZ_MAP_FREE) {
+					haz_map_set(hm, u, v, HAZ_MAP_IMPASSABLE);
+				}
+			}
+		}
+	}
+
 	switch (type) {
 		case HAZ_MAP_UNKNOWN:
 			color = 0xFF777777;
@@ -28,16 +57,16 @@ void haz_map_set(haz_map_t *hm, int x, int y, int type) {
 			color = 0xFF5EFF9C;
 		break;
 		case HAZ_MAP_OBSTACLE:
-			color = 0xFF9C5EFF;
+			color = 0xFFFF0044;
 		break;
 		case HAZ_MAP_IMPASSABLE:
-			color = 0xFF4400FF;
+			color = 0xFFFF00BB;
 		break;
 		default:
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->width + x] = color;
+	hm->image->buf[y*hm->image->stride + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, int newX, int newY, int oldX, int oldY) {
@@ -62,7 +91,7 @@ void haz_map_translate(haz_map_t *hm, int newX, int newY, int oldX, int oldY) {
 
 	for (int y = 0; y < hm->height; y++) {
 		for (int x = 0; x < hm->width; x++) {
-			if (x < lowX || x > highX || y < lowX || y > highY) {
+			if (x < lowX || x > highX || y < lowY || y > highY) {
 				haz_map_set(hm, x, y, HAZ_MAP_UNKNOWN);
 			} else {
 				haz_map_set(hm, x - diffX, y - diffY, haz_map_get(hm, x, y));

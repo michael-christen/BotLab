@@ -45,6 +45,8 @@
 
 #define MOUSE_MOVE_THRESHOLD 10
 
+int count;
+
 void setLaser(state_t* state, int lsr_val){
 //lsr_val == 1 ? laser is on : laser is off
 	pthread_mutex_lock(&state->lsr_mutex);
@@ -214,6 +216,7 @@ static void handler(int signum)
         case SIGINT:
         case SIGQUIT:
             pthread_mutex_lock(&global_state->running_mutex);
+            printf("setting running to 0\n");
             global_state->running = 0;
             pthread_mutex_unlock(&global_state->running_mutex);
             break;
@@ -278,6 +281,118 @@ static void * send_led(void * data){
 	return NULL;
 }
 
+void * camera_analyze(void * data)
+{
+    state_t * state = data;
+
+    zarray_t *urls = image_source_enumerate();
+
+    printf("Cameras:\n");
+    for (int i = 0; i < zarray_size(urls); i++) {
+        char *url;
+        zarray_get(urls, i, &url);
+        printf("  %3d: %s\n", i, url);
+    }
+
+    if (zarray_size(urls) == 0) {
+        image_source_enumerate_free(urls);
+        printf("No cameras found.\n");
+        return 0;
+    }
+    zarray_get(urls, 0, &state->url);
+    //image_source_enumerate_free(urls);
+    if (!state->getopt_options.autoCamera) {
+        state->url =
+    "dc1394://b09d01008e366c?fidx=0&white-balance-manual=1&white-balance-red=400&white-balance-blue=714";
+    }
+
+    state->isrc = image_source_open(state->url);
+    if (state->isrc == NULL) {
+        printf("Unable to open device %s\n", state->url);
+        return 0;
+    }
+
+    image_source_t *isrc = state->isrc;
+
+    if (isrc->start(isrc)) {
+        printf("Can't start image source\n");
+        return 0;
+    }
+
+    image_source_format_t isrc_format;
+    state->isrc->get_format(state->isrc, 0, &isrc_format);
+    state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
+
+    state->isrcReady = 1;
+    image_source_data_t isdata;
+    int res;
+    state->imageValid = 0;
+
+    while (state->running) {
+        pthread_mutex_lock(&state->image_mutex);
+        res = isrc->get_frame(isrc, &isdata);
+        if (!res) {
+            if (state->imageValid == 1) {
+                image_u32_destroy(state->im);
+            }
+            state->im = image_convert_u32(&isdata);
+            state->imageValid = 1;
+        }
+
+        isrc->release_frame(isrc, &isdata);
+
+        if (state->getopt_options.verbose) {
+            printf("Got frame %p\n", state->im);
+        }
+        if (state->imageValid == 1) {
+            // HOMOGRAPHY BEFORE BARREL DISTORTION CORRECTION GOES HERE
+            correctDistortion(state->im, state->lookupTable);
+            //Blue
+            state->num_pts_tape =
+                line_detection(state->im, state->tape);
+            //printf("Pts: %d\n",state->num_pts_tape);
+                //might wanna make diff d.s.
+                //Also, gonna need to copy image
+                //Green
+            uint32_t color_detect = state->red | state->green << 8 |
+                state->blue << 16 | 0xff << 24;
+            //printf("color: %x\n",color_detect);
+            //printf("thresh: %f\n",state->thresh);
+                state->num_balls = blob_detection(state->im, state->balls,
+                    color_detect,
+                    0xff039dfd,
+                                state->thresh);
+            //printf("num_balls: %d\n",state->num_balls);
+            if(state->num_balls) {
+                double diff_x = state->im->width/2.0 - state->balls[0].x;
+                //printf("x: %f\n", diff_x);
+                state->im->buf[(int) (state->im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
+                double pid_out = pid_get_output(
+                        state->green_pid,diff_x);
+                state->green_pid_out = pid_out;
+                //printf("pid_out: %f\n",pid_out);
+            }
+        } else {
+            printf("shouldn't get heree!!!\n");
+        }
+        pthread_mutex_unlock(&state->image_mutex);
+        usleep(10000);
+    }
+
+    if (state->imageValid = 1) {
+        printf("Final image destroy\n");
+        pthread_mutex_lock(&state->image_mutex);
+        image_u32_destroy(state->im);
+        state->imageValid = 0;
+        pthread_mutex_unlock(&state->image_mutex);
+    }
+
+    if (!state->getopt_options.no_video) {
+        state->isrc->close(state->isrc);
+    }
+    return NULL;
+}
+
 /*
 static void * driver_monitor(void *data) {
     //int systemTry = system("./maebot_driver");
@@ -340,7 +455,7 @@ void* lcm_handle_loop(void *data) {
 void* FSM(void* data){
 	state_t* state = data;
 
-	stateType_t curState, nextState;
+	explorer_state_t curState, nextState;
 	curState = stop;
 	nextState = curState;
 	int threshold = 0.3;
@@ -489,11 +604,11 @@ int main(int argc, char ** argv)
     state->thresh = 52.0;
     state->green_pid = malloc(sizeof(pid_ctrl_t));
     state->green_pid_out = 0;
+    state->isrcReady = 0;
+    state->im = NULL;
     pid_init(state->green_pid, 1, 0, 0, 0);
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
-
-    state->lookupTable = getLookupTable(752,480);
 
     //Should be width
     state->tape = calloc(1000, sizeof(pixel_t));
@@ -524,9 +639,10 @@ int main(int argc, char ** argv)
     pthread_mutex_init(&state->lsr_mutex, NULL);
     pthread_mutex_init(&state->lcm_mutex, NULL);
     pthread_mutex_init(&state->running_mutex, NULL);
+    pthread_mutex_init(&state->image_mutex, NULL);
 
 
-    state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_ptr_hash, zhash_ptr_equals);
+    state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_uint64_hash, zhash_uint64_equals);
 
     signal(SIGINT, handler);
 
@@ -550,6 +666,7 @@ int main(int argc, char ** argv)
     state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
 
     //pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
+    pthread_create(&state->camera_thread, NULL, camera_analyze, state);
     pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
     pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
     //pthread_create(&state->led_thread,  NULL, send_led, state);
@@ -558,8 +675,13 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->fsm_thread, NULL, FSM, state);
     pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 
-	//pthread_join(state->fsm_thread, NULL);
-    pthread_join(state->gui_thread, NULL);
+	//pthread_join(state->camera_thread, NULL);
+
+    if (pthread_join(state->gui_thread, NULL) != 0) {
+        printf("Problem here!\n");
+    } else {
+        printf("All good!\n");
+    }
 
     // clean up
     vx_world_destroy(state->vw);
