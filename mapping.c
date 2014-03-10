@@ -12,8 +12,8 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 	double rot_theta = 0; //need to get from gyro sensors. gyro[0/1/2?]
 	double bruce_x = state->pos_x, bruce_y = state->pos_y;
 
-	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,		
-																y_rel,	
+	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
+																y_rel,
 																0});
 	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
 													-sin(rot_theta),	cos(rot_theta),	0,
@@ -35,6 +35,18 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 	state->obstacle_map[scale_x][scale_y].status = OCCUPIED;
 	state->obstacle_map[scale_x][scale_y].created = clock();
 
+<<<<<<< HEAD
+=======
+/*
+	int bruce_grid_x = (bruce_x + 5)/10; //add 5 to make it round, not truncate
+	bruce_grid_x++; //bruce can't see 1 grid cell in front of him
+
+	for(bruce_grid_x; bruce_grid_x < scale_x; bruce_grid_x++){
+			state->obstacle_map[bruce_grid_x][scale_y].status = UNOCCUPIED;
+			state->obstacle_map[bruce_grid_x][scale_y].created = clock();
+	}
+*/ //can't do this unless i take theta into account
+>>>>>>> 491dd37067986c19d543a7aafbf15b2a62387cf9
 	return;
 
 }
@@ -44,9 +56,15 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	state_t * state = data;
 	double rot_theta = state->gyro[0]; //need to get from gyro sensors. gyro[0/1/2?]
 
+<<<<<<< HEAD
 	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,		
 																y_rel,	
 																1});
+=======
+	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
+																y_rel,
+																0});
+>>>>>>> 491dd37067986c19d543a7aafbf15b2a62387cf9
 
 	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
 													-sin(rot_theta),	cos(rot_theta),	0,
@@ -74,11 +92,15 @@ void find_point_pos( void * data, int x_px, int y_px, haz_map_t *hm, int obstacl
 	*/
 	state_t * state = data;
 
+
 	matd_t * H = matd_create_data(3, 3, (double[]) {	.024425,	0,  -7.693753,
 																.000786,	-.060617,	20.145458,
 																-0.000023,	-0.003807,	0.741406});
 	
 	//determine x and y coordinates, relative to bruce, using homography project fcn
+
+//determine x and y coordinates, relative to bruce
+
 	double x_rel, y_rel;
 	homography_project(H, x_px, y_px, &x_rel, &y_rel);
 
@@ -148,8 +170,10 @@ void find_H_matrix(void * data){
 		zarray_add(correspondences, coordinates);
 	}
 
-	matd_t * H = homography_compute(correspondences);
+	//matd_t * H = homography_compute(correspondences);
+	matd_t * H = matd_create(3,3);
 
+<<<<<<< HEAD
 	matd_print(H, "%15f");
 
 	//from barrel distortion fixed image
@@ -157,6 +181,21 @@ void find_H_matrix(void * data){
     image_source_format_t isrc_format;
     state->isrc->get_format(state->isrc, 0, &isrc_format);
     printf("%d, %d\n", isrc_format.width, isrc_format.height);
+=======
+	int H00 = matd_get(H, 0, 0);
+	int H01 = matd_get(H, 0, 1);
+	int H02 = matd_get(H, 0, 2);
+	int H10 = matd_get(H, 1, 0);
+	int H11 = matd_get(H, 1, 1);
+	int H12 = matd_get(H, 1, 2);
+	int H20 = matd_get(H, 2, 0);
+	int H21 = matd_get(H, 2, 1);
+	int H22 = matd_get(H, 2, 2);
+
+	matd_destroy(H);
+
+	printf(" %d, %d, %d, \n %d, %d, %d, \n %d, %d, %d, \n", H00, H01, H02, H10, H11, H12, H20, H21, H22);
+>>>>>>> 491dd37067986c19d543a7aafbf15b2a62387cf9
 }
 
 
