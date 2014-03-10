@@ -185,28 +185,33 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 	//Blue
 	state->num_pts_tape =
 	    line_detection(im, state->tape);
-	printf("Pts: %d\n",state->num_pts_tape);
+	//printf("Pts: %d\n",state->num_pts_tape);
         //might wanna make diff d.s.
         //Also, gonna need to copy image
         //Green
 	uint32_t color_detect = state->red | state->green << 8 |
 	    state->blue << 16 | 0xff << 24;
-	printf("color: %x\n",color_detect);
-	printf("thresh: %f\n",state->thresh);
+	//printf("color: %x\n",color_detect);
+	//printf("thresh: %f\n",state->thresh);
         num_balls = blob_detection(im, balls,
 			color_detect,
 			0xff039dfd,
                         state->thresh);
 	printf("num_balls: %d\n",num_balls);
-	if(num_balls) {
+	if(num_balls == 1) {
 	    double diff_x = im->width/2.0 - balls[0].x;
 	    printf("x: %f\n", diff_x);
 	    im->buf[(int) (im->stride*balls[0].y + balls[0].x)] = 0xffff0000;
 	    double pid_out = pid_get_output(
 				state->green_pid,diff_x);
+	    state->diff_x        = diff_x;
 	    state->green_pid_out = pid_out;
+	    state->diamond_seen  = 1;
 	    printf("pid_out: %f\n",pid_out);
+	} else {
+	    state->diamond_seen  = 0;
 	}
+
 
         double decimate = state->getopt_options.decimate;
 
@@ -458,9 +463,14 @@ int displayInitDebugLayer(state_t *state, layer_data_t *layerData) {
 int renderDebugLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *textBuff = vx_world_get_buffer(layerData->world, "text");
 
-    char debugText[100];
-    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\n";
-    sprintf(debugText, formatting, state->pos_x, state->pos_y, state->pos_theta, state->gyro[0]);
+    char debugText[200];
+    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\nDiff_x: %f\nPID_OUT: %f\nDIAMOND: %d\n";
+    sprintf(debugText, formatting,
+	    state->pos_x, state->pos_y,
+	    state->pos_theta, state->gyro[0],
+	    state->diff_x, state->green_pid_out,
+	    state->diamond_seen
+    );
     vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT, debugText);
     vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));
     vx_buffer_swap(textBuff);

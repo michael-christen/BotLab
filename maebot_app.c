@@ -97,8 +97,10 @@ void moveBot(state_t* state, int cmd_val){
     } else if(cmd_val & LEFT) {
 	driveRot(state, ROT_SPEED);
     } else if(cmd_val & PID) {
-	double rot = pid_to_rot(state->green_pid_out);
-	driveRot(state, rot);
+	if(state->diamond_seen) {
+	    double rot = pid_to_rot(state->green_pid_out);
+	    driveRot(state, rot);
+	}
     } else {
 	driveStop(state);
     }
@@ -417,7 +419,7 @@ void* FSM(void* data){
 			while(abs(state->pos_theta - dtheta) > rthreshold){
 				usleep(1000);
 			}
-			
+
 			//drive forward to branch
 			moveBot(state, FORWARD);
 			while(abs(state->pos_x - branch_x) > threshold && abs(state->pos_y - branch_y) > threshold){
@@ -436,7 +438,7 @@ void* FSM(void* data){
 		default: nextState = curState;
 		}
 		curState = nextState;
-	}	
+	}
 	return NULL;
 }
 
@@ -490,6 +492,8 @@ int main(int argc, char ** argv)
     state->thresh = 52.0;
     state->green_pid = malloc(sizeof(pid_ctrl_t));
     state->green_pid_out = 0;
+    state->diff_x        = 0;
+    state->diamond_seen  = 0;
     pid_init(state->green_pid, 1, 0, 0, 0);
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
