@@ -31,26 +31,29 @@
 #include "blob_detection.h"
 #include "line_detection.h"
 
-ball_t balls[MAX_NUM_BALLS];
-int num_balls, displayCount;
+int displayCount;
 
 void display_finished(vx_application_t * app, vx_display_t * disp)
 {
-    //printf("Top of display finished\n");
-    zhash_iterator_t it;
+    printf("Top of display finished\n");
+    uint64_t i;
     vx_layer_t *value;
 
     state_t * state = app->impl;
 
     //printf("disp end: %d\n", disp);
 
-    zhash_iterator_init(state->layer_map, &it);
-
     pthread_mutex_lock(&state->layer_mutex);
 
-    while (zhash_iterator_next(&it, &disp, &value)) {
-        vx_layer_destroy(value);
-        zhash_iterator_remove(&it);
+    for (i = 0; i < NUM_LAYERS; i++) {
+        layer_data_t *layerData = &(state->layers[i]);
+        if (layerData->enable == 1) {
+            uint64_t key = ((uint64_t) disp) * (i + 1);
+            printf("disp: %u, key %u\n", ((uint64_t) disp), key);
+            zhash_remove(state->layer_map, &key, NULL, &value);
+            printf("layer being destroyed!\n");
+            vx_layer_destroy(value);
+        }
     }
 
     pthread_mutex_unlock(&state->layer_mutex);
@@ -68,7 +71,7 @@ void display_finished(vx_application_t * app, vx_display_t * disp)
 
 void display_started(vx_application_t * app, vx_display_t * disp)
 {
-    int i;
+    uint64_t i;
 
     state_t * state = app->impl;
 
@@ -77,16 +80,17 @@ void display_started(vx_application_t * app, vx_display_t * disp)
     for (i = 0; i < NUM_LAYERS; i++) {
         layer_data_t *layerData = &(state->layers[i]);
         if (layerData->enable == 1) {
-
+            uint64_t key = ((uint64_t) disp) * (i + 1);
+            printf("Layer being created\n");
             vx_layer_t * layer = vx_layer_create(layerData->world);
-
+            printf("disp: %u, key %u\n", ((uint64_t) disp), key);
             layerData->layer = layer;
 
             vx_layer_set_display(layer, disp);
 
             pthread_mutex_lock(&state->layer_mutex);
             // store a reference to the world and layer that we associate with each vx_display_t
-            zhash_put(state->layer_map, &disp, &layer, NULL, NULL);
+            zhash_put(state->layer_map, &key, &layer, NULL, NULL);
             pthread_mutex_unlock(&state->layer_mutex);
 
             layerData->displayInit(state, layerData);
@@ -98,49 +102,6 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     layerData->world = vx_world_create();
-
-    /*
-    const zarray_t *args = getopt_get_extra_args(state->gopt);
-    if (zarray_size(args) > 0) {
-        zarray_get(args, 0, &state->url);
-    } else {*/
-    zarray_t *urls = image_source_enumerate();
-
-    printf("Cameras:\n");
-    for (int i = 0; i < zarray_size(urls); i++) {
-        char *url;
-        zarray_get(urls, i, &url);
-        printf("  %3d: %s\n", i, url);
-    }
-
-    if (zarray_size(urls) == 0) {
-        printf("No cameras found.\n");
-        return 0;
-    }
-    zarray_get(urls, 0, &state->url);
-    //}
-    if (!state->getopt_options.autoCamera) {
-        state->url =
-    "dc1394://b09d01008e366c?fidx=0&white-balance-manual=1&white-balance-red=400&white-balance-blue=714";
-    }
-
-    state->isrc = image_source_open(state->url);
-    if (state->isrc == NULL) {
-        printf("Unable to open device %s\n", state->url);
-        return 0;
-    }
-
-    image_source_t *isrc = state->isrc;
-
-    if (isrc->start(isrc)) {
-        printf("Can't start image source\n");
-        return 0;
-    }
-
-    image_source_format_t isrc_format;
-    state->isrc->get_format(state->isrc, 0, &isrc_format);
-    state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
-
     return 1;
 }
 
@@ -159,66 +120,16 @@ int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
-    if (state->getopt_options.verbose) {
-        printf("Starting run_camera\n");
+    if (state->imageValid == 0) {
+        return 1;
     }
-
-    image_source_t *isrc = state->isrc;
-    image_u32_t *im = NULL;
-    image_source_data_t isdata;
-
-    int res = isrc->get_frame(isrc, &isdata);
-    if (!res) {
-        im = image_convert_u32(&isdata);
-    } else {
-        return 0;
-    }
-
-    isrc->release_frame(isrc, &isdata);
-
-    if (state->getopt_options.verbose) {
-        printf("Got frame %p\n", im);
-    }
-
+    pthread_mutex_lock(&state->image_mutex);
+    image_u32_t *im = state->im;
     if (im != NULL) {
-		correctDistortion(im, state->lookupTable);
-	//Blue
-	state->num_pts_tape =
-	    line_detection(im, state->tape);
-	//printf("Pts: %d\n",state->num_pts_tape);
-        //might wanna make diff d.s.
-        //Also, gonna need to copy image
-        //Green
-	uint32_t color_detect = state->red | state->green << 8 |
-	    state->blue << 16 | 0xff << 24;
-	//printf("color: %x\n",color_detect);
-	//printf("thresh: %f\n",state->thresh);
-        num_balls = blob_detection(im, balls,
-			color_detect,
-			0xff039dfd,
-                        state->thresh);
-	printf("num_balls: %d\n",num_balls);
-	if(num_balls == 1) {
-	    double diff_x = im->width/2.0 - balls[0].x;
-	    printf("x: %f\n", diff_x);
-	    im->buf[(int) (im->stride*balls[0].y + balls[0].x)] = 0xffff0000;
-	    double pid_out = pid_get_output(
-				state->green_pid,diff_x);
-	    state->diff_x        = diff_x;
-	    state->green_pid_out = pid_out;
-	    state->diamond_seen  = 1;
-	    printf("pid_out: %f\n",pid_out);
-	} else {
-	    state->diamond_seen  = 0;
-	}
-
-
         double decimate = state->getopt_options.decimate;
 
         if (decimate != 1.0) {
-            image_u32_t * im2 = image_util_u32_decimate(im, decimate);
-            image_u32_destroy(im);
-            im = im2;
+            im = image_util_u32_decimate(im, decimate);
         }
 
         vx_object_t * vo = vxo_image_from_u32(im, VXO_IMAGE_FLIPY,
@@ -230,18 +141,17 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 
         vx_buffer_add_back(vb, vo);
         vx_buffer_swap(vb);
-    }
 
-    image_u32_destroy(im);
+        if (decimate != 1.0) {
+            image_u32_destroy(im);
+        }
+    } 
+    pthread_mutex_unlock(&state->image_mutex);
     //printf("endRender cameraPOV\n");
     return 1;
 }
 
 int destroyCameraPOVLayer(state_t *state, layer_data_t *layerData) {
-    if (!state->getopt_options.no_video) {
-        state->isrc->close(state->isrc);
-    }
-
     vx_world_destroy(layerData->world);
     return 1;
 }
@@ -515,6 +425,7 @@ void* renderLayers(state_t *state) {
             }
             pthread_mutex_unlock(&state->running_mutex);
         }
+        usleep(250000);
     }
     printf("Entering layer destroy\n");
     // Destroy/Clean up
@@ -554,8 +465,8 @@ void* gui_create(void *data) {
     state->layers[0].destroy = destroyWorldTopDownLayer;
 
 
-    state->layers[1].enable = !state->getopt_options.no_video;
-    //state->layers[1].enable = 1;
+    //state->layers[1].enable = !state->getopt_options.no_video;
+    state->layers[1].enable = 1;
     state->layers[1].name = "CameraPOV";
     state->layers[1].position[0] = 0.666f;
     state->layers[1].position[1] = 0.5f;
@@ -593,7 +504,12 @@ void* gui_create(void *data) {
     // Handles layer init, rendering, and destruction
     renderLayers(state);
 
+    printf("before vx cleanup after renderLayers\n");
+
     vx_remote_display_source_destroy(remote);
 
+    printf("end of gui thread (after destroy)\n");
+
+    printf("not running no more!\n");
     return NULL;
 }
