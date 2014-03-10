@@ -126,35 +126,6 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     pthread_mutex_lock(&state->image_mutex);
     image_u32_t *im = state->im;
     if (im != NULL) {
-	correctDistortion(im, state->lookupTable);
-	//Blue
-	state->num_pts_tape =
-	    line_detection(im, state->tape);
-	//printf("Pts: %d\n",state->num_pts_tape);
-        //might wanna make diff d.s.
-        //Also, gonna need to copy image
-        //Green
-	uint32_t color_detect = state->red | state->green << 8 |
-	    state->blue << 16 | 0xff << 24;
-	//printf("color: %x\n",color_detect);
-	//printf("thresh: %f\n",state->thresh);
-        state->num_balls = blob_detection(im, state->balls,
-			color_detect,
-			0xff039dfd,
-                        state->thresh);
-	//printf("num_balls: %d\n",num_balls);
-	if(state->num_balls == 1) {
-	    double diff_x = im->width/2.0 - state->balls[0].x;
-	    //printf("x: %f\n", diff_x);
-	    im->buf[(int) (im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
-	    double pid_out = pid_get_output(
-				state->green_pid,diff_x);
-	    state->diff_x        = diff_x;
-	    state->green_pid_out = pid_out;
-	    state->diamond_seen  = 1;
-	} else {
-	    state->diamond_seen  = 0;
-	}
 
         double decimate = state->getopt_options.decimate;
 

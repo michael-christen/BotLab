@@ -368,15 +368,18 @@ void * camera_analyze(void * data)
                     0xff039dfd,
                                 state->thresh);
             //printf("num_balls: %d\n",state->num_balls);
-            if(state->num_balls) {
+            if(state->num_balls == 1) {
                 double diff_x = state->im->width/2.0 - state->balls[0].x;
                 //printf("x: %f\n", diff_x);
                 state->im->buf[(int) (state->im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
                 double pid_out = pid_get_output(
                         state->green_pid,diff_x);
                 state->green_pid_out = pid_out;
+		state->diamond_seen  = 1;
                 //printf("pid_out: %f\n",pid_out);
-            }
+            } else {
+		state->diamond_seen  = 0;
+	    }
         } else {
             printf("shouldn't get heree!!!\n");
         }
