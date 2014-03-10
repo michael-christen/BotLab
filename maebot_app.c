@@ -5,7 +5,7 @@
 #include "pid_ctrl.h"
 #include "drive_ctrl.h"
 #include "barrel_distortion.h"
-//#include "mapping.h"
+#include "mapping.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -570,6 +570,6 @@ int main(int argc, char ** argv)
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
-	//find_H_matrix();
+	 find_H_matrix(state);
     return 0;
 }
