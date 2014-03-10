@@ -574,6 +574,12 @@ int main(int argc, char ** argv)
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
+
 	 find_H_matrix(state);
+	int obstacle = 1, x_px = 190, y_px = 281;
+	for(x_px; x_px < 559; x_px++){
+		find_point_pos( state, x_px, y_px, &state->hazMap, obstacle);
+	}
+
     return 0;
 }
