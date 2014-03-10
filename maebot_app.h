@@ -43,6 +43,7 @@
 #define NUM_LAYERS 4
 #define BRUCE_DIAMETER 10.5
 #define BRUCE_HEIGHT 10
+#define GRID_RES 2
 
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768
@@ -185,6 +186,8 @@ struct state_t {
 
     pid_ctrl_t *green_pid;
     double      green_pid_out;
+    double      diff_x;
+    int         diamond_seen;
 };
 
 

@@ -5,6 +5,7 @@
 #include "pid_ctrl.h"
 #include "drive_ctrl.h"
 #include "barrel_distortion.h"
+#include "mapping.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -98,8 +99,10 @@ void moveBot(state_t* state, int cmd_val){
     } else if(cmd_val & LEFT) {
 	driveRot(state, ROT_SPEED);
     } else if(cmd_val & PID) {
-	double rot = pid_to_rot(state->green_pid_out);
-	driveRot(state, rot);
+	if(state->diamond_seen) {
+	    double rot = pid_to_rot(state->green_pid_out);
+	    driveRot(state, rot);
+	}
     } else {
 	driveStop(state);
     }
@@ -531,7 +534,7 @@ void* FSM(void* data){
 			while(abs(state->pos_theta - dtheta) > rthreshold){
 				usleep(1000);
 			}
-			
+
 			//drive forward to branch
 			moveBot(state, FORWARD);
 			while(abs(state->pos_x - branch_x) > threshold && abs(state->pos_y - branch_y) > threshold){
@@ -550,7 +553,7 @@ void* FSM(void* data){
 		default: nextState = curState;
 		}
 		curState = nextState;
-	}	
+	}
 	return NULL;
 }
 
@@ -606,6 +609,8 @@ int main(int argc, char ** argv)
     state->green_pid_out = 0;
     state->isrcReady = 0;
     state->im = NULL;
+    state->diff_x        = 0;
+    state->diamond_seen  = 0;
     pid_init(state->green_pid, 1, 0, 0, 0);
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
@@ -691,6 +696,12 @@ int main(int argc, char ** argv)
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
+
+	 find_H_matrix(state);
+	int obstacle = 1, x_px = 190, y_px = 281;
+	for(x_px; x_px < 559; x_px++){
+		find_point_pos( state, x_px, y_px, &state->hazMap, obstacle);
+	}
 
     return 0;
 }

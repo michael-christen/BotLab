@@ -7,7 +7,8 @@
 #include "pixel.h"
 #include <stdio.h>
 
-#define C -.00048
+#define DISTORT_A 0.6712
+#define DISTORT_C -.000722
 
 pixel_t* getLookupTable(int width, int height);
 

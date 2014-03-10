@@ -6,7 +6,7 @@ pixel_t getPixel(double orig_x, double orig_y, double x, double y) {
 	double deltx = x - orig_x;
 	double theta = atan2(delty, deltx);
 	double curR  = sqrt(pow(deltx,2)+pow(delty,2));
-	double newR  = C * pow(curR, 2) + curR;
+	double newR  = (DISTORT_C * pow(curR, 2) + curR) / DISTORT_A;
 	result.x     = cos(theta) * newR + orig_x; 
 	result.y     = sin(theta) * newR + orig_y;
 	if(deltx > 0 && delty < 0){

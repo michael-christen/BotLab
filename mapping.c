@@ -1,17 +1,19 @@
 #include "mapping.h"
 #include "stdio.h"
+#include "haz_map.h"
 
-
+//not using add_obstacles_to_map right now, no global map
+/*
 void add_obstacles_to_map(double x_rel, double y_rel, void * data){
-	//data is state
+	
 	state_t * state = data;
 
 	//get obstacles into map coords with a rotation based on bruce's rotation, translation based on bruce's location
-	double rot_theta = 0; //need to get from gyro sensors, not hardcode
+	double rot_theta = 0; //need to get from gyro sensors. gyro[0/1/2?]
 	double bruce_x = state->pos_x, bruce_y = state->pos_y;
 
-	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,		
-																y_rel,	
+	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
+																y_rel,
 																0});
 	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
 													-sin(rot_theta),	cos(rot_theta),	0,
@@ -24,44 +26,76 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 	matd_t * real = matd_multiply(rel_to_real, rel_coords);
 
 
-	//a little stuck on how to fill these in along the diagonal from left side to right side
-	//find slope...for x = left_x to right_x, fill in appropriate y? and up one, down 1?
-	//remember right and left are meaningless now
-
-
 	int x = matd_get(real, 0, 0);
 	int y = matd_get(real, 0, 1);
 
-	int scale_x = (x+5)/10; //add 5 to make it round, not truncate
-	int scale_y = (y+5)/10; //add 5 to make it round, not truncate
+	int scale_x = (x+GRID_RES/2)/GRID_RES; //add half res to make it round, not truncate
+	int scale_y = (y+GRID_RES/2)/GRID_RES; //add half res to make it round, not truncate
 
 	state->obstacle_map[scale_x][scale_y].status = OCCUPIED;
 	state->obstacle_map[scale_x][scale_y].created = clock();
+
+
+
 	return;
 
 }
+*/
 
-
-
-void find_point_pos( void * data, int x_px, int y_px){
-	//void pointer to state, can state hold blob?
+void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_t *hm, int obstacle){
 	state_t * state = data;
-	matd_t * px_coords = matd_create_data(3, 1, (double[]) {	x_px,
-																y_px,
+	double rot_theta = /*state->gyro[0]*/ 0; //need to get from gyro sensors. gyro[0/1/2?]
+
+	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,		
+																y_rel,	
 																1});
-	matd_t * H = matd_create_data(3, 3, (double[]) {	1,	0,  0,
-																0,	1,	0,
-																0,	0,	1});
-	matd_t * rel_coords = matd_multiply(H, px_coords);
+
+
+	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
+													-sin(rot_theta),	cos(rot_theta),	0,
+													0,					0,				1});
+
+	matd_t * real = matd_multiply(R, rel_coords);
+
+
+	x_rel = matd_get(real, 0, 0);
+	y_rel = matd_get(real, 1, 0);
+
+	printf("adding obstacle at x: %f, y: %f\n", x_rel, y_rel);
+
+	if(obstacle == 1){
+		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2), y_rel, HAZ_MAP_OBSTACLE);
+	}
+	else{
+		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2), y_rel, HAZ_MAP_FREE);
+	}
+}
+
+void find_point_pos( void * data, int x_px, int y_px, haz_map_t *hm, int obstacle){
+	/*
+		pixel location, defined by its x,y coords, 
+		reference to hazard map,
+		int obstacle: 0 if free space, 1 if obstacle
+	*/
+	state_t * state = data;
+
+
+	matd_t * H = matd_create_data(3, 3, (double[]) {0.019277,	0.001086,  -7.553172,
+																-0.000094,	-0.001020,	7.455857,
+																 -0.000014,	 0.002194 ,	 -0.532195});
 	
-//determine x and y coordinates of blob, relative to bruce
-	double x_rel, y_rel;
-	x_rel = matd_get(rel_coords, 0, 0);
-	y_rel = matd_get(rel_coords, 0, 1);
+	//determine x and y coordinates, relative to bruce, using homography project fcn
+
+//determine x and y coordinates, relative to bruce
+
+	double x_rel = 0, y_rel = 0;
+	homography_project(H, x_px, y_px, &x_rel, &y_rel);
 
 
-	add_obstacles_to_map( x_rel, y_rel, data);
+	//add_obstacles_to_map( x_rel, y_rel, data);
+	add_obstacles_to_haz_map( x_rel, y_rel, data, hm, obstacle);
 
+	return;
 }
 
 
@@ -69,29 +103,51 @@ void find_point_pos( void * data, int x_px, int y_px){
 
 
 
-void find_H_matrix(zarray_t * click_array, int za_size){
+void find_H_matrix(void * data){
+	state_t * state = data;
 	//click_array is x and y of pixels clicked, 4 for now
 	zarray_t * rw_coords = zarray_create(sizeof(float[2]));
 	float real[2] = {0, 0};
-	//real[0] = x1;
-	//real[1] = y1;
+	real[0] = -30;
+	real[1] = 60;
 	zarray_add(rw_coords, real);
-	//real[0] = x2;
-	//real[1] = y2;
+	real[0] = 0;
+	real[1] = 30;
 	zarray_add(rw_coords, real);
-	//real[0] = x3;
-	//real[1] = y3;
+	real[0] = 0;
+	real[1] = 60;
 	zarray_add(rw_coords, real);
-	//real[0] = x4;
-	//real[1] = y4;
+	real[0] = 0;
+	real[1] = 90;
 	zarray_add(rw_coords, real);
+	real[0] = 30;
+	real[1] = 60;
+	zarray_add(rw_coords, real);
+
+	zarray_t * click_array = zarray_create(sizeof(float[2]));
+	float pix[2] = {0, 0};
+	pix[0] = 190;
+	pix[1] = 298;
+	zarray_add(click_array, pix);
+	pix[0] = 372;
+	pix[1] = 352;
+	zarray_add(click_array, pix);
+	pix[0] = 373;
+	pix[1] = 301;
+	zarray_add(click_array, pix);
+	pix[0] = 376;
+	pix[1] = 281;
+	zarray_add(click_array, pix);
+	pix[0] = 559;
+	pix[1] = 300;
+	zarray_add(click_array, pix);
 
 	zarray_t * correspondences = zarray_create(sizeof(float[4]));
 
 	float coordinates[4];
-	int click[2];
+	float click[2];
 
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; i < 5; i++){
 		zarray_get(click_array, i, click);
 		zarray_get(rw_coords, i, real);
 		coordinates[0] = click[0];
@@ -103,17 +159,11 @@ void find_H_matrix(zarray_t * click_array, int za_size){
 
 	matd_t * H = homography_compute(correspondences);
 
-	int H00 = matd_get(H, 0, 0);
-	int H01 = matd_get(H, 0, 1);
-	int H02 = matd_get(H, 0, 2);
-	int H10 = matd_get(H, 1, 0);
-	int H11 = matd_get(H, 1, 1);
-	int H12 = matd_get(H, 1, 2);
-	int H20 = matd_get(H, 2, 0);
-	int H21 = matd_get(H, 2, 1);
-	int H22 = matd_get(H, 2, 2);
+	matd_print(H, "%15f");
 
-	printf(" %d, %d, %d, \n %d, %d, %d, \n %d, %d, %d, \n", H00, H01, H02, H10, H11, H12, H20, H21, H22);
+	//from barrel distortion fixed image
+
+
 }
 
 
