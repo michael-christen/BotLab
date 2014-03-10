@@ -182,6 +182,8 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 	    cmd_val = PID;
 	} else if(key->key_code == '0') {
 	    cmd_val |= ~PID;
+	} else if(key->key_code == 'm') {
+		rotateTheta(-M_PI/2.0);
 	}
 	state->red &= 0xff;
 	state->green &= 0xff;
@@ -341,99 +343,51 @@ void* lcm_handle_loop(void *data) {
 void* FSM(void* data){
 	state_t* state = data;
 
-	stateType_t curState, nextState;
-	curState = stop;
+	explorer_state_t curState, nextState;
+	explorer_t explorer;
 	nextState = curState;
-	int threshold = 0.3;
-	int rthreshold = 0.1;
-	int timesRotated45 = 0;
 	while(state->running){
 
 	switch(curState){
-		case stop:
-			moveBot(state, STOP);
-			nextState = analyze;
-			break;
-		case move_forward:
-			moveBot(state, FORWARD);
-			nextState = analyze;
-			break;
-		case analyze:{
-			if(1){//new_diamond_in_view){
-				nextState = zap_diamond;
-				timesRotated45--; //in case diamond is opposite the turns
-			}else if(1){//new_branch_in_view){
-				nextState = take_branch;
-				timesRotated45 = 0;
-			}else if(!state->moving){
-				if(timesRotated45 == 3){
-					return NULL;	//nowhere to go
-				}
-				driveToTheta(state, state->pos_theta - M_PI/4.0);
-				timesRotated45++;
+		case FORWARD:{
+			path_t* path = explorer_get_move(&explorer);
+			while(path->position != path->length){
+				position_t waypoint = path->waypoints[path->position];
+				driveToPosition(waypoint);
+				path->position++;
 			}
+			path_destroy(path);
+			nextState = explorer_run(&explorer);
 			break;}
-		case zap_diamond:{
-			int wasMoving = 0;
-			if(!state->moving){
-				wasMoving = 1;
-				moveBot(state, STOP);
-			}
+		case LEFT:{
+			rotateTheta(M_PI/2.0);
+			nextState = explorer_run(&explorer);
+			break;}
+		case RIGHT:{
+			rotateTheta(-M_PI/2.0);
+			nextState = explorer_run(&explorer);
+			break;}
+		case DIAMOND:{
 			//Still need to get diamond coords
 			double diamond_x, diamond_y;
 			double dx = diamond_x - state->pos_x;
 			double dy = diamond_y - state->pos_y;
-			double 	dtheta = atan2(dy, dx);
+			double dtheta = atan2(dy, dx);
 			double originalTheta = state->pos_theta;
 			//rotate toward diamond
 			driveToTheta(state, dtheta);
-			while(abs(state->pos_theta - dtheta) > rthreshold){
-				usleep(1000);
-			}
 
 			//shoot diamond
 			fireLaser(state);
 			//update diamond to zapped
 
-			if(wasMoving){
-				//return to original theta
-				driveToTheta(state, originalTheta);
-				while(abs(state->pos_theta - originalTheta) > rthreshold){
-					usleep(1000);
-				}
-				moveBot(state, FORWARD);
-			}
-			nextState = analyze;
+			driveToTheta(state, originalTheta);
+			nextState = explorer_run(&explorer);
 			break;}
-		case take_branch:{
-			//Assuming branch is defined as in free space - no collisions
-			double branch_x, branch_y;
-			double dx = branch_x - state->pos_x;
-			double dy = branch_y - state->pos_y;
-			double dtheta = atan2(dy, dx);
+		case GOHOME:{
 
-			//rotate bot toward branch opening
-			driveToTheta(state, dtheta);
-			while(abs(state->pos_theta - dtheta) > rthreshold){
-				usleep(1000);
-			}
-			
-			//drive forward to branch
-			moveBot(state, FORWARD);
-			while(abs(state->pos_x - branch_x) > threshold && abs(state->pos_y - branch_y) > threshold){
-				usleep(1000);
-			}
-			moveBot(state, STOP);
-
-			//rotate bot to face branch
-			double branch_theta;	//Theta between current hall and branch
-			driveToTheta(state, branch_theta);
-			while(abs(state->pos_theta - branch_theta) > rthreshold){
-				usleep(1000);
-			}
-			nextState = move_forward;
 			break;}
-		default: nextState = curState;
+		default: nextState = explorer_run(&explorer);
 		}
 		curState = nextState;
 	}	

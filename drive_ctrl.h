@@ -3,6 +3,7 @@
 //For state_t, don't like it
 #include "maebot_app.h"
 #include "odometry.h"
+#include "path.h"
 #include "lcmtypes/maebot_diff_drive_t.h"
 #include <pthread.h>
 #include <math.h>
@@ -20,8 +21,14 @@ void driveStraight(state_t * state, double speed);
 //we need to view it differently
 void driveRot(state_t * state, double omega);
 
+void driveStop(state_t * state);
+
+//Drive to a specific theta relative to global coords
 void driveToTheta(state_t * state, double theta);
 
-void driveStop(state_t * state);
+//Rotate the bot a specific theta
+void rotateTheta(state_t * state, double theta);
+
+void driveToPosition(state_t * state, position_t position);
 
 #endif

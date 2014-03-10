@@ -35,11 +35,56 @@ void driveRot(state_t * state, double omega) {
     driveRad(state, 0, omega);
 }
 
-void driveToTheta(state_t * state, double theta) {
-	//Rotate to theta
-}
-
 void driveStop(state_t * state) {
     driveRad(state, 0, 0);
 }
 
+void driveToTheta(state_t * state, double theta) {
+	double thresh = 0.1;
+
+	state->goal_theta = theta;
+l
+	if(abs(state->goal_theta - state->theta) > thresh){
+		state->waiting_on_pos = 0;
+		state->waiting_on_theta = 1;
+
+		driveRot(state, (theta - state->theta > 0 ? 0.25 : -0.25));
+
+		pthread_mutex_lock(&state->drive_mutex);
+		pthread_cond_wait(&state->drive_cond, &state->drive_mutex);
+		pthread_mutex_unlock(&state->drive_mutex);
+
+		state->waiting_on_theta = 0;
+		driveStop(state);
+	}
+}
+
+void rotateTheta(state_t * state, double theta) {
+	driveToTheta(state, state->pos_theta + theta);
+}
+
+void driveToPosition(state_t * state, position_t position){
+	double thresh = 0.3;
+
+	state->goal_x = position.x;
+	state->goal_y = position.y;
+
+	if(abs(state.goal_x - state->pos_x) > thresh || abs(state.goal_y - state.pos_y) > thresh)){
+		double dx = position.x - state->pos_x;
+		double dy = position.y - state->pos_y;
+		double dtheta = atan2(dy, dx);
+		driveToTheta(state, theta);
+	
+		state->waiting_on_pos = 1;
+		state->waiting_on_theta = 0;
+		//drive to position
+		driveStraight(state, 1);
+
+		pthread_mutex_lock(&state->drive_mutex);
+		pthread_cond_wait(&state->drive_cond, &state->drive_mutex);
+		pthread_mutex_unlock(&state->drive_mutex);
+
+		state->waiting_on_pos = 0;
+		driveStop(state);
+	}
+}

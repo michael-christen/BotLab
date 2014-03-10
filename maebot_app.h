@@ -16,7 +16,6 @@
 #include "haz_map.h"
 #include "pid_ctrl.h"
 #include "path.h"
-#include "haz_map.h"
 #include "world_map.h"
 
 // EECS 467 Libraries
@@ -55,7 +54,6 @@
 typedef struct layer_data_t layer_data_t;
 typedef struct state_t state_t;
 typedef struct getopt_options_t getopt_options_t;
-typedef enum stateType stateType_t;
 
 
 struct getopt_options_t {
@@ -103,6 +101,11 @@ struct state_t {
     maebot_leds_t led;
     pthread_mutex_t led_mutex;
     pthread_t led_thread;
+
+	pthread_mutex_t drive_mutex;
+	pthread_cond_t drive_cond;
+	double goal_x, goal_y, goal_theta;
+	int waiting_on_pos, waiting_on_theta;
 
 
     int acc[3];
@@ -175,15 +178,6 @@ struct state_t {
     pid_ctrl_t *green_pid;
     double      green_pid_out;
 };
-
-enum stateType{
-	stop,
-	move_forward,
-	analyze,
-	zap_diamond,
-	take_branch
-};
-
 
 
 //////////////
