@@ -63,7 +63,7 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 
 	double xbias = 1.5;
 
-	printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
+//	printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
 	
 
 

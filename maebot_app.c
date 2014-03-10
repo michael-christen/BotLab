@@ -680,11 +680,12 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->fsm_thread, NULL, FSM, state);
     pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 	 
-	find_H_matrix(state);
+
+/*	find_H_matrix(state);
 	int obstacle = 0, x_px = 156, y_px = 352;
 	for(x_px; x_px < 525; x_px++){
 		find_point_pos( state, x_px, y_px, &state->hazMap, obstacle);
-	}
+	} */
 
 	//pthread_join(state->camera_thread, NULL);
 
