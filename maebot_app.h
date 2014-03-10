@@ -7,16 +7,18 @@
 
 // C Libraries
 #include <pthread.h>
-#include"time.h"
+#include "time.h"
 #include "vx/vx.h"
 
 // MAEBOT
+#include "blob_detection.h"
 #include "barrel_distortion.h"
 #include "pixel.h"
 #include "haz_map.h"
 #include "pid_ctrl.h"
 #include "path.h"
 #include "world_map.h"
+#include "explorer.h"
 
 // EECS 467 Libraries
 #include "common/getopt.h"
@@ -40,6 +42,7 @@
 #define NUM_LAYERS 4
 #define BRUCE_DIAMETER 10.5
 #define BRUCE_HEIGHT 10
+#define GRID_RES 2
 
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768
@@ -92,7 +95,8 @@ struct state_t {
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
 
-    int running, displayStarted, displayFinished;
+    volatile int running;
+    int displayStarted, displayFinished;
 
     maebot_laser_t lsr;
     pthread_mutex_t lsr_mutex;
@@ -137,7 +141,15 @@ struct state_t {
     getopt_t * gopt;
     char * url;
     image_source_t *isrc;
+    int isrcReady;
     int fidx;
+    int imageValid;
+    image_u32_t *im;
+    pthread_mutex_t image_mutex;
+    pthread_t camera_thread;
+
+    int num_balls;
+    ball_t balls[MAX_NUM_BALLS];
 
     lcm_t * lcm;
     pthread_mutex_t lcm_mutex;
@@ -177,8 +189,10 @@ struct state_t {
 
     pid_ctrl_t *green_pid;
     double      green_pid_out;
-};
 
+	double		diff_x;
+	int			diamond_seen;
+};
 
 //////////////
 // FUNCTIONS

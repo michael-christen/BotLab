@@ -51,5 +51,6 @@ void correctDistortion(image_u32_t* im, pixel_t* lookupTable){
 			}
 		}
 	}
+	free(im->buf);
 	im->buf = cbuf;
 }
