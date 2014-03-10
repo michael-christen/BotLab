@@ -1,4 +1,5 @@
 #include "pid_ctrl.h"
+
 void pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal) {
     pid_update_pid(pid, P, I, D);
     pid_update_goal(pid, goal);
@@ -42,8 +43,8 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 }
 
 double pid_to_rot(double pid_out) {
-    if(abs(pid_out) > 1) {
-	pid_out /= abs(pid_out);
+    if(fabs(pid_out) > 1) {
+	pid_out /= fabs(pid_out);
     }
     return pid_out;
 }

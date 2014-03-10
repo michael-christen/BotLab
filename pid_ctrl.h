@@ -1,6 +1,8 @@
 #ifndef __PID_CTRL__H__
 #define __PID_CTRL__H__
 #include<time.h>
+#include<stdio.h>
+#include<math.h>
 
 typedef struct pid pid_ctrl_t;
 struct pid {
