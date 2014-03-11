@@ -3,9 +3,11 @@
 #include<time.h>
 #include<stdio.h>
 #include<math.h>
+#include<float.h>
 
-#define MAX_OUTPUT 100
+#define MAX_VAL 100
 #define MIN_OUTPUT 15
+#define MAPPING_FACTOR  0.14
 typedef struct pid pid_ctrl_t;
 struct pid {
     double goal;
