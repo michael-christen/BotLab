@@ -29,10 +29,27 @@ void odometry_handler (
 	state->pos_y     += avg * cos(state->pos_theta);
 	state->pos_theta += (dL - dR) / DIST_BETWEEN_WHEELS;
 	
-	double threshold = 1.0;
+	double posthesh = 0.3;
+	double mthreshold = 1.0;
 	double rthreshold = 0.1;
-	if(abs(state->pos_x - state->last_x) > threshold ||
-		abs(state->pos_y - state->last_y) > threshold){
+
+	if(state->waiting_on_pos && 
+		abs(state->pos_x - state->goal_x) < mthreshold &&
+		abs(state->pos_y - state->goal_y) < mthreshold){
+		pthread_mutex_lock(&state->drive_mutex);
+		pthread_cond_broadcast(&state->drive_cond);
+		pthread_mutex_unlock(&state->drive_mutex);
+	}
+
+	if(state->waiting_on_theta &&
+		abs(state->pos_theta - state->goal_theta) < rthreshold){
+		pthread_mutex_lock(&state->drive_mutex);
+		pthread_cond_broadcast(&state->drive_cond);
+		pthread_mutex_unlock(&state->drive_mutex);
+	}
+	
+	if(abs(state->pos_x - state->last_x) > mthreshold ||
+		abs(state->pos_y - state->last_y) > mthreshold){
 		state->translating = 1;
 	} else{
 		state->translating = 0;

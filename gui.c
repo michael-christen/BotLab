@@ -126,6 +126,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     pthread_mutex_lock(&state->image_mutex);
     image_u32_t *im = state->im;
     if (im != NULL) {
+
         double decimate = state->getopt_options.decimate;
 
         if (decimate != 1.0) {
@@ -145,7 +146,7 @@ int renderCameraPOVLayer(state_t *state, layer_data_t *layerData) {
         if (decimate != 1.0) {
             image_u32_destroy(im);
         }
-    } 
+    }
     pthread_mutex_unlock(&state->image_mutex);
     //printf("endRender cameraPOV\n");
     return 1;

@@ -220,11 +220,11 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 
 	    double w_over_h = (width+0.0) / (height+0.0);
 	    int width_lte_height = w_over_h <= 1.2 && w_over_h > 0.5;
-	    printf("i: %d, px_size: %d, t&b_in_lr: %d, t_inline_b: %d, w<=h: %d, w/h: %f,, height: %d, width: %d\n",
+	    /*printf("i: %d, px_size: %d, t&b_in_lr: %d, t_inline_b: %d, w<=h: %d, w/h: %f,, height: %d, width: %d\n",
 		   i, balls[i].num_px, top_and_bot_in_lr,
 		   top_inline_bot, width_lte_height, w_over_h,
 		   height, width);
-
+		*/
 	    if(top_and_bot_in_lr &&
 	       //top_inline_bot    &&
 	       width_lte_height  &&
@@ -237,9 +237,11 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 		final_balls[final_num_balls].y =
 		    (final_balls[final_num_balls].y+0.0)/
 		    final_balls[final_num_balls].num_px;
+		/*
 		printf("%d passed, x: %f, y: %f\n",i,
 		       final_balls[final_num_balls].x,
 		       final_balls[final_num_balls].y);
+		       */
 		final_num_balls ++;
 	    }
 	}

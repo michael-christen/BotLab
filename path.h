@@ -9,7 +9,7 @@ struct position_t {
 };
 
 struct path_t {
-    unsigned int length, poisition;
+    unsigned int length, position;
     position_t *waypoints;
 };
 

@@ -26,11 +26,13 @@ struct explorer_t {
 };
 
 enum explorer_state{
-	stop,
-	move_forward,
-	analyze,
-	zap_diamond,
-	take_branch
+	EX_ANALYZE,
+	EX_MOVE_FORWARD,
+	EX_TURN_LEFT,
+	EX_TURN_RIGHT,
+	EX_ZAP_DIAMOND,
+	EX_GOHOME,
+	EX_EXIT
 };
 
 void explorer_init(explorer_t *ex);

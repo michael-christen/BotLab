@@ -72,7 +72,7 @@ int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double thet
 	matd_destroy(forwardRot);
 	matd_destroy(pos);
 	matd_destroy(trans);
-	return dist;
+	return EX_EXIT;
 }
 
 path_t* explorer_get_move(explorer_t *ex) {

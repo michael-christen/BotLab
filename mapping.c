@@ -5,7 +5,7 @@
 //not using add_obstacles_to_map right now, no global map
 /*
 void add_obstacles_to_map(double x_rel, double y_rel, void * data){
-	
+
 	state_t * state = data;
 
 	//get obstacles into map coords with a rotation based on bruce's rotation, translation based on bruce's location
@@ -46,8 +46,8 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	state_t * state = data;
 	double rot_theta = /*state->gyro[0]*/ 0; //need to get from gyro sensors. gyro[0/1/2?]
 
-	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,		
-																y_rel,	
+	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
+																y_rel,
 																1});
 
 
@@ -61,35 +61,40 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	x_rel = matd_get(real, 0, 0);
 	y_rel = matd_get(real, 1, 0);
 
-	printf("adding obstacle at x: %f, y: %f\n", x_rel, y_rel);
+	double xbias = 1.5;
+
+//	printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
+
+
 
 	if(obstacle == 1){
-		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2), y_rel, HAZ_MAP_OBSTACLE);
+		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2 + xbias), y_rel, HAZ_MAP_OBSTACLE);
 	}
 	else{
-		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2), y_rel, HAZ_MAP_FREE);
+		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2 + xbias), y_rel, HAZ_MAP_FREE);
 	}
 }
 
 void find_point_pos( void * data, int x_px, int y_px, haz_map_t *hm, int obstacle){
 	/*
-		pixel location, defined by its x,y coords, 
+		pixel location, defined by its x,y coords,
 		reference to hazard map,
 		int obstacle: 0 if free space, 1 if obstacle
 	*/
 	state_t * state = data;
 
 
-	matd_t * H = matd_create_data(3, 3, (double[]) {0.019277,	0.001086,  -7.553172,
-																-0.000094,	-0.001020,	7.455857,
-																 -0.000014,	 0.002194 ,	 -0.532195});
-	
+	matd_t * H = matd_create_data(3, 3, (double[]) { 0.014442,       0.002133,      -6.026192,
+      															-0.001299,      -0.000377,       5.889305,
+    																-0.000036,       0.001629,      -0.385430});
+
+
 	//determine x and y coordinates, relative to bruce, using homography project fcn
 
 //determine x and y coordinates, relative to bruce
 
 	double x_rel = 0, y_rel = 0;
-	homography_project(H, x_px, y_px, &x_rel, &y_rel);
+	//homography_project(H, x_px, y_px, &x_rel, &y_rel);
 
 
 	//add_obstacles_to_map( x_rel, y_rel, data);
@@ -123,6 +128,12 @@ void find_H_matrix(void * data){
 	real[0] = 30;
 	real[1] = 60;
 	zarray_add(rw_coords, real);
+	real[0] = -15;
+	real[1] = 30;
+	zarray_add(rw_coords, real);
+	real[0] = 15;
+	real[1] = 30;
+	zarray_add(rw_coords, real);
 
 	zarray_t * click_array = zarray_create(sizeof(float[2]));
 	float pix[2] = {0, 0};
@@ -141,13 +152,19 @@ void find_H_matrix(void * data){
 	pix[0] = 559;
 	pix[1] = 300;
 	zarray_add(click_array, pix);
+	pix[0] = 156;
+	pix[1] = 357;
+	zarray_add(click_array, pix);
+	pix[0] = 525;
+	pix[1] = 349;
+	zarray_add(click_array, pix);
 
 	zarray_t * correspondences = zarray_create(sizeof(float[4]));
 
 	float coordinates[4];
 	float click[2];
 
-	for(int i = 0; i < 5; i++){
+	for(int i = 0; i < 7; i++){
 		zarray_get(click_array, i, click);
 		zarray_get(rw_coords, i, real);
 		coordinates[0] = click[0];
@@ -157,7 +174,8 @@ void find_H_matrix(void * data){
 		zarray_add(correspondences, coordinates);
 	}
 
-	matd_t * H = homography_compute(correspondences);
+	//matd_t * H = homography_compute(correspondences);
+	matd_t * H = matd_create(3,3);
 
 	matd_print(H, "%15f");
 
