@@ -579,6 +579,7 @@ void* position_tracker(void *data) {
 
 int main(int argc, char ** argv)
 {
+    int i, j;
     vx_global_init();
 
     state_t * state = calloc(1, sizeof(state_t));
@@ -615,6 +616,14 @@ int main(int argc, char ** argv)
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
+    for (i = 0; i < 80; i++) {
+        haz_map_set(&state->hazMap, (state->hazMap.width / 2) - 40 + i, (state->hazMap.height / 2) + 40, HAZ_MAP_OBSTACLE);
+        haz_map_set(&state->hazMap, (state->hazMap.width / 2) - 40 + i, (state->hazMap.height / 2) - 40, HAZ_MAP_OBSTACLE);
+        haz_map_set(&state->hazMap, (state->hazMap.width / 2) - 40, (state->hazMap.height / 2) - 40 + i, HAZ_MAP_OBSTACLE);
+        haz_map_set(&state->hazMap, (state->hazMap.width / 2) + 40, (state->hazMap.height / 2) - 40 + i, HAZ_MAP_OBSTACLE);
+    }
+    explorer_init(&state->explorer);
+
     //Should be width
     state->tape = calloc(1000, sizeof(pixel_t));
     state->num_pts_tape = 0;
@@ -627,7 +636,6 @@ int main(int argc, char ** argv)
     state->odometry_channel = "MAEBOT_ODOMETRY";
 
 
-    int i, j;
 	 for(i = 0; i < 200; i++){
 		for( j = 0; j < 200; j++){
 			state->obstacle_map[i][j].status = UNKNOWN;
@@ -697,11 +705,11 @@ int main(int argc, char ** argv)
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
     //system("kill `pgrep -f './maebot_driver'`");
 
-	 find_H_matrix(state);
+	/*find_H_matrix(state);
 	int obstacle = 1, x_px = 190, y_px = 281;
-	for(x_px; x_px < 559; x_px++){
+	for (x_px; x_px < 559; x_px++) {
 		find_point_pos( state, x_px, y_px, &state->hazMap, obstacle);
-	}
+	}*/
 
     return 0;
 }
