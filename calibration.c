@@ -32,7 +32,7 @@
 
 }*/
 
-void calibrate_gyros(int *gyro_int, int *gyro_bias){
+void calibrate_gyros(int *gyro_int, double *gyro_bias){
 //Inputs should be : &state->gyro_int, &state->gyro_bias
 //void * data){
 	//this is gonna be a call at the start, we let the robot sit and let the gyroscopes accumulate error.
