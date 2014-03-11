@@ -19,7 +19,8 @@ MOVE_FORWARD,
 MOVE_BACKWARD,
 TURN_LEFT,
 TURN_RIGHT,
-LASER_ON
+LASER_ON,
+CALIBRATE_GYRO
 } Status;
 
 void setLeds(state_t* state, uint32_t left, uint32_t right){
@@ -44,6 +45,9 @@ void LEDStatus(state_t* state, Status stat){
 			break;
 		case LASER_ON:
 			setLeds(state, RED, RED);
+			break;
+		case CALIBRATE_GYRO:
+			setLeds(state, PURPLE, PURPLE);
 			break;
 		default:
 			setLeds(state, OFF, OFF);

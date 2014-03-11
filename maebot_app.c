@@ -188,6 +188,10 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 	    cmd_val |= ~PID;
 	} else if(key->key_code == 'm') {
 		rotateTheta(state, -M_PI/2.0);
+	} else if(key->key_code == 'c') {
+		LEDStatus(state, CALIBRATE_GYRO);
+		calibrate_gyros(&state->gyro_int, &state->gyro_bias);
+		LEDStatus(state, NONE);
 	}
 	state->red &= 0xff;
 	state->green &= 0xff;
@@ -409,6 +413,19 @@ static void * driver_monitor(void *data) {
     return NULL;
 }
 */
+
+void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
+	const maebot_sensor_data_t * msg, void * data){
+	
+	state_t* state = data;
+
+	for(int i = 0; i < 3; i++){
+		state->acc[i] = msg->accel[i];
+		state->gyro[i] = msg->gyro[i];
+		state->gyro_int[i] = msg->gyro_int[i] - state->gyro_bias[i];
+	}
+
+}
 
 void* lcm_handle_loop(void *data) {
     state_t *state = data;
