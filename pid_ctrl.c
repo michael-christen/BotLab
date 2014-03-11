@@ -34,7 +34,7 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
     }
 
     double output     = pid->P*err +
-	                pid->I*pid->integral +
+	                pid->I*pid->integral -
 			pid->D*derivative;
 
     pid->prev_err     = err;
