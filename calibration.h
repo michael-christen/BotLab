@@ -4,13 +4,13 @@
 
 
 /*void sensor_handler (
-	const lcm_recv_buf_t *rbuf, 
-	const char * channel, 
-        const maebot_sensor_data_t * msg, 
+	const lcm_recv_buf_t *rbuf,
+	const char * channel,
+        const maebot_sensor_data_t * msg,
 	void * data
 );*/
 
-void calibrate_gyros(int *gyro_int, double *gyro_bias);
+void calibrate_gyros(int64_t gyro_int[], double gyro_bias[]);
 
 
 #endif
