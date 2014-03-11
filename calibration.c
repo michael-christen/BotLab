@@ -49,7 +49,7 @@ void calibrate_gyros(int *gyro_int, double *gyro_bias){
 	int orig_2 = gyro_int[2];
 
 	//???Do you really think it's necessary to wait 3 minutes
-	sleep(180);
+	sleep(5);
 
 	int biased_0 = gyro_int[0];
 	int biased_1 = gyro_int[1];
