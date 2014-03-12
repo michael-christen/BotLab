@@ -132,8 +132,8 @@ void find_point_pos( void * data, int obstacle){
 
 
 
-void find_H_matrix(void * data){
-	state_t * state = data;
+void find_H_matrix(){
+
 	//click_array is x and y of pixels clicked, 4 for now
 	zarray_t * rw_coords = zarray_create(sizeof(float[2]));
 	float real[2] = {0, 0};
