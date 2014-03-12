@@ -191,9 +191,13 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if(key->key_code == 'm') {
 			rotateTheta(state, -M_PI/2.0);
 		} else if(key->key_code == 'c') {
-			LEDStatus(state, CALIBRATE_GYRO);
-			calibrate_gyros(&state->gyro_int, &state->gyro_bias, &state->gyro_int_offset);
-			LEDStatus(state, NONE);
+			if(!state->calibrating){
+				LEDStatus(state, CALIBRATE_GYRO);
+				calibrate_gyros(&state->gyro_int[2], &state->calibrating, &state->gyro_ticks_per_theta);
+				LEDStatus(state, NONE);
+			}else{
+				state->calibrating = 0;
+			}
 		}
 		state->red &= 0xff;
 		state->green &= 0xff;
