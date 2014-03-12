@@ -30,12 +30,14 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
     clock_t cur_clock   = clock();
     double dt           = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
     double err          = pid->goal - meas;
+	/*
 	if(err < 0) {
 		printf("ERROR is < 0\n");
 	}
 	else if(err > 0) {
 		printf("ERROR is > 0\n");
 	}
+	*/
     double derivative   = 0;
 
     if(pid->first_meas) {
@@ -51,8 +53,12 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 		pid->integral = 0;
 	}
 
-    double output       = pid->P*err +
-		                  pid->I*pid->integral -
+	double proportion   = pid->P * err;
+	double integral     = pid->I * pid->integral;
+	printf("proportion: %f\n",proportion);
+	printf("integral  : %f\n",integral);
+    double output       = proportion +
+		                  integral   -
 		                  pid->D*derivative;
 
 	if(fabs(output) > MAX_VAL) {

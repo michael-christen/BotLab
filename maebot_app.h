@@ -94,6 +94,8 @@ struct state_t {
     maebot_diff_drive_t cmd;
     pthread_mutex_t cmd_mutex;
     pthread_t cmd_thread;
+	int   cmd_val;
+	int   motor_count;
 
     volatile int running;
     int displayStarted, displayFinished;
@@ -193,6 +195,7 @@ struct state_t {
     double      diff_x;
     int         diamond_seen;
 	int         doing_pid;
+	int         num_pid_zeros;
 };
 
 //////////////

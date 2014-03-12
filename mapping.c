@@ -46,8 +46,8 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_t *hm, int obstacle){
 	state_t * state = data;
 
-	double rot_theta = state->pos_theta; 
-	printf("theta:%f\n", rot_theta);
+	double rot_theta = state->pos_theta;
+	//printf("theta:%f\n", rot_theta);
 
 
 	//matrices for position realtive to bruce, rotation, and multiplication of the 2
@@ -64,7 +64,7 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	x_rel = matd_get(real, 0, 0);
 	y_rel = matd_get(real, 1, 0);
 
-	printf("rotated coords x: %f, y: %f\n", x_rel, y_rel);
+	//printf("rotated coords x: %f, y: %f\n", x_rel, y_rel);
 
 	//constant left bias
 	double xbias = 1.5; //cm
@@ -79,15 +79,15 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	int map_y_scaled = map_y/GRID_RES + HAZ_MAP_MAX_HEIGHT/2;
 
 	if ( map_x_scaled < 0 ||  map_x_scaled > HAZ_MAP_MAX_WIDTH){
-		printf("x out of range\n");
+		//printf("x out of range\n");
 	}
 	if ( map_y_scaled < 0 ||  map_y_scaled > HAZ_MAP_MAX_HEIGHT){
-		printf("y out of range\n");
+		//printf("y out of range\n");
 	}
 
 	//place point on haz_map
 	if(obstacle == 1){
-		printf("grid cell on haz map filled  x: %f, y: %f\n", map_x_scaled, map_y_scaled);
+		//printf("grid cell on haz map filled  x: %f, y: %f\n", map_x_scaled, map_y_scaled);
 		//haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
@@ -126,7 +126,7 @@ void find_point_pos( void * data, int obstacle){
 		double x = state->tape[i].x;
 		double y = state->tape[i].y;
 
-		printf("pixel at x: %f, y: %f\n", x, y);
+		//printf("pixel at x: %f, y: %f\n", x, y);
 
 
 	 	double xx = MATD_EL(H, 0, 0)*x + MATD_EL(H, 0, 1)*y + MATD_EL(H, 0, 2);
@@ -137,6 +137,7 @@ void find_point_pos( void * data, int obstacle){
     	double y_cm = yy / zz;		
 		
 		printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);		
+
 
 		add_obstacles_to_haz_map( x_cm, y_cm, data, &hm, obstacle);
 	}
