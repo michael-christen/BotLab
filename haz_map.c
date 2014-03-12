@@ -23,6 +23,12 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 }
 
 void haz_map_set(haz_map_t *hm, int x, int y, int type) {
+
+	//Bounds checking
+	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
+		return
+	}
+
 	int color;
 
 	hm->hazMap[y*hm->width + x] = type;
