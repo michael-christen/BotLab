@@ -118,7 +118,7 @@ struct state_t {
     int gyro[3];
     int64_t gyro_int[3];
 	double gyro_bias[3];
-    //double gyro_0_bias, gyro_1_bias, gyro_2_bias;
+    int64_t gyro_int_offset[3];
     const char *sensor_channel;
 
     //Position info from odometry
