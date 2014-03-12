@@ -121,3 +121,25 @@ uint32_t dist_to_grey(double dist) {
     }
     return result;
 }
+
+void fill_color(uint32_t r, uint32_t g, uint32_t b, 
+		double thresh, image_u32_t *im) {
+	int num_points = 0;
+	int y, x, id;
+	uint32_t px;
+	uint32_t color_detect = r | g << 8 | b << 16 | 0xff << 24;
+
+	//1st pass
+	for(x = 0; x < im->width; ++x) {
+		//look bottom to top
+		for(y = im->height-1; y >= 0; --y) {
+			id = im->stride*y + x;
+			px = im->buf[id];
+			if(color_dist(color_detect, px) < thresh) {
+				//Make sure above is blue too
+				im->buf[id] = 0xff039dfd;
+			}
+
+		}
+	}
+}
