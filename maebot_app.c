@@ -364,8 +364,7 @@ void * camera_analyze(void * data)
                 //might wanna make diff d.s.
                 //Also, gonna need to copy image
                 //Green
-				int obstacle = 1;
-				find_point_pos( state, obstacle);
+
             uint32_t color_detect = state->red | state->green << 8 |
                 state->blue << 16 | 0xff << 24;
             //printf("color: %x\n",color_detect);
@@ -685,7 +684,20 @@ int main(int argc, char ** argv)
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	//pthread_create(&state->fsm_thread, NULL, FSM, state);
     pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
+	
+				state->num_pts_tape = 0;
+				int x = 370; //525
+				int y = 280;
+				for(y; y < 320; y++){
+					pixel_t px;
+					px.x = x;
+					px.y = y;
+					state->tape[y-280] = px;
+					state->num_pts_tape++;
+				}
 
+				int obstacle = 1;
+				find_point_pos( state, obstacle);
 
 /*	find_H_matrix(state);
 	int obstacle = 0, x_px = 156, y_px = 352;
