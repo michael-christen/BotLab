@@ -363,6 +363,8 @@ void * camera_analyze(void * data)
                 //might wanna make diff d.s.
                 //Also, gonna need to copy image
                 //Green
+					int obstacle = 1; 
+					find_point_pos(state, obstacle);
             uint32_t color_detect = state->red | state->green << 8 |
                 state->blue << 16 | 0xff << 24;
             //printf("color: %x\n",color_detect);

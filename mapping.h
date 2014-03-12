@@ -14,7 +14,7 @@
 
 void find_point_pos( void * data, int obstacle);
 
-void find_H_matrix(void * data);
+void find_H_matrix();
 
 
 
