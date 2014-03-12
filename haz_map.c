@@ -26,7 +26,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, int type) {
 
 	//Bounds checking
 	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
-		return
+		return;
 	}
 
 	int color;
