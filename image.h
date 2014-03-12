@@ -17,4 +17,7 @@ uint32_t dist_to_grey(double dist);
 void RGBtoHSV( uint32_t r, uint32_t g, uint32_t b,
 	double *h, double *s, double *v);
 
+void fill_color(uint32_t r, uint32_t g, uint32_t b, 
+		double thresh, image_u32_t *im); 
+
 #endif
