@@ -64,7 +64,7 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	//constant left bias
 	double xbias = 1.5;
 
-	//printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
+	printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
 
 	double map_x = x_rel + HAZ_MAP_MAX_WIDTH/2 + xbias;
 	double map_y = y_rel + HAZ_MAP_MAX_HEIGHT/2;
@@ -74,7 +74,7 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 
 	//place point on haz_map
 	if(obstacle == 1){
-		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
+		//haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
 		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
