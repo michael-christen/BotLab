@@ -75,8 +75,8 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	double map_x = x_rel + xbias;
 	double map_y = y_rel;
 
-	double map_x_scaled = map_x/GRID_RES + HAZ_MAP_MAX_WIDTH/2;
-	double map_y_scaled = map_y/GRID_RES + HAZ_MAP_MAX_HEIGHT/2;
+	int map_x_scaled = map_x/GRID_RES + HAZ_MAP_MAX_WIDTH/2;
+	int map_y_scaled = map_y/GRID_RES + HAZ_MAP_MAX_HEIGHT/2;
 
 	if ( map_x_scaled < 0 ||  map_x_scaled > HAZ_MAP_MAX_WIDTH){
 		printf("x out of range\n");
@@ -136,7 +136,7 @@ void find_point_pos( void * data, int obstacle){
   	  	double x_cm = xx / zz;
     	double y_cm = yy / zz;		
 		
-		printf("pixel at x: %f cm, y: %f cm\n", x_cm, y_cm);		
+		printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);		
 
 		add_obstacles_to_haz_map( x_cm, y_cm, data, &hm, obstacle);
 	}
