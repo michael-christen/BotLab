@@ -155,7 +155,15 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
     int cmd_val = 0;
     if (!key->released) {
 	// forward
-        if (key->key_code == 'w' || key->key_code == 'W') {
+		if(key->key_code == 'p' || state->doing_pid) {
+	    	cmd_val = PID;
+			state->doing_pid = 1;
+			if(key->key_code == 'o') {
+				state->doing_pid = 0;
+				cmd_val |= ~PID;
+			}
+		}
+		else if (key->key_code == 'w' || key->key_code == 'W') {
 	    cmd_val |= FORWARD;
         } else if (key->key_code == 'a' || key->key_code == 'A' ) {
 	    cmd_val |= LEFT;
@@ -182,10 +190,6 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 	    state->thresh ++;
 	} else if(key->key_code == 'u') {
 	    state->thresh --;
-	} else if(key->key_code == 'p') {
-	    cmd_val = PID;
-	} else if(key->key_code == '0') {
-	    cmd_val |= ~PID;
 	} else if(key->key_code == 'm') {
 		rotateTheta(state, -M_PI/2.0);
 	} else if(key->key_code == 'c') {
@@ -363,8 +367,6 @@ void * camera_analyze(void * data)
                 //might wanna make diff d.s.
                 //Also, gonna need to copy image
                 //Green
-					int obstacle = 1; 
-					find_point_pos(state, obstacle);
             uint32_t color_detect = state->red | state->green << 8 |
                 state->blue << 16 | 0xff << 24;
             //printf("color: %x\n",color_detect);
@@ -597,6 +599,7 @@ int main(int argc, char ** argv)
     state->im = NULL;
     state->diff_x        = 0;
     state->diamond_seen  = 0;
+	state->doing_pid     = 0;
     pid_init(state->green_pid, 0.5, 0.5, 0, 0);
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
