@@ -440,8 +440,7 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
 	for(int i = 0; i < 3; i++){
 		state->acc[i] = msg->accel[i];
 		state->gyro[i] = msg->gyro[i];
-		state->gyro_int[i] = msg->gyro_int[i] -
-			state->gyro_int_offset[i] - state->gyro_bias[i];
+		state->gyro_int[i] += state->gyro[i] - state->gyro_bias[i]; //msg->gyro_int[i] -state->gyro_int_offset[i] - state->gyro_bias[i];
 	}
 
 	//state->gyro[2] -=

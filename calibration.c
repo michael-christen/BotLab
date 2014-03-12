@@ -55,7 +55,7 @@ void calibrate_gyros(int64_t gyro_int[], double gyro_bias[],
 
 	double time = 2.5;
 	sleep(time);
-	gyro_int_offset = gyro_int;
+	//gyro_int_offset = gyro_int;
 
 	int64_t biased_0 = gyro_int[0];
 	int64_t biased_1 = gyro_int[1];
