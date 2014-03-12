@@ -192,6 +192,7 @@ struct state_t {
 
     uint32_t red, green, blue;
     double thresh;
+	double hue;
 
     pid_ctrl_t *green_pid;
     double      green_pid_out;

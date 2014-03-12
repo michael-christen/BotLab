@@ -1,7 +1,7 @@
 #include "line_detection.h"
 
 unsigned int is_tape(uint32_t px) {
-    return color_dist(TEMPLATE_PX, px) < COLOR_THRESHOLD;
+    return hue_dist(TEMPLATE_HUE, px) < HUE_THRESHOLD;
 }
 
 int line_detection(image_u32_t *im, pixel_t *points) {

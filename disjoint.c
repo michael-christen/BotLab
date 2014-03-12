@@ -54,3 +54,9 @@ void set_link(Set* a, Set *b)
     return;
 }
 
+void set_destroy(Set *set) {
+	if(set) {
+		free(set);
+	}
+}
+

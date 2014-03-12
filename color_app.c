@@ -22,6 +22,18 @@
 #include "lcmtypes/maebot_laser_t.h"
 #include "lcmtypes/maebot_leds_t.h"
 #include "lcmtypes/maebot_sensor_data_t.h"
+
+#define MOUSE_MOVE_THRESHOLD 10
+
+static int touch_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_touch_event_t * mouse)
+{
+    return 0;
+}
+static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_t * pos, vx_mouse_event_t * mouse)
+{
+    return 0;
+}
+
 static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t * key)
 {
     state_t *state = vh->impl;
@@ -45,13 +57,19 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->thresh ++;
 		} else if(key->key_code == 'u') {
 			state->thresh --;
+		} else if(key->key_code == 'z') {
+			state->hue   ++;
+		} else if(key->key_code == 'x') {
+			state->hue   --;
 		}
+
+		state->hue = fmod(state->hue,360);
 		state->red &= 0xff;
 		state->green &= 0xff;
 		state->blue &= 0xff;
-		printf("r: %d, g: %d, b: %d, t: %f",
-				state->red, state->green, state->blue,
-				state->thresh);
+		double h, s, v;
+		RGBtoHSV(state->red, state->green, state->blue,&h,&s,&v);
+		printf("h: %f, t: %f\n", state->hue, state->thresh);
 	}
 	return 0;
 }
@@ -141,8 +159,7 @@ void * camera_analyze(void * data)
             //printf("Got frame %p\n", state->im);
         }
         if (state->imageValid == 1) {
-			fill_color(state->red, state->green, state->blue,
-					state->thresh, state->im);
+			fill_color(state->hue, state->thresh, state->im);
 		} else {
 			//printf("shouldn't get heree!!!\n");
 		}
@@ -176,10 +193,15 @@ int main(int argc, char ** argv)
     state->app.display_started = display_started;
     state->app.impl = state;
     state->veh.dispatch_order = -10;
+    state->veh.touch_event = touch_event;
+    state->veh.mouse_event = mouse_event;
     state->veh.key_event = key_event;
+    state->veh.destroy = nodestroy;
+    state->veh.impl = state;
     state->red = 0x3a;
     state->green = 0x76;
     state->blue = 0x41;
+	state->hue  = 0;
     state->thresh = 52.0;
     state->isrcReady = 0;
     state->im = NULL;
