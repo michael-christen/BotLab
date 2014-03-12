@@ -32,7 +32,8 @@
 
 }*/
 
-void calibrate_gyros(int64_t gyro_int[], double gyro_bias[]){
+void calibrate_gyros(int64_t gyro_int[], double gyro_bias[],
+	int64_t gyro_int_offset[]){
 //Inputs should be : &state->gyro_int, &state->gyro_bias
 //void * data){
 	//this is gonna be a call at the start, we let the robot sit and let the gyroscopes accumulate error.
@@ -48,9 +49,10 @@ void calibrate_gyros(int64_t gyro_int[], double gyro_bias[]){
 	int64_t orig_1 = gyro_int[1];
 	int64_t orig_2 = gyro_int[2];
 	printf("Calibrating gyros...\n");
-	//???Do you really think it's necessary to wait 3 minutes
+	
 	double time = 2.5;
 	sleep(time);
+	gyro_int_offset = gyro_int;
 
 	int64_t biased_0 = gyro_int[0];
 	int64_t biased_1 = gyro_int[1];
