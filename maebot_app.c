@@ -46,6 +46,8 @@
 
 #define MOUSE_MOVE_THRESHOLD 10
 
+#define GYRO_OFF_2 -280.5897772	//From 3815 samples
+
 int count;
 
 void setLaser(state_t* state, int lsr_val){
@@ -186,12 +188,18 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->thresh ++;
 		} else if(key->key_code == 'u') {
 			state->thresh --;
-		} else if(key->key_code == 'm') {
+		} else if(key->key_code == 'z') {
+			state->hue ++;
+		} else if(key->key_code == 'x') {
+			state->hue --;
+		}else if(key->key_code == 'm') {
 			rotateTheta(state, -M_PI/2.0);
 		} else if(key->key_code == 'c') {
-			LEDStatus(state, CALIBRATE_GYRO);
-			calibrate_gyros(&state->gyro_int, &state->gyro_bias, &state->gyro_int_offset);
-			LEDStatus(state, NONE);
+			if(!state->calibrate && !state->calibrating){
+				state->calibrate = 1;
+			}else if(state->calibrating){
+				state->calibrating = 0;
+			}
 		}
 		state->red &= 0xff;
 		state->green &= 0xff;
@@ -364,15 +372,14 @@ void * camera_analyze(void * data)
                 //might wanna make diff d.s.
                 //Also, gonna need to copy image
                 //Green
-
+				int obstacle = 1;
+				find_point_pos( state, obstacle);
             uint32_t color_detect = state->red | state->green << 8 |
                 state->blue << 16 | 0xff << 24;
             //printf("color: %x\n",color_detect);
             //printf("thresh: %f\n",state->thresh);
                 state->num_balls = blob_detection(state->im, state->balls,
-                    color_detect,
-                    0xff039dfd,
-                                state->thresh);
+									  state->hue, 0xff039dfd, state->thresh);
             //printf("num_balls: %d\n",state->num_balls);
             if(state->num_balls == 1) {
                 state->diff_x = state->im->width/2.0 - state->balls[0].x;
@@ -439,9 +446,11 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
 	for(int i = 0; i < 3; i++){
 		state->acc[i] = msg->accel[i];
 		state->gyro[i] = msg->gyro[i];
-		state->gyro_int[i] = msg->gyro_int[i] -
-			state->gyro_int_offset[i] - state->gyro_bias[i];
+		state->gyro_int[i] += state->gyro[i];// state->gyro_bias[i]; //msg->gyro_int[i] -state->gyro_int_offset[i] - state->gyro_bias[i];
 	}
+	//printf("Gryo2: %g, %lld, ", state->gyro[2], state->gyro_int[2]);
+	state->gyro_int[2] -= GYRO_OFF_2;
+	//printf("%lld\n,", state->gyro_int[2]);
 
 	//state->gyro[2] -=
 	/*printf ("  gyro values = (%d, %d, %d)\n",
@@ -450,7 +459,7 @@ void sensor_handler (const lcm_recv_buf_t *rbuf, const char * channel,
             msg->gyro_int[0], msg->gyro_int[1], msg->gyro_int[2]);*/
 
 	//printf("%d, %lld\n",msg->gyro[2], msg->gyro_int[2]);
-	printf("%d, %lld\n", state->gyro[2], state->gyro_int[2]);
+	//printf("%d, %lld, %lld, %g\n", state->gyro[2], state->gyro_int[2], state->gyro_int_offset[2], state->gyro_bias[2]);
 }
 
 void* lcm_handle_loop(void *data) {
@@ -580,6 +589,22 @@ void* position_tracker(void *data) {
     return NULL;
 }
 
+void * calibrator(void* data){
+	state_t *state = data;
+
+	while(state->running){
+		if(state->calibrate){
+			state->calibrate = 0;
+			LEDStatus(state, CALIBRATE_GYRO);
+			calibrate_gyros(&state->gyro_int[2], &state->calibrating, &state->gyro_ticks_per_theta);
+			LEDStatus(state, NONE);
+		}else{
+			sleep(.05);
+		}
+	}
+	return NULL;
+}
+
 int main(int argc, char ** argv)
 {
     vx_global_init();
@@ -607,7 +632,8 @@ int main(int argc, char ** argv)
     state->red = 0x3a;
     state->green = 0x76;
     state->blue = 0x41;
-    state->thresh = 52.0;
+    state->thresh = 20.0;
+	state->hue    = 145.0;
     state->green_pid = malloc(sizeof(pid_ctrl_t));
     state->green_pid_out = 0;
     state->isrcReady = 0;
@@ -686,7 +712,8 @@ int main(int argc, char ** argv)
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	//pthread_create(&state->fsm_thread, NULL, FSM, state);
     pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
-	
+
+/*
 				state->num_pts_tape = 0;
 				int x = 370; //525
 				int y = 280;
@@ -700,6 +727,10 @@ int main(int argc, char ** argv)
 
 				int obstacle = 1;
 				find_point_pos( state, obstacle);
+*/
+	pthread_create(&state->calibrator_thread, NULL, calibrator, state);
+
+
 
 /*	find_H_matrix(state);
 	int obstacle = 0, x_px = 156, y_px = 352;
