@@ -191,11 +191,9 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if(key->key_code == 'm') {
 			rotateTheta(state, -M_PI/2.0);
 		} else if(key->key_code == 'c') {
-			if(!state->calibrating){
-				LEDStatus(state, CALIBRATE_GYRO);
-				calibrate_gyros(&state->gyro_int[2], &state->calibrating, &state->gyro_ticks_per_theta);
-				LEDStatus(state, NONE);
-			}else{
+			if(!state->calibrate && !state->calibrating){
+				state->calibrate = 1;
+			}else if(state->calibrating){
 				state->calibrating = 0;
 			}
 		}
@@ -589,6 +587,22 @@ void* position_tracker(void *data) {
     return NULL;
 }
 
+void * calibrator(void* data){
+	state_t *state = data;
+
+	while(state->running){
+		if(state->calibrate){
+			state->calibrate = 0;
+			LEDStatus(state, CALIBRATE_GYRO);
+			calibrate_gyros(&state->gyro_int[2], &state->calibrating, &state->gyro_ticks_per_theta);
+			LEDStatus(state, NONE);
+		}else{
+			sleep(.05);
+		}
+	}
+	return NULL;
+}
+
 int main(int argc, char ** argv)
 {
     vx_global_init();
@@ -695,6 +709,7 @@ int main(int argc, char ** argv)
     pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	//pthread_create(&state->fsm_thread, NULL, FSM, state);
     pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
+	pthread_create(&state->calibrator_thread, NULL, calibrator, state);
 
 
 /*	find_H_matrix(state);

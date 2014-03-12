@@ -90,6 +90,7 @@ struct state_t {
     vx_event_handler_t veh;
 
 	pthread_t fsm_thread;
+	pthread_t calibrator_thread;
 
     maebot_diff_drive_t cmd;
     pthread_mutex_t cmd_mutex;
@@ -118,11 +119,10 @@ struct state_t {
     int gyro[3];
     int64_t gyro_int[3];
 	double gyro_ticks_per_theta;
-	//double gyro_bias[3];
-    //int64_t gyro_int_offset[3];
     const char *sensor_channel;
 
-	int calibrating;
+	int calibrate;	//signal calibration
+	int calibrating;	//actively calibrating
 
     //Position info from odometry
     int positionQueueP, positionQueueCount;
