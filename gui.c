@@ -30,6 +30,7 @@
 
 #include "blob_detection.h"
 #include "line_detection.h"
+#include "haz_map.h"
 
 int displayCount;
 

@@ -9,10 +9,9 @@
 #define HAZ_MAP_UNKNOWN 0
 #define HAZ_MAP_FREE 1
 #define HAZ_MAP_OBSTACLE 2
-#define HAZ_MAP_UNIT_TO_CM 5
+#define GRID_RES 5
 #define HAZ_MAP_OBSTACLE_RADIUS 5
-#define HAZ_MAP_CONFIG_RADIUS 15
-#define HAZ_MAP_VAL_MAX 100
+#define HAZ_MAP_CONFIG_RAIDUS 15
 #define HAZ_MAP_HUGE_DIST 999
 
 typedef struct haz_map_t haz_map_t;
@@ -39,6 +38,7 @@ struct haz_map_tile_t {
 
 struct haz_map_t {
 	uint32_t width, height;
+	double max_free_val;
 	haz_map_tile_t hazMap[HAZ_MAP_MAX_WIDTH * HAZ_MAP_MAX_HEIGHT];
 	image_u32_t *image;
 };

@@ -14,6 +14,7 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 	hm->image = image_u32_create(w, h);
 	hm->width = w;
 	hm->height = h;
+	hm->max_free_val = pow(HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES, 2);
 	position_t o[8] = {{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}};
 
 	int i, j, k, count, newX, newY;
@@ -44,9 +45,9 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 
 void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	int maxU, minU, u, v;
-	double mapAngle, dist, val;
+	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
-	int maxV, minV, offset;
+	int maxV, minV;
 	//Bounds checking
 	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
 		return;
@@ -56,7 +57,8 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 		case HAZ_MAP_OBSTACLE:
 			tile.type = HAZ_MAP_OBSTACLE;
 			haz_map_set_data(hm, x, y, &tile);
-			offset = HAZ_MAP_CONFIG_RADIUS / HAZ_MAP_UNIT_TO_CM;
+			offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
+			obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
 			maxV = fmin(y + offset, hm->height - 1);
 			minV = fmax(y - offset, 0);
 			for (v = minV; v <= maxV; v++) {
@@ -65,7 +67,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 				minU = fmax(x - offset * sin(mapAngle), 0);
 				for (u = minU; u <= maxU; u++) {
 					dist = sqrt(pow(u - x, 2) + pow(y - v, 2));
-					if (dist <= HAZ_MAP_OBSTACLE_RADIUS/HAZ_MAP_UNIT_TO_CM) {
+					if (dist < obstOffset) {
 						tile.type = HAZ_MAP_OBSTACLE;
 						tile.val = HAZ_MAP_HUGE_DIST;
 						haz_map_set_data(hm, u, v, &tile);
@@ -101,7 +103,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF777777;
 		break;
 		case HAZ_MAP_FREE:
-			offset = map(data->val, 0, HAZ_MAP_VAL_MAX, 0, 255);
+			offset = map(data->val, 0, hm->max_free_val, 0, 255);
 			//color = 0xFF5EFFFF;
 			color = 0xFFFF00FF | (offset << 8);
 			//printf("val: 0x%10x\n", color);
