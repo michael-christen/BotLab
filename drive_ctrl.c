@@ -51,9 +51,10 @@ void driveToTheta(state_t * state, double theta) {
 		//from green targeting pid
 		double pid_out = pid_get_output(state->theta_pid,
 				state->pos_theta);
-		double motor_val = pid_to_rot(pid_out);
+		double motor_val = pid_to_rot(state->theta_pid, pid_out);
 
 		driveRot(state, motor_val);
+		usleep(10000);
 	}
 	driveStop(state);
 }
