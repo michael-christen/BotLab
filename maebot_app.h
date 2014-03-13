@@ -204,6 +204,8 @@ struct state_t {
     int         diamond_seen;
 	int         doing_pid;
 	int         num_pid_zeros;
+
+	pid_ctrl_t *theta_pid;
 };
 
 //////////////

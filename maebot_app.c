@@ -693,6 +693,7 @@ int main(int argc, char ** argv)
 	state->hue    = 145.0;
 	state->green_pid = malloc(sizeof(pid_ctrl_t));
 	state->green_pid_out = 0;
+	state->theta_pid = malloc(sizeof(pid_ctrl_t));
 	state->isrcReady = 0;
 	state->im = NULL;
 	state->cmd_val = 0;
@@ -702,6 +703,7 @@ int main(int argc, char ** argv)
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0);
+	pid_init(state->theta_pid, 1.0, 0, 0, 0);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
