@@ -46,7 +46,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	int maxU, minU, u, v;
 	double mapAngle, dist, val;
 	haz_map_tile_t tile;
-	int maxV, minV;
+	int maxV, minV, offset;
 	//Bounds checking
 	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
 		return;
@@ -56,28 +56,29 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 		case HAZ_MAP_OBSTACLE:
 			tile.type = HAZ_MAP_OBSTACLE;
 			haz_map_set_data(hm, x, y, &tile);
-			maxV = fmin(y + HAZ_MAP_CONFIG_RAIDUS, hm->height - 1);
-			minV = fmax(y - HAZ_MAP_CONFIG_RAIDUS, 0);
+			offset = HAZ_MAP_CONFIG_RADIUS / HAZ_MAP_UNIT_TO_CM;
+			maxV = fmin(y + offset, hm->height - 1);
+			minV = fmax(y - offset, 0);
 			for (v = minV; v <= maxV; v++) {
 				mapAngle = map(v, minV, maxV, 0, M_PI);
-				maxU = fmin(x + HAZ_MAP_CONFIG_RAIDUS * sin(mapAngle), hm->width - 1);
-				minU = fmax(x - HAZ_MAP_CONFIG_RAIDUS * sin(mapAngle), 0);
+				maxU = fmin(x + offset * sin(mapAngle), hm->width - 1);
+				minU = fmax(x - offset * sin(mapAngle), 0);
 				for (u = minU; u <= maxU; u++) {
 					dist = sqrt(pow(u - x, 2) + pow(y - v, 2));
-					if (dist <= HAZ_MAP_OBSTACLE_RADIUS) {
+					if (dist <= HAZ_MAP_OBSTACLE_RADIUS/HAZ_MAP_UNIT_TO_CM) {
 						tile.type = HAZ_MAP_OBSTACLE;
 						tile.val = HAZ_MAP_HUGE_DIST;
 						haz_map_set_data(hm, u, v, &tile);
 					} else {
 						haz_map_get(hm, &tile, u, v);
-						val = pow(HAZ_MAP_CONFIG_RAIDUS - dist, 2);
+						val = pow(offset - dist, 2);
 						if (tile.type == HAZ_MAP_UNKNOWN || (tile.type == HAZ_MAP_FREE && tile.val < val)) {
 							tile.type = HAZ_MAP_FREE;
 							tile.val = val;
 							haz_map_set_data(hm, u, v, &tile);
 						}
 					}
-					
+
 				}
 			}
 		break;
