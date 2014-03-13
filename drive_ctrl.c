@@ -54,7 +54,6 @@ void driveToTheta(state_t * state, double theta) {
 		double motor_val = pid_to_rot(pid_out);
 
 		driveRot(state, motor_val);
-		pthread_mutex_unlock(&state->drive_mutex);
 	}
 	driveStop(state);
 }
