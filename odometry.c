@@ -33,7 +33,7 @@ void odometry_handler (
 	double mthreshold = 1.0;
 	double rthreshold = 0.1;
 
-	if(state->waiting_on_pos && 
+	/*if(state->waiting_on_pos && 
 		fabs(state->pos_x - state->goal_x) < mthreshold &&
 		fabs(state->pos_y - state->goal_y) < mthreshold){
 		pthread_mutex_lock(&state->drive_mutex);
@@ -46,7 +46,7 @@ void odometry_handler (
 		pthread_mutex_lock(&state->drive_mutex);
 		pthread_cond_broadcast(&state->drive_cond);
 		pthread_mutex_unlock(&state->drive_mutex);
-	}
+	}*/
 	
 	if(fabs(state->pos_x - state->last_x) > mthreshold ||
 		fabs(state->pos_y - state->last_y) > mthreshold){

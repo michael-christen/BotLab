@@ -6,7 +6,9 @@ double sign(double val) {
 	return 0;
 }
 
-void pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal) {
+void pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal, int min_output, int max_val) {
+	pid->min_output = min_output;
+	pid->max_val = max_val;
     pid_update_pid(pid, P, I, D);
     pid_update_goal(pid, goal);
 }
@@ -63,11 +65,11 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 		                  integral   +
 						  deriv_out;
 
-	if(fabs(output) > MAX_VAL) {
-		output = sign(output) * MAX_VAL;
+	if(fabs(output) > pid->max_val) {
+		output = sign(output) * pid->max_val;
 	}
 	//STOP when within error bounds
-    if(fabs(err) < MIN_OUTPUT) {
+    if(fabs(err) < pid->min_output) {
 		pid->integral   = 0;
 		output          = 0;
 	}
@@ -80,14 +82,14 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 //Map (-max_val, +max_val) -> (-1,1), ~actually want (-.14,.14)
 //what to do when < min_movable, I will catch up, but will it
 //take too long?
-double pid_to_rot(double pid_out) {
+double pid_to_rot(pid_ctrl_t *pid, double pid_out) {
     //There
-    if(fabs(pid_out) < MIN_OUTPUT) {
+    if(fabs(pid_out) < pid->min_output) {
 		printf("there\n");
 		return 0;
     }
 	//Scale to (-1,1)
-	pid_out /= MAX_VAL;
+	pid_out /= pid->max_val;
 
 	//Scale to factor
 	pid_out *= -MAPPING_FACTOR;

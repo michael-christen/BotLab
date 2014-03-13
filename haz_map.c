@@ -47,7 +47,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	int maxU, minU, u, v;
 	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
-	int maxV, minV;
+	int maxV, minV, offset;
 	//Bounds checking
 	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
 		return;
@@ -61,7 +61,6 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 			obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
 			maxV = fmin(y + offset, hm->height - 1);
 			minV = fmax(y - offset, 0);
-			printf("offset: %f, obstOffset: %f\n", offset, obstOffset);
 			for (v = minV; v <= maxV; v++) {
 				mapAngle = map(v, minV, maxV, 0, M_PI);
 				maxU = fmin(x + offset * sin(mapAngle), hm->width - 1);
@@ -81,7 +80,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 							haz_map_set_data(hm, u, v, &tile);
 						}
 					}
-					
+
 				}
 			}
 		break;
