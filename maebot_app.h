@@ -127,8 +127,9 @@ struct state_t {
 	int calibrating;	//actively calibrating
 
     //Position info from odometry
-    int positionQueueP, positionQueueCount;
-    position_t positionQueue[MAX_POS_SAMPLES];
+    int pathTakenValid, targetPathValid;
+    path_t *pathTaken, *targetPath;
+
     double pos_x, pos_y, pos_z;
 	double last_x, last_y;
     double pos_theta;
@@ -144,7 +145,7 @@ struct state_t {
 	int translating;
 	int rotating;
 	int moving;
-
+    explorer_t explorer;
 
     getopt_t * gopt;
     char * url;
@@ -203,6 +204,8 @@ struct state_t {
     int         diamond_seen;
 	int         doing_pid;
 	int         num_pid_zeros;
+
+	pid_ctrl_t *theta_pid;
 };
 
 //////////////
