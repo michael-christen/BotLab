@@ -12,7 +12,7 @@ explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y,
 	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
 	printf("forwardDist: %d\n", forwardDist);
 	printf("leftDist: %d\n", leftDist);	
-	return stop;
+	return EX_EXIT;
 }
 
 int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double theta) {
@@ -27,13 +27,14 @@ int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double thet
 	forwardRot = matd_create_data(3, 3, fRotD);
 	trans = matd_identity(3);
 	int count = 1;
-	int u, v, point;
+	int u, v;
 	int hmMaxY = hm->height;
 	int hmMinY = 0;
 	int hmMaxX = hm->width;
 	int hmMinX = 0;
 	int cont = 1;
 	int dist = -1;
+	haz_map_tile_t tile;
 
 	while (cont == 1) {
 		if (region == EXPLORER_REGION_FORWARD) {
@@ -52,16 +53,17 @@ int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double thet
 		//printf("u: %d, v: %d\n", u, v);
 
 		if (u > hmMinX && u < hmMaxX && v > hmMinY && v < hmMaxY) {
-			point = haz_map_get(hm, u, v);
+			haz_map_get(hm, &tile, u, v);
 
-			switch (point) {
+			switch (tile.type) {
 				case HAZ_MAP_OBSTACLE:
 					dist = count;
 					cont = 0;
 				break;
+				default:
+					count++;
+				break;
 			}
-
-			count++;
 		} else {
 			// wall not found
 			cont = 0;
@@ -72,7 +74,7 @@ int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double thet
 	matd_destroy(forwardRot);
 	matd_destroy(pos);
 	matd_destroy(trans);
-	return EX_EXIT;
+	return dist;
 }
 
 path_t* explorer_get_move(explorer_t *ex) {

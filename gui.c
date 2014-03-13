@@ -100,6 +100,32 @@ void display_started(vx_application_t * app, vx_display_t * disp)
     printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
+void draw_path(vx_buffer_t *buf, path_t *path, float color[]) {
+    uint32_t numCoords = 6 * (path->length - 1);
+    float *traj = malloc(sizeof(float) * numCoords);
+    uint32_t i, baseIndex;
+    for (i = 0; i < path->length; i++) {
+        if (i == 0) {
+            baseIndex = 0;
+        } else {
+            baseIndex = (i*6) - 3;
+        }
+        traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
+        traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
+        traj[baseIndex + 2] = 0.5;
+
+        if (i != path->length - 1 &&  i != 0) {
+            traj[baseIndex + 3] = traj[baseIndex];
+            traj[baseIndex + 4] = traj[baseIndex + 1];
+            traj[baseIndex + 5] = traj[baseIndex + 2];
+        }
+    }
+
+    vx_resc_t *posPoints = vx_resc_copyf(traj, numCoords);
+    vx_buffer_add_back(buf, vxo_lines(posPoints, numCoords/3, GL_LINES, vxo_points_style(color , 2.0f)));
+    free(traj);
+}
+
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     layerData->world = vx_world_create();
     return 1;
@@ -178,9 +204,10 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
     vx_buffer_add_back(gridBuff, vxo_grid());
     //printf("stride %d\n", state->gridMap.image->stride);
+
     vx_object_t *vo = vxo_chain(
                                 vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-                                vxo_mat_translate3(-state->hazMap.width/2, -state->hazMap.height/2, -1),
+                                vxo_mat_translate3(-(int)(state->hazMap.width/2), -(int)(state->hazMap.height/2), -1),
                                 vxo_image_from_u32(state->hazMap.image, 0, 0)
                                 );
 
@@ -214,25 +241,17 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 
     vx_buffer_add_back(bruceBuff, vo);
 
-    //Draw Actual Trajectory
-    vx_buffer_t *aTrajBuff = vx_world_get_buffer(layerData->world, "actual-trajectory");
-    //Draw Axes
-    float aTraj[MAX_POS_SAMPLES * 3];
-    int i;
-    int posIndex = state->positionQueueP;
-    for (i = 0; i < state->positionQueueCount; i++) {
-        aTraj[i*3] = state->positionQueue[posIndex].x * CM_TO_VX;
-        aTraj[i*3 + 1] = state->positionQueue[posIndex].y * CM_TO_VX;
-        aTraj[i*3 + 2] = 0.5;
-        posIndex--;
-
-        if (posIndex < 0) {
-            posIndex = MAX_POS_SAMPLES - 1;
-        }
+     //Draw Actual Trajectory
+    vx_buffer_t *tTrajBuff = vx_world_get_buffer(layerData->world, "target-trajectory");
+    if (state->targetPathValid == 1) {
+        draw_path(tTrajBuff, state->targetPath, vx_blue);
     }
 
-    vx_resc_t *posPoints = vx_resc_copyf(aTraj, state->positionQueueCount * 3);
-    vx_buffer_add_back(aTrajBuff, vxo_lines(posPoints, state->positionQueueCount, GL_LINES, vxo_points_style(vx_blue, 2.0f)));
+    //Draw Actual Trajectory
+    vx_buffer_t *aTrajBuff = vx_world_get_buffer(layerData->world, "actual-trajectory");
+    if (state->pathTakenValid == 1) {
+        draw_path(aTrajBuff, state->pathTaken, vx_green);
+    }
 
     //Draw Gaussian Ellipse
     //95% confidence ellipse from 1-sigma error ellipse
@@ -313,6 +332,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     //Swap buffers
     vx_buffer_swap(gridBuff);
     vx_buffer_swap(bruceBuff);
+    vx_buffer_swap(tTrajBuff);
     vx_buffer_swap(aTrajBuff);
     vx_buffer_swap(ellipseBuff);
     //printf("endRender TOPDOWN\n");

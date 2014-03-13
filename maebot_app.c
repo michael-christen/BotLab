@@ -157,12 +157,16 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 	// forward
         if (key->key_code == 'w' || key->key_code == 'W') {
 	    cmd_val |= FORWARD;
+        state->pos_y += 3;
         } else if (key->key_code == 'a' || key->key_code == 'A' ) {
 	    cmd_val |= LEFT;
+        state->pos_x -= 3;
         } else if (key->key_code == 's' || key->key_code == 'S') {
 	    cmd_val |= BACKWARD;
+        state->pos_y -= 3;
         } else if (key->key_code == 'd' || key->key_code == 'D') {
 	    cmd_val |= RIGHT;
+        state->pos_x += 3;
 	} else if(key->key_code == 'l' || key->key_code == 'L') {
 	    // fire laser
 	    fireLaser(state);
@@ -519,21 +523,30 @@ void* FSM(void* data){
 
 void* position_tracker(void *data) {
     state_t *state = data;
+    int i;
+
+    state->pathTaken = malloc(sizeof(path_t));
+    path_t *path = state->pathTaken;
+    path->length = MAX_POS_SAMPLES;
+    path->waypoints = malloc(sizeof(position_t) * path->length);
+    for (i = 0; i < MAX_POS_SAMPLES; i++) {
+        path->waypoints[i].x = 0;
+        path->waypoints[i].y = 0;
+    }
+
+    state->pathTakenValid = 1;
 
     while (state->running) {
-        state->positionQueue[state->positionQueueP].x = state->pos_x;
-        state->positionQueue[state->positionQueueP].y = state->pos_y;
-        state->positionQueueP++;
-
-        if (state->positionQueueP > MAX_POS_SAMPLES) {
-            state->positionQueueP = 0;
+        for (i = 1; i < path->length; i++) {
+            path->waypoints[i - 1].x = path->waypoints[i].x;
+            path->waypoints[i - 1].y = path->waypoints[i].y;
         }
+        path->waypoints[path->length - 1].x = state->pos_x;
+        path->waypoints[path->length - 1].y = state->pos_y;
 
-        if (state->positionQueueCount < MAX_POS_SAMPLES) {
-            state->positionQueueCount++;
-        }
         usleep(POS_SAMPLES_INTERVAL);
     }
+
     return NULL;
 }
 
@@ -558,10 +571,10 @@ int main(int argc, char ** argv)
     state->pos_y    = 0;
     state->pos_z    = 0;
     state->pos_theta= 0;
+    state->pathTakenValid = 0;
+    state->targetPathValid = 0;
     state->odometry_seen = 0;
     state->init_last_mouse = 0;
-    state->positionQueueP = 0;
-    state->positionQueueCount = 0;
     state->red = 0x3a;
     state->green = 0x76;
     state->blue = 0x41;
@@ -576,13 +589,7 @@ int main(int argc, char ** argv)
 
     haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
-    for (i = 0; i < 80; i++) {
-        haz_map_set(&state->hazMap, (state->hazMap.width / 2) - 40 + i, (state->hazMap.height / 2) + 40, HAZ_MAP_OBSTACLE);
-        haz_map_set(&state->hazMap, (state->hazMap.width / 2) - 40 + i, (state->hazMap.height / 2) - 40, HAZ_MAP_OBSTACLE);
-        haz_map_set(&state->hazMap, (state->hazMap.width / 2) - 40, (state->hazMap.height / 2) - 40 + i, HAZ_MAP_OBSTACLE);
-        haz_map_set(&state->hazMap, (state->hazMap.width / 2) + 40, (state->hazMap.height / 2) - 40 + i, HAZ_MAP_OBSTACLE);
-    }
-    explorer_init(&state->explorer);
+    //explorer_init(&state->explorer);
 
     //Should be width
     state->tape = calloc(1000, sizeof(pixel_t));
@@ -667,6 +674,12 @@ int main(int argc, char ** argv)
     vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
     haz_map_destroy(&state->hazMap);
+    if (state->pathTaken == 1) {
+        path_destroy(state->pathTaken);
+    }
+    if (state->targetPathValid == 1) {
+        path_destroy(state->targetPath);
+    }
     printf("Exited Cleanly!\n");
     //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
     //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);

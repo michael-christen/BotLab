@@ -119,8 +119,9 @@ struct state_t {
     const char *sensor_channel;
 
     //Position info from odometry
-    int positionQueueP, positionQueueCount;
-    position_t positionQueue[MAX_POS_SAMPLES];
+    int pathTakenValid, targetPathValid;
+    path_t *pathTaken, *targetPath;
+
     double pos_x, pos_y, pos_z;
 	double last_x, last_y;
     double pos_theta;
