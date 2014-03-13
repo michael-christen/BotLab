@@ -3,7 +3,7 @@ include ../common.mk
 CFLAGS = $(CFLAGS_STD) $(CFLAGS_COMMON) $(CFLAGS_VX) $(CFLAGS_GTK) $(CFLAGS_LCMTYPES) $(CFLAGS_LCM) $(CFLAGS_VX) -fPIC -O2
 LDFLAGS =  $(LDFLAGS_VX_GTK) $(LDFLAGS_VX) $(LDFLAGS_GTK) $(LDFLAGS_IMAGESOURCE) $(LDFLAGS_COMMON) $(LDFLAGS_LCMTYPES) $(LDFLAGS_LCM) $(LDFLAGS_STD)
 
-BINARIES = ../../bin/maebot_app
+BINARIES = ../../bin/maebot_app ../../bin/color_app
 LIB = ../../lib
 
 all: $(BINARIES)
@@ -14,6 +14,11 @@ all: $(BINARIES)
 	pixel.o explorer.o path.o
 	@echo "\t$@"
 	@$(CC) -o $@ $^ $(LDFLAGS)
+
+../../bin/color_app: color_app.o color_gui.o image.o
+	@echo "\t$@"
+	@$(CC) -o $@ $^ $(LDFLAGS)
+	
 
 clean:
 	@rm -f *.o *~ *.a

@@ -14,6 +14,7 @@ struct Set
 };
 
 Set * set_init (int x);
+void  set_destroy(Set *set);
 //Sets both a and b -> a | b
 void set_union(Set *a, Set *b);
 //Returns the topmost parent of this set
@@ -23,7 +24,7 @@ void set_link(Set *a, Set *b);
 
 
 
-	
+
 
 
 #endif

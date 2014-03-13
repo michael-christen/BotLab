@@ -1,5 +1,11 @@
 #include "pid_ctrl.h"
 
+double sign(double val) {
+	if(val < 0) return -1;
+	if(val > 0) return 1;
+	return 0;
+}
+
 void pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal) {
     pid_update_pid(pid, P, I, D);
     pid_update_goal(pid, goal);
@@ -21,47 +27,72 @@ void pid_update_goal(pid_ctrl_t *pid, double goal) {
 }
 
 double pid_get_output(pid_ctrl_t *pid, double meas) {
-    clock_t cur_clock = clock();
-    double dt         = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
-    double err      = pid->goal - meas;
-    double derivative = 0;
+    clock_t cur_clock   = clock();
+    double dt           = (cur_clock - pid->prev_clk + 0.0)/CLOCKS_PER_SEC;
+    double err          = pid->goal - meas;
+	/*
+	if(err < 0) {
+		printf("ERROR is < 0\n");
+	}
+	else if(err > 0) {
+		printf("ERROR is > 0\n");
+	}
+	*/
+    double derivative   = 0;
 
     if(pid->first_meas) {
-	pid->first_meas = 0;
+		pid->first_meas = 0;
     } else {
-	pid->integral += err*dt;
-	derivative     = (err - pid->prev_err)/dt;
+		pid->integral   += err*dt;
+		derivative      = (err - pid->prev_err)/dt;
     }
 
-    double output     = pid->P*err +
-	                pid->I*pid->integral +
-			pid->D*derivative;
+	//If passes, get rid of integral
+	if(sign(pid->prev_err) != sign(err)) {
+		printf("SWITCH");
+		pid->integral = 0;
+	}
 
-    pid->prev_err     = err;
-    pid->prev_clk     = cur_clock;
+	double proportion   = pid->P * err;
+	double integral     = pid->I * pid->integral;
+	double deriv_out    = pid->D * -derivative;
+	printf("proportion: %f\n",proportion);
+	//printf("integral  : %f\n",integral);
+	printf("derivative: %f\n",deriv_out);
+    double output       = proportion +
+		                  integral   +
+						  deriv_out;
+
+	if(fabs(output) > MAX_VAL) {
+		output = sign(output) * MAX_VAL;
+	}
+	//STOP when within error bounds
+    if(fabs(err) < MIN_OUTPUT) {
+		pid->integral   = 0;
+		output          = 0;
+	}
+
+    pid->prev_err       = err;
+    pid->prev_clk       = cur_clock;
     return output;
 }
 
+//Map (-max_val, +max_val) -> (-1,1), ~actually want (-.14,.14)
+//what to do when < min_movable, I will catch up, but will it
+//take too long?
 double pid_to_rot(double pid_out) {
-    double min_movable = 0.13;
     //There
     if(fabs(pid_out) < MIN_OUTPUT) {
-	printf("there\n");
-	return 0;
+		printf("there\n");
+		return 0;
     }
-    if(fabs(pid_out) > MAX_OUTPUT) {
-	//get sign
-	pid_out /= fabs(pid_out);
-	//Set to max_output
-	pid_out *= MAX_OUTPUT;
-    }
-    pid_out /= -MAX_OUTPUT;
-    /*
-    if(fabs(pid_out) < min_movable) {
-	pid_out /= fabs(pid_out);
-	pid_out *= min_movable;
-    }
-    */
+	//Scale to (-1,1)
+	pid_out /= MAX_VAL;
+
+	//Scale to factor
+	pid_out *= -MAPPING_FACTOR;
+
     printf("speed: %f\n",pid_out);
     return pid_out;
 }
+

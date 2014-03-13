@@ -3,7 +3,7 @@
 //////////////
 
 // C Libraries
-#include "maebot_app.h"
+#include "color_app.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -27,9 +27,6 @@
 #include "common/matd.h"
 #include "imagesource/image_source.h"
 #include "imagesource/image_convert.h"
-
-#include "blob_detection.h"
-#include "line_detection.h"
 
 int displayCount;
 
@@ -100,32 +97,6 @@ void display_started(vx_application_t * app, vx_display_t * disp)
     printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
-void draw_path(vx_buffer_t *buf, path_t *path, float color[]) {
-    uint32_t numCoords = 6 * (path->length - 1);
-    float *traj = malloc(sizeof(float) * numCoords);
-    uint32_t i, baseIndex;
-    for (i = 0; i < path->length; i++) {
-        if (i == 0) {
-            baseIndex = 0;
-        } else {
-            baseIndex = (i*6) - 3;
-        }
-        traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
-        traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
-        traj[baseIndex + 2] = 0.5;
-
-        if (i != path->length - 1 &&  i != 0) {
-            traj[baseIndex + 3] = traj[baseIndex];
-            traj[baseIndex + 4] = traj[baseIndex + 1];
-            traj[baseIndex + 5] = traj[baseIndex + 2];
-        }
-    }
-
-    vx_resc_t *posPoints = vx_resc_copyf(traj, numCoords);
-    vx_buffer_add_back(buf, vxo_lines(posPoints, numCoords/3, GL_LINES, vxo_points_style(color , 2.0f)));
-    free(traj);
-}
-
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
     layerData->world = vx_world_create();
     return 1;
@@ -141,6 +112,7 @@ int displayInitCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 
     vx_layer_camera_fit2D(layerData->layer, lowLeft, upRight, 1);
     vx_layer_set_viewport_rel(layerData->layer, layerData->position);
+    vx_layer_add_event_handler(layerData->layer, &state->veh);
     //vx_layer_add_event_handler(layerData->layer, &state->veh);
     return 1;
 }
@@ -205,54 +177,6 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_add_back(gridBuff, vxo_grid());
     //printf("stride %d\n", state->gridMap.image->stride);
 
-    vx_object_t *vo = vxo_chain(
-                                vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-                                vxo_mat_translate3(-(int)(state->hazMap.width/2), -(int)(state->hazMap.height/2), -1),
-                                vxo_image_from_u32(state->hazMap.image, 0, 0)
-                                );
-
-    vx_buffer_add_back(gridBuff, vo);
-    //Draw Axes
-    float axes[12] = {-1000, 0, 0, 1000, 0, 0, 0, -1000, 0, 0, 1000, 0};
-    vx_resc_t *verts = vx_resc_copyf(axes, 12);
-    vx_buffer_add_back(gridBuff, vxo_lines(verts, 4, GL_LINES, vxo_points_style(vx_red, 2.0f)));
-    //Draw Bruce
-    vx_buffer_t *bruceBuff = vx_world_get_buffer(layerData->world, "bruce");
-
-    vo = vxo_chain(
-                                vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-                                vxo_mat_translate3(state->pos_x, state->pos_y, state->pos_z + BRUCE_HEIGHT / 2),
-                                vxo_mat_scale3(BRUCE_DIAMETER, BRUCE_DIAMETER, BRUCE_HEIGHT),
-                                vxo_cylinder(vxo_mesh_style(vx_blue),
-                                                vxo_lines_style(vx_cyan, 2.0f))
-                                );
-
-    vx_buffer_add_back(bruceBuff, vo);
-
-    vo = vxo_chain(
-                    vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-                    vxo_mat_translate3(state->pos_x, state->pos_y ,state->pos_z + BRUCE_HEIGHT + 0.1),
-                    vxo_mat_rotate_z(-state->pos_theta),
-                    vxo_mat_translate3(0, -BRUCE_DIAMETER / 2, 0),
-                    vxo_mat_rotate_x(-M_PI/2),
-                    vxo_mat_scale3(BRUCE_DIAMETER / 2, 1, BRUCE_DIAMETER),
-                    vxo_square_pyramid(vxo_mesh_style(vx_red))
-                  );
-
-    vx_buffer_add_back(bruceBuff, vo);
-
-     //Draw Actual Trajectory
-    vx_buffer_t *tTrajBuff = vx_world_get_buffer(layerData->world, "target-trajectory");
-    if (state->targetPathValid == 1) {
-        draw_path(tTrajBuff, state->targetPath, vx_blue);
-    }
-
-    //Draw Actual Trajectory
-    vx_buffer_t *aTrajBuff = vx_world_get_buffer(layerData->world, "actual-trajectory");
-    if (state->pathTakenValid == 1) {
-        draw_path(aTrajBuff, state->pathTaken, vx_green);
-    }
-
     //Draw Gaussian Ellipse
     //95% confidence ellipse from 1-sigma error ellipse
     double scalefactor = 2.4477;
@@ -312,28 +236,9 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     }
     vx_buffer_t *ellipseBuff = vx_world_get_buffer(layerData->world,
 	    "error_ellipse");
-    vo = vxo_chain(
-    vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-	vxo_mat_translate3(
-	    state->pos_x,
-	    state->pos_y,
-	    state->pos_z
-	),
-	vxo_mat_rotate_z(phi - state->pos_theta),
-	vxo_lines(
-	    vx_resc_copyf(points, npoints*3),
-	    npoints,
-	    GL_LINE_LOOP,
-	    vxo_lines_style(vx_purple, 1.0f)
-	)
-    );
-    vx_buffer_add_back(ellipseBuff, vo);
 
     //Swap buffers
     vx_buffer_swap(gridBuff);
-    vx_buffer_swap(bruceBuff);
-    vx_buffer_swap(tTrajBuff);
-    vx_buffer_swap(aTrajBuff);
     vx_buffer_swap(ellipseBuff);
     //printf("endRender TOPDOWN\n");
     return 1;
@@ -355,20 +260,6 @@ int displayInitWorldPOVLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
-    const float distBehind = 5 * BRUCE_DIAMETER / 2.0f;
-    const float distAbove = BRUCE_HEIGHT;
-    float eye[3];
-    float lookat[3];
-    float up[3];
-    eye[0] = (state->pos_x + (distBehind * sin(-state->pos_theta))) * CM_TO_VX;
-    eye[1] = (state->pos_y - (distBehind * cos(-state->pos_theta))) * CM_TO_VX;
-    eye[2] = (state->pos_z + BRUCE_HEIGHT + distAbove) * CM_TO_VX;
-    lookat[0] = state->pos_x * CM_TO_VX;
-    lookat[1] = state->pos_y * CM_TO_VX;
-    lookat[2] = (state->pos_z + BRUCE_HEIGHT) * CM_TO_VX;
-    up[0] = lookat[0] - eye[0];
-    up[1] = lookat[1] - eye[1];
-    up[2] = eye[2] + distAbove;
     //vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
     //printf("endRender worldPOV\n");
     return 1;
@@ -395,13 +286,6 @@ int renderDebugLayer(state_t *state, layer_data_t *layerData) {
     vx_buffer_t *textBuff = vx_world_get_buffer(layerData->world, "text");
 
     char debugText[400];
-    const char* formatting = "<<left,#ffffff,serif>>X: %f\nY: %f\nTheta: %f\nGyro[0]: %d\nDiff_x: %f\nPID_OUT: %f\nDIAMOND: %d\nDOING_PID: %d\n";
-    sprintf(debugText, formatting,
-	    state->pos_x, state->pos_y,
-	    state->pos_theta, state->gyro[0],
-	    state->diff_x, state->green_pid_out,
-	    state->diamond_seen, state->doing_pid
-    );
     vx_object_t *vo = vxo_text_create(VXO_TEXT_ANCHOR_TOP_LEFT, debugText);
     vx_buffer_add_back(textBuff, vxo_pix_coords(VX_ORIGIN_TOP_LEFT, vo));
     vx_buffer_swap(textBuff);
@@ -474,7 +358,7 @@ void* gui_create(void *data) {
 
 
     // Init layer data structs
-    state->layers[0].enable = 1;
+    state->layers[0].enable = 0;
     state->layers[0].name = "WorldTopDown";
     state->layers[0].position[0] = 0;
     state->layers[0].position[1] = 0.333f;
@@ -489,16 +373,16 @@ void* gui_create(void *data) {
     //state->layers[1].enable = !state->getopt_options.no_video;
     state->layers[1].enable = 1;
     state->layers[1].name = "CameraPOV";
-    state->layers[1].position[0] = 0.666f;
-    state->layers[1].position[1] = 0.5f;
-    state->layers[1].position[2] = 0.333f;
-    state->layers[1].position[3] = 0.5f;
+    state->layers[1].position[0] = 0.0f;
+    state->layers[1].position[1] = 0.0f;
+    state->layers[1].position[2] = 1.0f;
+    state->layers[1].position[3] = 1.0f;
     state->layers[1].init = initCameraPOVLayer;
     state->layers[1].displayInit = displayInitCameraPOVLayer;
     state->layers[1].render = renderCameraPOVLayer;
     state->layers[1].destroy = destroyCameraPOVLayer;
 
-    state->layers[2].enable = 1;
+    state->layers[2].enable = 0;
     state->layers[2].name = "WorldPOV";
     state->layers[2].position[0] = 0.666f;
     state->layers[2].position[1] = 0;
@@ -509,7 +393,7 @@ void* gui_create(void *data) {
     state->layers[2].render = renderWorldPOVLayer;
     state->layers[2].destroy = destroyWorldPOVLayer;
 
-    state->layers[3].enable = 1;
+    state->layers[3].enable = 0;
     state->layers[3].name = "Debug";
     state->layers[3].position[0] = 0;
     state->layers[3].position[1] = 0;

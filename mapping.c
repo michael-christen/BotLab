@@ -1,6 +1,7 @@
 #include "mapping.h"
 #include "stdio.h"
 #include "haz_map.h"
+#include "pixel.h"
 
 //not using add_obstacles_to_map right now, no global map
 /*
@@ -44,61 +45,62 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 
 void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_t *hm, int obstacle){
 	state_t * state = data;
-	double rot_theta = /*state->gyro[0]*/ 0; //need to get from gyro sensors. gyro[0/1/2?]
 
+	double rot_theta = -1 * state->pos_theta;
+
+
+	//matrices for position realtive to bruce, rotation, and multiplication of the 2
 	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
 																y_rel,
 																1});
 
-
-	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
-													-sin(rot_theta),	cos(rot_theta),	0,
+	//printf("original coords x: %f, y: %f\n", x_rel, y_rel);
+	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),	-sin(rot_theta),	state->pos_x,
+													sin(rot_theta),	 cos(rot_theta),	state->pos_y,
 													0,					0,				1});
 
 	matd_t * real = matd_multiply(R, rel_coords);
 
-
 	x_rel = matd_get(real, 0, 0);
 	y_rel = matd_get(real, 1, 0);
 
-	double xbias = 1.5;
+	//printf("rotated coords x: %f, y: %f\n", x_rel, y_rel);
 
-//	printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
+	//constant left bias
+	double xbias = 1.5; //cm
+
+	//printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
 
 
+	double map_x = x_rel + xbias;
+	double map_y = y_rel;
 
+	//printf("haz map max width: %d, grid res: %d\n", HAZ_MAP_MAX_WIDTH, GRID_RES);
+
+	int map_x_scaled = (map_x/GRID_RES) +(HAZ_MAP_MAX_WIDTH/2);
+	int map_y_scaled = (map_y/GRID_RES) +(HAZ_MAP_MAX_HEIGHT/2);
+
+	if ( map_x_scaled < 0 ||  map_x_scaled > HAZ_MAP_MAX_WIDTH){
+		//printf("x out of range\n");
+		return;
+	}
+	if ( map_y_scaled < 0 ||  map_y_scaled > HAZ_MAP_MAX_HEIGHT){
+		//printf("y out of range\n");
+		return;
+	}
+
+	//place point on haz_map
 	if(obstacle == 1){
-		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2 + xbias), y_rel, HAZ_MAP_OBSTACLE);
+		//printf("grid cell on haz map filled  x: %d, y: %d\n", map_x_scaled, map_y_scaled);
+		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
-		haz_map_set(hm, (x_rel + HAZ_MAP_MAX_WIDTH/2 + xbias), y_rel, HAZ_MAP_FREE);
+		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
 	}
-}
 
-void find_point_pos( void * data, int x_px, int y_px, haz_map_t *hm, int obstacle){
-	/*
-		pixel location, defined by its x,y coords,
-		reference to hazard map,
-		int obstacle: 0 if free space, 1 if obstacle
-	*/
-	state_t * state = data;
-
-
-	matd_t * H = matd_create_data(3, 3, (double[]) { 0.014442,       0.002133,      -6.026192,
-      															-0.001299,      -0.000377,       5.889305,
-    																-0.000036,       0.001629,      -0.385430});
-
-
-	//determine x and y coordinates, relative to bruce, using homography project fcn
-
-//determine x and y coordinates, relative to bruce
-
-	double x_rel = 0, y_rel = 0;
-	//homography_project(H, x_px, y_px, &x_rel, &y_rel);
-
-
-	//add_obstacles_to_map( x_rel, y_rel, data);
-	add_obstacles_to_haz_map( x_rel, y_rel, data, hm, obstacle);
+	matd_destroy(rel_coords);
+	matd_destroy(R);
+	matd_destroy(real);
 
 	return;
 }
@@ -108,8 +110,54 @@ void find_point_pos( void * data, int x_px, int y_px, haz_map_t *hm, int obstacl
 
 
 
-void find_H_matrix(void * data){
+void find_point_pos( void * data, int obstacle){
+	/*
+		int obstacle: 0 if free space, 1 if obstacle
+	*/
 	state_t * state = data;
+	haz_map_t hm = state->hazMap;
+
+	matd_t * H = matd_create_data(3, 3, (double[]) { 0.014442,       0.002133,      -6.026192,
+      															-0.001299,      -0.000377,       5.889305,
+    																-0.000036,       0.001629,      -0.385430});
+
+	//homography_project(H, x_px, y_px, &x_rel, &y_rel);
+
+	int points = state->num_pts_tape;
+	int i;
+
+	for(i = 0; i < points; i++){
+		double x = state->tape[i].x;
+		double y = state->tape[i].y;
+
+		//printf("pixel at x: %f, y: %f\n", x, y);
+
+
+	 	double xx = MATD_EL(H, 0, 0)*x + MATD_EL(H, 0, 1)*y + MATD_EL(H, 0, 2);
+    	double yy = MATD_EL(H, 1, 0)*x + MATD_EL(H, 1, 1)*y + MATD_EL(H, 1, 2);
+		double zz = MATD_EL(H, 2, 0)*x + MATD_EL(H, 2, 1)*y + MATD_EL(H, 2, 2);
+
+  	  	double x_cm = xx / zz;
+    	double y_cm = yy / zz;
+
+	//	printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);
+
+
+		add_obstacles_to_haz_map( x_cm, y_cm, data, &hm, obstacle);
+	}
+
+
+	matd_destroy(H);
+	return;
+}
+
+
+
+
+
+
+void find_H_matrix(){
+
 	//click_array is x and y of pixels clicked, 4 for now
 	zarray_t * rw_coords = zarray_create(sizeof(float[2]));
 	float real[2] = {0, 0};
@@ -119,7 +167,7 @@ void find_H_matrix(void * data){
 	real[0] = 0;
 	real[1] = 30;
 	zarray_add(rw_coords, real);
-	real[0] = 0;
+	real[0]= 0;
 	real[1] = 60;
 	zarray_add(rw_coords, real);
 	real[0] = 0;
