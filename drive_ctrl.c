@@ -42,7 +42,7 @@ void driveStop(state_t * state) {
 void driveToTheta(state_t * state, double theta) {
 	double thresh = 0.1;
 
-	state->goal_theta = theta;
+	state->goal_theta = fmod(theta, 2*M_PI);
 
 	if(fabs(state->goal_theta - state->pos_theta) > thresh){
 		state->waiting_on_pos = 0;
@@ -60,7 +60,7 @@ void driveToTheta(state_t * state, double theta) {
 }
 
 void rotateTheta(state_t * state, double theta) {
-	driveToTheta(state, state->pos_theta + theta);
+	driveToTheta(state, fmod(state->pos_theta + theta, 2*M_PI));
 }
 
 void driveToPosition(state_t * state, position_t position){
