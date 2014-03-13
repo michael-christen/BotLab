@@ -685,6 +685,11 @@ int main(int argc, char ** argv)
     state->pathTakenValid = 0;
     state->targetPathValid = 0;
 	state->odometry_seen = 0;
+	//Initialize to identity so, can multiply
+	state->var_matrix    = matd_identity(2);
+	state->alpha = 0.05;
+	state->beta  = 0.02;
+
 	state->init_last_mouse = 0;
 	state->red = 0x3a;
 	state->green = 0x76;

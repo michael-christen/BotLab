@@ -137,6 +137,8 @@ struct state_t {
     int32_t prev_left_ticks, prev_right_ticks;
     int    odometry_seen;
     const char *odometry_channel;
+	matd_t *var_matrix;
+	double alpha, beta;
 
 	//map
 	grid_cell obstacle_map[200][200]; //10cm x 10 cm
