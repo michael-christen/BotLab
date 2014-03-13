@@ -618,23 +618,32 @@ void* FSM(void* data){
 }
 
 void* position_tracker(void *data) {
-	state_t *state = data;
+    state_t *state = data;
+    int i;
 
-	while (state->running) {
-		state->positionQueue[state->positionQueueP].x = state->pos_x;
-		state->positionQueue[state->positionQueueP].y = state->pos_y;
-		state->positionQueueP++;
+    state->pathTaken = malloc(sizeof(path_t));
+    path_t *path = state->pathTaken;
+    path->length = MAX_POS_SAMPLES;
+    path->waypoints = malloc(sizeof(position_t) * path->length);
+    for (i = 0; i < MAX_POS_SAMPLES; i++) {
+        path->waypoints[i].x = 0;
+        path->waypoints[i].y = 0;
+    }
 
-		if (state->positionQueueP > MAX_POS_SAMPLES) {
-			state->positionQueueP = 0;
-		}
+    state->pathTakenValid = 1;
 
-		if (state->positionQueueCount < MAX_POS_SAMPLES) {
-			state->positionQueueCount++;
-		}
-		usleep(POS_SAMPLES_INTERVAL);
-	}
-	return NULL;
+    while (state->running) {
+        for (i = 1; i < path->length; i++) {
+            path->waypoints[i - 1].x = path->waypoints[i].x;
+            path->waypoints[i - 1].y = path->waypoints[i].y;
+        }
+        path->waypoints[path->length - 1].x = state->pos_x;
+        path->waypoints[path->length - 1].y = state->pos_y;
+
+        usleep(POS_SAMPLES_INTERVAL);
+    }
+
+    return NULL;
 }
 
 void * calibrator(void* data){
@@ -673,10 +682,10 @@ int main(int argc, char ** argv)
 	state->pos_y    = 0;
 	state->pos_z    = 0;
 	state->pos_theta= 0;
+    state->pathTakenValid = 0;
+    state->targetPathValid = 0;
 	state->odometry_seen = 0;
 	state->init_last_mouse = 0;
-	state->positionQueueP = 0;
-	state->positionQueueCount = 0;
 	state->red = 0x3a;
 	state->green = 0x76;
 	state->blue = 0x41;
@@ -786,12 +795,17 @@ int main(int argc, char ** argv)
 	// clean up
 	vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
-	haz_map_destroy(&state->hazMap);
-	//printf("Exited Cleanly!\n");
-	//maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
-	//maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
-	//system("kill `pgrep -f './maebot_driver'`");
+    haz_map_destroy(&state->hazMap);
+    if (state->pathTaken == 1) {
+        path_destroy(state->pathTaken);
+    }
+    if (state->targetPathValid == 1) {
+        path_destroy(state->targetPath);
+    }
+    printf("Exited Cleanly!\n");
+    //maebot_sensor_data_t_unsubscribe(lcm, sensor_sub);
+    //maebot_sensor_data_t_unsubscribe(lcm, odometry_sub);
+    //system("kill `pgrep -f './maebot_driver'`");
 
-
-	return 0;
+    return 0;
 }
