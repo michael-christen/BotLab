@@ -14,6 +14,7 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 	hm->image = image_u32_create(w, h);
 	hm->width = w;
 	hm->height = h;
+	hm->max_free_val = pow(HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES, 2);
 	position_t o[8] = {{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}};
 
 	int i, j, k, count, newX, newY;
@@ -44,7 +45,7 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 
 void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	int maxU, minU, u, v;
-	double mapAngle, dist, val;
+	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
 	int maxV, minV;
 	//Bounds checking
@@ -56,21 +57,24 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 		case HAZ_MAP_OBSTACLE:
 			tile.type = HAZ_MAP_OBSTACLE;
 			haz_map_set_data(hm, x, y, &tile);
-			maxV = fmin(y + HAZ_MAP_CONFIG_RAIDUS, hm->height - 1);
-			minV = fmax(y - HAZ_MAP_CONFIG_RAIDUS, 0);
+			offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
+			obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
+			maxV = fmin(y + offset, hm->height - 1);
+			minV = fmax(y - offset, 0);
+			printf("offset: %f, obstOffset: %f\n", offset, obstOffset);
 			for (v = minV; v <= maxV; v++) {
 				mapAngle = map(v, minV, maxV, 0, M_PI);
-				maxU = fmin(x + HAZ_MAP_CONFIG_RAIDUS * sin(mapAngle), hm->width - 1);
-				minU = fmax(x - HAZ_MAP_CONFIG_RAIDUS * sin(mapAngle), 0);
+				maxU = fmin(x + offset * sin(mapAngle), hm->width - 1);
+				minU = fmax(x - offset * sin(mapAngle), 0);
 				for (u = minU; u <= maxU; u++) {
 					dist = sqrt(pow(u - x, 2) + pow(y - v, 2));
-					if (dist <= HAZ_MAP_OBSTACLE_RADIUS) {
+					if (dist < obstOffset) {
 						tile.type = HAZ_MAP_OBSTACLE;
 						tile.val = HAZ_MAP_HUGE_DIST;
 						haz_map_set_data(hm, u, v, &tile);
 					} else {
 						haz_map_get(hm, &tile, u, v);
-						val = pow(HAZ_MAP_CONFIG_RAIDUS - dist, 2);
+						val = pow(offset - dist, 2);
 						if (tile.type == HAZ_MAP_UNKNOWN || (tile.type == HAZ_MAP_FREE && tile.val < val)) {
 							tile.type = HAZ_MAP_FREE;
 							tile.val = val;
@@ -100,7 +104,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF777777;
 		break;
 		case HAZ_MAP_FREE:
-			offset = map(data->val, 0, HAZ_MAP_VAL_MAX, 0, 255);
+			offset = map(data->val, 0, hm->max_free_val, 0, 255);
 			//color = 0xFF5EFFFF;
 			color = 0xFFFF00FF | (offset << 8);
 			//printf("val: 0x%10x\n", color);
@@ -112,7 +116,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->width + x] = color;
+	hm->image->buf[y*hm->image->stride + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, int newX, int newY, int oldX, int oldY) {
