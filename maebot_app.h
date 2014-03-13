@@ -42,7 +42,7 @@
 #define NUM_LAYERS 4
 #define BRUCE_DIAMETER 10.5
 #define BRUCE_HEIGHT 10
-#define GRID_RES 2
+#define GRID_RES 5
 
 // XXX these need to be fixed based on actual spec
 #define MAX_REVERSE_SPEED -32768

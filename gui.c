@@ -206,6 +206,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	//printf("stride %d\n", state->gridMap.image->stride);
 
 	vx_object_t *vo = vxo_chain(
+			vxo_mat_scale3(GRID_RES, GRID_RES, GRID_RES),
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
 			vxo_mat_translate3(-(int)(state->hazMap.width/2), -(int)(state->hazMap.height/2), -1),
 			vxo_image_from_u32(state->hazMap.image, 0, 0)
@@ -258,21 +259,12 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	double scalefactor = 2.4477;
 	//just for show now
 	scalefactor = 10;
-	/*
-	double covX = 1.0;
-	double covY = 0.5;
-	matd_t *covMatrix = matd_create(2,2);
-	matd_put(covMatrix, 0, 0, pow(covX, 2));
-	matd_put(covMatrix, 0, 1, covX * covY);
-	matd_put(covMatrix, 1, 0, pow(covY, 2));
-	matd_put(covMatrix, 1, 1, covY * covX);
-	*/
-	//Calculate Eigen Values with quadratic formula
 	double covX = matd_get(state->var_matrix, 0, 0);
 	double covY = matd_get(state->var_matrix, 1, 1);
 	double trace = covX + covY;
 	double gap   = sqrt(pow(trace,2) - 
 			4 * matd_det(state->var_matrix));
+	//Calculate Eigen Values with quadratic formula
 	double eigX = (trace + gap)/2;
 	double eigY = (trace - gap)/2;
 	double min_eig = (eigX < eigY) ? eigX : eigY;

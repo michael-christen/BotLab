@@ -226,6 +226,13 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 		curTile = &hm->hazMap[minDist.tileIndex];
 		if (curData.shortestPathKnown == 0) {
 			curData.shortestPathKnown = 1;
+
+			if (curTile->x == endX && curTile->y == endY) {
+				printf("Found path at %d, %d of length %d\n", curTile->x, curTile->y, curData.pathCount);
+				cont = 0;
+				break;
+			}
+
 			// for each neighbor
 			//printf("cur tile: %u, %u\n", curTile->x, curTile->y);
 			for (i = 0; i < curTile->numNeighbors; i++) {
@@ -240,12 +247,6 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 					checkData.parentIndex = minDist.tileIndex;
 					checkData.pathCount = curData.pathCount + 1;
 					zarray_set(dData, checkIndex, &checkData, NULL);
-					if (checkTile->x == endX && checkTile->y == endY) {
-						printf("Found path at %d, %d of length %d\n", checkTile->x, checkTile->y,checkData.pathCount);
-						cont = 0;
-						break;
-					}
-
 					curDist.tileIndex = checkIndex;
 					curDist.dist = newD;
 					zarray_add(pq, &curDist);
@@ -256,22 +257,22 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 		}
 	}
 
-	printf("Path Start of count %d\n", checkData.pathCount);
+	printf("Path Start of count %d\n", curData.pathCount);
 	printf("startIndex %u\n", startIndex);
-	printf("endTile %u, %u\n", checkTile->x, checkTile->y);
+	printf("endTile %u, %u\n", curTile->x, curTile->y);
 	int curIndex;
 	path_t *retPath;
 	retPath = malloc(sizeof(path_t));
-	retPath->waypoints = malloc(sizeof(position_t) * checkData.pathCount);
-	retPath->length = checkData.pathCount;
+	retPath->waypoints = malloc(sizeof(position_t) * curData.pathCount);
+	retPath->length = curData.pathCount;
 	retPath->position = 0;
 	for (i = retPath->length - 1; i >= 0; i--) {
-		curIndex = checkTile->y*hm->width + checkTile->x;
+		curIndex = curTile->y*hm->width + curTile->x;
 		if (curIndex != startIndex) {
-			zarray_get(dData, curIndex, &checkData);
-			checkTile = &hm->hazMap[checkData.parentIndex];
-			retPath->waypoints[i].x = checkTile->x;// - hm->width/2;
-			retPath->waypoints[i].y = checkTile->y;// - hm->height/2;
+			zarray_get(dData, curIndex, &curData);
+			curTile = &hm->hazMap[curData.parentIndex];
+			retPath->waypoints[i].x = curTile->x;// - hm->width/2;
+			retPath->waypoints[i].y = curTile->y;// - hm->height/2;
 		} else {
 			break;
 		}
