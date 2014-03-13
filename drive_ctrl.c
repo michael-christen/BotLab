@@ -42,30 +42,21 @@ void driveStop(state_t * state) {
 void driveToTheta(state_t * state, double theta) {
 	double thresh = 0.1;
 
-
 	pid_update_goal(state->theta_pid, theta);
 
 	state->goal_theta = theta;
 
 	while(abs(state->goal_theta - state->pos_theta) > thresh){
-		state->waiting_on_pos = 0;
-		state->waiting_on_theta = 1;
-
 		//Won't quite work yet, I have some left overs 
 		//from green targeting pid
 		double pid_out = pid_get_output(state->theta_pid,
 				state->pos_theta);
 		double motor_val = pid_to_rot(pid_out);
 
-		driveRot(state, (theta - state->pos_theta > 0 ? 0.25 : -0.25));
-
-		pthread_mutex_lock(&state->drive_mutex);
-		pthread_cond_wait(&state->drive_cond, &state->drive_mutex);
+		driveRot(state, motor_val);
 		pthread_mutex_unlock(&state->drive_mutex);
-
-		state->waiting_on_theta = 0;
-		driveStop(state);
 	}
+	driveStop(state);
 }
 
 void rotateTheta(state_t * state, double theta) {
