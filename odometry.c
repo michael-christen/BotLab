@@ -34,28 +34,28 @@ void odometry_handler (
 	double rthreshold = 0.1;
 
 	if(state->waiting_on_pos && 
-		abs(state->pos_x - state->goal_x) < mthreshold &&
-		abs(state->pos_y - state->goal_y) < mthreshold){
+		fabs(state->pos_x - state->goal_x) < mthreshold &&
+		fabs(state->pos_y - state->goal_y) < mthreshold){
 		pthread_mutex_lock(&state->drive_mutex);
 		pthread_cond_broadcast(&state->drive_cond);
 		pthread_mutex_unlock(&state->drive_mutex);
 	}
 
 	if(state->waiting_on_theta &&
-		abs(state->pos_theta - state->goal_theta) < rthreshold){
+		fabs(state->pos_theta - state->goal_theta) < rthreshold){
 		pthread_mutex_lock(&state->drive_mutex);
 		pthread_cond_broadcast(&state->drive_cond);
 		pthread_mutex_unlock(&state->drive_mutex);
 	}
 	
-	if(abs(state->pos_x - state->last_x) > mthreshold ||
-		abs(state->pos_y - state->last_y) > mthreshold){
+	if(fabs(state->pos_x - state->last_x) > mthreshold ||
+		fabs(state->pos_y - state->last_y) > mthreshold){
 		state->translating = 1;
 	} else{
 		state->translating = 0;
 	}
 	
-	if(abs(state->pos_theta - state->last_theta) > rthreshold){
+	if(fabs(state->pos_theta - state->last_theta) > rthreshold){
 		state->rotating = 1;
 	}else{
 		state->rotating = 0;

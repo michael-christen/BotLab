@@ -44,7 +44,7 @@ void driveToTheta(state_t * state, double theta) {
 
 	state->goal_theta = theta;
 
-	if(abs(state->goal_theta - state->pos_theta) > thresh){
+	if(fabs(state->goal_theta - state->pos_theta) > thresh){
 		state->waiting_on_pos = 0;
 		state->waiting_on_theta = 1;
 
@@ -69,7 +69,8 @@ void driveToPosition(state_t * state, position_t position){
 	state->goal_x = position.x;
 	state->goal_y = position.y;
 
-	if(abs(state->goal_x - state->pos_x) > thresh || abs(state->goal_y - state->pos_y) > thresh){
+	if(fabs(state->goal_x - state->pos_x) > thresh || 
+		fabs(state->goal_y - state->pos_y) > thresh){
 		double dx = position.x - state->pos_x;
 		double dy = position.y - state->pos_y;
 		double dtheta = atan2(dy, dx);
