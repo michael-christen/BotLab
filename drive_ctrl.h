@@ -5,6 +5,7 @@
 #include "odometry.h"
 #include "path.h"
 #include "lcmtypes/maebot_diff_drive_t.h"
+#include "pid_ctrl.h"
 #include <pthread.h>
 #include <math.h>
 #include <float.h>

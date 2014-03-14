@@ -102,6 +102,7 @@ void display_started(vx_application_t * app, vx_display_t * disp)
 	printf("hash table size after insert: %d\n", zhash_size(state->layer_map));
 }
 
+
 void drawEllipse(vx_buffer_t *ellipseBuff, matd_t *var_matrix, odometry_t pos, state_t *state) {
 	//95% confidence ellipse from 1-sigma error ellipse
 	double scalefactor = 2.4477;
@@ -197,6 +198,7 @@ void draw_path(vx_buffer_t *buf, path_t *path, const float color[]) {
     vx_resc_t *posPoints = vx_resc_copyf(traj, numCoords);
     vx_buffer_add_back(buf, vxo_lines(posPoints, numCoords/3, GL_LINES, vxo_points_style(color , 2.0f)));
     free(traj);
+
 }
 
 int initCameraPOVLayer(state_t *state, layer_data_t *layerData) {
