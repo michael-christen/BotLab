@@ -5,8 +5,8 @@
 #include "path.h"
 #include "haz_map.h"
 
-#define WORLD_MAP_MAX_WIDTH 541
-#define WORLD_MAP_MAX_HEIGHT 541
+#define WORLD_MAP_MAX_WIDTH 251
+#define WORLD_MAP_MAX_HEIGHT 251
 #define WORLD_MAP_UNSEEN 0
 #define WORLD_MAP_SEEN 1
 #define WORLD_MAP_RES 10

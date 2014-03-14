@@ -661,8 +661,10 @@ void* position_tracker(void *data) {
         path->waypoints[path->length - 1].x = state->pos_x;
         path->waypoints[path->length - 1].y = state->pos_y;
 
-	
+
         world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+			state->pos_x += 1;
+			state->pos_y += 2;
 
 
 
@@ -785,7 +787,7 @@ int main(int argc, char ** argv)
 	pthread_mutex_init(&state->running_mutex, NULL);
 	pthread_mutex_init(&state->image_mutex, NULL);
 	pthread_mutex_init(&state->haz_map_mutex, NULL);
-
+	pthread_mutex_init(&state->world_map_mutex, NULL);
 
 	state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_uint64_hash, zhash_uint64_equals);
 
