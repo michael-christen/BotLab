@@ -9,6 +9,8 @@
 #include <pthread.h>
 #include "time.h"
 #include "vx/vx.h"
+#include <stdlib.h>
+
 
 // MAEBOT
 #include "blob_detection.h"

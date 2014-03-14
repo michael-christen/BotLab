@@ -46,7 +46,7 @@ void display_finished(vx_application_t * app, vx_display_t * disp)
         layer_data_t *layerData = &(state->layers[i]);
         if (layerData->enable == 1) {
             uint64_t key = ((uint64_t) disp) * (i + 1);
-            printf("disp: %u, key %u\n", ((uint64_t) disp), key);
+            printf("disp: %zu, key %zu\n", ((uint64_t) disp), key);
             zhash_remove(state->layer_map, &key, NULL, &value);
             printf("layer being destroyed!\n");
             vx_layer_destroy(value);
@@ -80,7 +80,7 @@ void display_started(vx_application_t * app, vx_display_t * disp)
             uint64_t key = ((uint64_t) disp) * (i + 1);
             printf("Layer being created\n");
             vx_layer_t * layer = vx_layer_create(layerData->world);
-            printf("disp: %u, key %u\n", ((uint64_t) disp), key);
+            printf("disp: %zu, key %zu\n", ((uint64_t) disp), key);
             layerData->layer = layer;
 
             vx_layer_set_display(layer, disp);
@@ -222,7 +222,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     phi = M_PI/2;
 
     int npoints = 35;
-    float points[npoints*3];
+   float points[npoints*3];
     for (int i = 0; i < npoints; i++) {
 	float angle = 2*M_PI*i/npoints;
 

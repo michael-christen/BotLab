@@ -148,7 +148,7 @@ uint32_t dist_to_grey(double dist) {
 }
 
 void fill_color(double hue, double thresh, image_u32_t *im) {
-	int num_points = 0;
+//	int num_points = 0;
 	int y, x, id;
 	uint32_t px;
 
