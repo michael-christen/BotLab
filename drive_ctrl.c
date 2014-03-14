@@ -51,6 +51,10 @@ void driveToTheta(state_t * state, double theta) {
 				state->pos_theta - state->goal_theta);
 		double motor_val = pid_to_rot(state->theta_pid, pid_out);
 
+		if(fabs(state->goal_theta - state->pos_theta < 180)){
+			motor_val *= -1;
+		}
+
 		driveRot(state, motor_val);
 		usleep(10000);
 	}
