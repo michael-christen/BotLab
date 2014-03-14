@@ -180,8 +180,20 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, dou
 }
 
 void haz_map_get(haz_map_t *hm, haz_map_tile_t *tile, int x, int y) {
-	tile->type = hm->hazMap[y*hm->width + x].type;
-	tile->val = hm->hazMap[y*hm->width + x].val;
+	int i;
+	haz_map_tile_t *tTile = &hm->hazMap[y*hm->width + x];
+	tile->type = tTile->type;
+	tile->val = tTile->val;
+	tile->timestamp = tTile->timestamp;
+	tile->x = tTile->x;
+	tile->y = tTile->y;
+	tile->numNeighbors = tTile->numNeighbors;
+	tile->type = tTile->type;
+	tile->val = tTile->val;
+	for (i = 0; i < tile->numNeighbors; i++) {
+		tile->neighbors[i] = tTile->neighbors[i];
+	}
+	
 }
 
 void haz_map_destroy(haz_map_t *hm) {
