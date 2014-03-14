@@ -68,6 +68,8 @@ void odometry_handler (
     }
     state->prev_left_ticks = msg->encoder_left_ticks;
     state->prev_right_ticks = msg->encoder_right_ticks;
+
+    haz_map_translate(&state->hazMap, state->pos_x, state->pos_y, state->last_x, state->last_y);
 }
 
 double getDistFromTicks(int32_t ticks) {

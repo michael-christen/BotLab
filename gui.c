@@ -209,7 +209,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
     vx_object_t *vo = vxo_chain(
                                 vxo_mat_scale3(GRID_RES, GRID_RES, GRID_RES),
 								vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-                                vxo_mat_translate3(-(int)(state->hazMap.width/2), -(int)(state->hazMap.height/2), -1),
+                                vxo_mat_translate3(state->pos_x - (int)(state->hazMap.width/2), state->pos_y - (int)(state->hazMap.height/2), -1),
                                 vxo_image_from_u32(state->hazMap.image, 0, 0)
                                 );
 

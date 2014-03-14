@@ -14,7 +14,10 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 	hm->image = image_u32_create(w, h);
 	hm->width = w;
 	hm->height = h;
+	hm->x = 0;
+	hm->y = 0;
 	hm->max_free_val = pow(HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES, 2);
+	hm->clock = clock();
 	position_t o[8] = {{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}};
 
 	int i, j, k, count, newX, newY;
@@ -48,6 +51,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
 	int maxV, minV;
+	hm->clock = clock();
 	//Bounds checking
 	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
 		return;
@@ -87,7 +91,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 
 		default:
 			tile.type = type;
-			tile.val = 0;
+			tile.val = 1;
 			haz_map_set_data(hm, u, v, &tile);
 		break;
 	}
@@ -97,6 +101,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 	int color, offset;
 	hm->hazMap[y*hm->width + x].type = data->type;
 	hm->hazMap[y*hm->width + x].val = data->val;
+	hm->hazMap[y*hm->width + x].timestamp = hm->clock;
 
 	switch (data->type) {
 		case HAZ_MAP_UNKNOWN:
@@ -118,35 +123,50 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 	hm->image->buf[y*hm->image->width + x] = color;
 }
 
-void haz_map_translate(haz_map_t *hm, int newX, int newY, int oldX, int oldY) {
-	int diffX = newX - oldX;
-	int diffY = newY - oldY;
+void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY) {
+	hm->diffX = newX - oldX;
+	hm->diffY = newY - oldY;
+	hm->x += hm->diffX;
+	hm->y += hm->diffY;
+
 	int lowX = 0;
 	int highX = hm->width;
 	int lowY = 0;
 	int highY = hm->height;
+	double diffX = 0;
+	double diffY = 0;
 	haz_map_tile_t tile;
 
-	if (diffY >= 0) {
-		lowY = diffY;
-	} else {
-		highY = hm->height - diffY;
+	if (abs(hm->diffX) >= GRID_RES) {
+		diffX = hm->diffX;
+		hm->diffX = 0;
+		if (diffX >= 0) {
+			lowX = diffX;
+		} else {
+			highX = hm->width - diffX;
+		}
 	}
 
-	if (diffX >= 0) {
-		lowX = diffX;
-	} else {
-		highX = hm->width - diffX;
+	if (abs(hm->diffY) >= GRID_RES) {
+		diffY = hm->diffY;
+		hm->diffY = 0;
+		if (diffY >= 0) {
+			lowY = diffY;
+		} else {
+			highY = hm->width - diffY;
+		}
 	}
-
-	for (int y = 0; y < hm->height; y++) {
-		for (int x = 0; x < hm->width; x++) {
-			if (x < lowX || x > highX || y < lowY || y > highY) {
-				tile.type = HAZ_MAP_UNKNOWN;
-				haz_map_set_data(hm, x, y, &tile);
-			} else {
-				haz_map_get(hm, &tile, x, y);
-				haz_map_set_data(hm, x - diffX, y - diffY, &tile);
+	
+	if (diffY != 0 || diffX != 0) {
+		for (int y = 0; y < hm->height; y++) {
+			for (int x = 0; x < hm->width; x++) {
+				if (x < lowX || x > highX || y < lowY || y > highY) {
+					tile.type = HAZ_MAP_UNKNOWN;
+					haz_map_set_data(hm, x, y, &tile);
+				} else {
+					haz_map_get(hm, &tile, x, y);
+					haz_map_set_data(hm, x - diffX, y - diffY, &tile);
+				}
 			}
 		}
 	}
