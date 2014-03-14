@@ -47,13 +47,18 @@ void driveToTheta(state_t * state, double theta) {
 	while(abs(state->goal_theta - state->pos_theta) > thresh){
 		//Won't quite work yet, I have some left overs
 		//from green targeting pid
+		//
+		double difference = state->pos_theta - state->goal_theta;
+
+		if(difference > M_PI){
+			difference = 2*M_PI - difference;
+		}else if(difference < -M_PI){
+			difference += 2* M_PI;
+		}
 		double pid_out = pid_get_output(state->theta_pid,
-				state->pos_theta - state->goal_theta);
+				difference);
 		double motor_val = pid_to_rot(state->theta_pid, pid_out);
 
-		if(fabs(state->goal_theta - state->pos_theta < 180)){
-			motor_val *= -1;
-		}
 
 		driveRot(state, motor_val);
 		usleep(10000);
