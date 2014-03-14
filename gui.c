@@ -205,13 +205,14 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
 	vx_buffer_add_back(gridBuff, vxo_grid());
 	//printf("stride %d\n", state->gridMap.image->stride);
-
+	pthread_mutex_lock(&state->haz_map_mutex);
 	vx_object_t *vo = vxo_chain(
 			vxo_mat_scale3(GRID_RES, GRID_RES, GRID_RES),
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
 			vxo_mat_translate3(-(int)(state->hazMap.width/2), -(int)(state->hazMap.height/2), -1),
 			vxo_image_from_u32(state->hazMap.image, 0, 0)
 			);
+	pthread_mutex_unlock(&state->haz_map_mutex);
 
 	vx_buffer_add_back(gridBuff, vo);
 	//Draw Axes
@@ -246,7 +247,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	//Draw Actual Trajectory
 	vx_buffer_t *tTrajBuff = vx_world_get_buffer(layerData->world, "target-trajectory");
 	if (state->targetPathValid == 1) {
-		draw_path(tTrajBuff, state->targetPath, vx_blue);
+		draw_path(tTrajBuff, state->targetPath, vx_orange);
 	}
 
 	//Draw Actual Trajectory

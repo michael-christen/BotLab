@@ -15,6 +15,7 @@
 #define HAZ_MAP_CONFIG_RAIDUS 15
 #define HAZ_MAP_HUGE_DIST 999
 #define HAZ_MAP_TTL 10
+#define HAZ_MAP_REPULSE_FACTOR 50
 
 typedef struct haz_map_t haz_map_t;
 typedef struct haz_map_tile_t haz_map_tile_t;
@@ -63,5 +64,6 @@ void haz_map_destroy(haz_map_t *hm);
 int haz_map_in_bounds(haz_map_t *hm, int x, int y);
 path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY);
 void haz_map_cleanup(haz_map_t *hm);
+void haz_map_compute_config(haz_map_t *hm);
 
 #endif
