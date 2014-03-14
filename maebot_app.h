@@ -16,6 +16,7 @@
 #include "pixel.h"
 #include "haz_map.h"
 #include "pid_ctrl.h"
+#include "odometry.h"
 #include "path.h"
 #include "world_map.h"
 #include "explorer.h"
@@ -129,10 +130,15 @@ struct state_t {
     int pathTakenValid, targetPathValid;
     path_t *pathTaken, *targetPath;
 
+	odometry_t pos;
+	odometry_t last_pos;
+	matd_t *cur_var;
+	matd_t *last_var;
     double pos_x, pos_y, pos_z;
 	double last_x, last_y;
     double pos_theta;
 	double last_theta;
+
     int32_t prev_left_ticks, prev_right_ticks;
     int    odometry_seen;
     const char *odometry_channel;

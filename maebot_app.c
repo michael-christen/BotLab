@@ -677,16 +677,23 @@ int main(int argc, char ** argv)
 	state->veh.mouse_event = mouse_event;
 	state->veh.key_event = key_event;
 	state->veh.destroy = nodestroy;
-	state->veh.impl = state;
-	state->pos_x    = 0;
-	state->pos_y    = 0;
-	state->pos_z    = 0;
-	state->pos_theta= 0;
+	state->veh.impl  = state;
+	state->pos.x     = 0;
+	state->pos.y     = 0;
+	state->pos.theta = 0;
+	state->pos_x     = 0;
+	state->pos_y     = 0;
+	state->pos_z     = 0;
+	state->pos_theta = 0;
     state->pathTakenValid = 0;
     state->targetPathValid = 0;
 	state->odometry_seen = 0;
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
+
+	state->cur_var       = matd_create(3,3);
+	state->last_var      = matd_create(3,3);
+
 	state->alpha = 0.05;
 	state->beta  = 0.02;
 
