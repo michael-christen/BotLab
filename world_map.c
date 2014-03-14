@@ -55,6 +55,7 @@ void world_map_set(world_map_t *wm, double x, double y, int8_t type) {
 	if(adjY > wm->top){
 		wm->top = adjY;
 		printf("new max high\n");
+
 	}
 }
 
