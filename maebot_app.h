@@ -188,7 +188,6 @@ struct state_t {
     int layerCount;
     layer_data_t layers[NUM_LAYERS];
 
-    vx_world_t * vw;
     zhash_t *layer_map; // <display, layer>
 
     // Mouse event stuff

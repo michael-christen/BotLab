@@ -775,8 +775,6 @@ int main(int argc, char ** argv)
 	state->lcm = lcm;
 	state->sensor_channel = "MAEBOT_SENSOR";
 	state->odometry_channel = "MAEBOT_ODOMETRY";
-
-	state->vw = vx_world_create();
 	state->displayStarted = state->displayFinished = 0;
 
 
@@ -843,7 +841,6 @@ int main(int argc, char ** argv)
 	}
 
 	// clean up
-	vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
     haz_map_destroy(&state->hazMap);
     if (state->pathTaken == 1) {
