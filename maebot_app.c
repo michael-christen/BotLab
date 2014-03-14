@@ -177,6 +177,19 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			// Add state machine flag here
 			state->goalMouseX = man_point[0];
 			state->goalMouseY = man_point[1];
+			state->goToMouseCoords = 1;
+			pthread_mutex_lock(&state->haz_map_mutex);
+			if (state->targetPathValid == 1) {
+				path_destroy(state->targetPath);
+			}
+			state->targetPath = haz_map_get_path(&state->hazMap, man_point[0] / CM_TO_VX, man_point[1] / CM_TO_VX);
+			if (state->targetPath->length > 0) {
+				state->targetPathValid = 1;
+			} else {
+				free(state->targetPath);
+				state->targetPathValid = 0;
+			}
+			pthread_mutex_unlock(&state->haz_map_mutex);
 			printf("mx: %f, my: %f\n", man_point[0], man_point[1]);
 		}
 	}
@@ -434,7 +447,9 @@ void * camera_analyze(void * data)
 			if(!state->doing_pid) {
 				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
 			}
-			find_point_pos( state, obstacle);
+			pthread_mutex_lock(&state->haz_map_mutex);
+			find_point_pos(state, obstacle);
+			pthread_mutex_unlock(&state->haz_map_mutex);
 			state->num_pts_tape = 0;
 			int x = 190; //525
 			int y = 300;
@@ -647,7 +662,10 @@ void* position_tracker(void *data) {
         path->waypoints[path->length - 1].y = state->pos_y;
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
-        world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+        
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+			state->pos_x += 1;
+			state->pos_y += 2;
 
 
 
@@ -699,6 +717,7 @@ int main(int argc, char ** argv)
     state->pathTakenValid = 0;
     state->targetPathValid = 0;
 	state->odometry_seen = 0;
+	state->goToMouseCoords = 0;
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
 	state->stored_matrices = malloc(sizeof(matd_t*)*MAX_NUM_ELLIPSES);
@@ -733,6 +752,8 @@ int main(int argc, char ** argv)
 	pid_init(state->theta_pid, 5.0, 0, 0, 0, .1, 2*M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
+	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
+	//haz_map_compute_config(&state->hazMap);
 	/*for (i = 0; i < 10; i++) {
 		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
 		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + 10 + i, HAZ_MAP_OBSTACLE);
@@ -757,8 +778,6 @@ int main(int argc, char ** argv)
 	state->lcm = lcm;
 	state->sensor_channel = "MAEBOT_SENSOR";
 	state->odometry_channel = "MAEBOT_ODOMETRY";
-
-	state->vw = vx_world_create();
 	state->displayStarted = state->displayFinished = 0;
 
 
@@ -768,7 +787,8 @@ int main(int argc, char ** argv)
 	pthread_mutex_init(&state->lcm_mutex, NULL);
 	pthread_mutex_init(&state->running_mutex, NULL);
 	pthread_mutex_init(&state->image_mutex, NULL);
-
+	pthread_mutex_init(&state->haz_map_mutex, NULL);
+	pthread_mutex_init(&state->world_map_mutex, NULL);
 
 	state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_uint64_hash, zhash_uint64_equals);
 
@@ -824,7 +844,6 @@ int main(int argc, char ** argv)
 	}
 
 	// clean up
-	vx_world_destroy(state->vw);
 	destroyLookupTable(state->lookupTable);
     haz_map_destroy(&state->hazMap);
     if (state->pathTaken == 1) {

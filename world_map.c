@@ -2,18 +2,24 @@
 
 void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
 
-	int color;
+	if(adjX < 0 || adjX >= WORLD_MAP_MAX_WIDTH
+		|| adjY < 0 || adjY >= WORLD_MAP_MAX_HEIGHT){
+		return;
+	}
+	int color;	
 	wm->worldMap[adjY*wm->width + adjX].seen = type;
 
 	switch (type) {
 		case WORLD_MAP_SEEN:
+			printf ("setting x: %d, y: %d \n", adjX, adjY);
 			color = 0xFF8AE051;
 		break;
 		default: // unseen
 			color = 0xFFBBBBBB;
 		break;
 	}
-	wm->image->buf[adjY*wm->image->width + adjX] = color;
+	wm->image->buf[adjY*wm->image->stride + adjX] = color;
+	return;
 }
 
 void world_map_init(world_map_t *wm, int w, int h) {
@@ -42,19 +48,19 @@ void world_map_set(world_map_t *wm, double x, double y, int8_t type) {
 	//reset t/b/l/r if necessary
 	if(adjX < wm->left){
 		wm->left = adjX;
-		printf("new max left\n");
+		//printf("new max left\n");
 	}
 	if(adjX > wm->right){
 		wm->right = adjX;
-		printf("new max right\n");
+		//printf("new max right\n");
 	}
 	if(adjY < wm->bottom){
 		wm->bottom = adjY;
-		printf("new max low\n");
+		//printf("new max low\n");
 	}
 	if(adjY > wm->top){
 		wm->top = adjY;
-		printf("new max high\n");
+		//printf("new max high\n");
 
 	}
 }

@@ -31,6 +31,7 @@
 #include "blob_detection.h"
 #include "line_detection.h"
 #include "haz_map.h"
+#include "world_map.h"
 
 int displayCount;
 
@@ -185,7 +186,7 @@ int destroyCameraPOVLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int initWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
-	layerData->world = state->vw;
+	layerData->world = vx_world_create();
 	return 1;
 }
 
@@ -205,13 +206,14 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
 	vx_buffer_add_back(gridBuff, vxo_grid());
 	//printf("stride %d\n", state->gridMap.image->stride);
-
+	pthread_mutex_lock(&state->haz_map_mutex);
 	vx_object_t *vo = vxo_chain(
 			vxo_mat_scale3(GRID_RES, GRID_RES, GRID_RES),
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
 			vxo_mat_translate3(-(int)(state->hazMap.width/2), -(int)(state->hazMap.height/2), -1),
 			vxo_image_from_u32(state->hazMap.image, 0, 0)
 			);
+	pthread_mutex_unlock(&state->haz_map_mutex);
 
 	vx_buffer_add_back(gridBuff, vo);
 	//Draw Axes
@@ -246,7 +248,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	//Draw Actual Trajectory
 	vx_buffer_t *tTrajBuff = vx_world_get_buffer(layerData->world, "target-trajectory");
 	if (state->targetPathValid == 1) {
-		draw_path(tTrajBuff, state->targetPath, vx_blue);
+		draw_path(tTrajBuff, state->targetPath, vx_orange);
 	}
 
 	//Draw Actual Trajectory
@@ -349,41 +351,46 @@ void drawEllipse(vx_buffer_t *ellipseBuff, matd_t *var_matrix, odometry_t pos, s
 }
 
 int destroyWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
+	vx_world_destroy(layerData->world);
 	return 1;
 }
 
-int initWorldPOVLayer(state_t *state, layer_data_t *layerData) {
-	layerData->world = state->vw;
+int initWorldSeenLayer(state_t *state, layer_data_t *layerData) {
+	layerData->world = vx_world_create();
 	return 1;
 }
 
-int displayInitWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+int displayInitWorldSeenLayer(state_t *state, layer_data_t *layerData) {
 	vx_layer_set_viewport_rel(layerData->layer, layerData->position);
 	//vx_layer_add_event_handler(layerData->layer, &state->veh);
 	return 1;
 }
 
-int renderWorldPOVLayer(state_t *state, layer_data_t *layerData) {
-	const float distBehind = 5 * BRUCE_DIAMETER / 2.0f;
-	const float distAbove = BRUCE_HEIGHT;
-	float eye[3];
-	float lookat[3];
-	float up[3];
-	eye[0] = (state->pos_x + (distBehind * sin(-state->pos_theta))) * CM_TO_VX;
-	eye[1] = (state->pos_y - (distBehind * cos(-state->pos_theta))) * CM_TO_VX;
-	eye[2] = (state->pos_z + BRUCE_HEIGHT + distAbove) * CM_TO_VX;
-	lookat[0] = state->pos_x * CM_TO_VX;
-	lookat[1] = state->pos_y * CM_TO_VX;
-	lookat[2] = (state->pos_z + BRUCE_HEIGHT) * CM_TO_VX;
-	up[0] = lookat[0] - eye[0];
-	up[1] = lookat[1] - eye[1];
-	up[2] = eye[2] + distAbove;
-	//vx_layer_camera_lookat(layerData->layer, eye, lookat, up, 1);
-	//printf("endRender worldPOV\n");
+int renderWorldSeenLayer(state_t *state, layer_data_t *layerData) {
+	vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
+	vx_buffer_add_back(gridBuff, vxo_grid());
+
+	vx_buffer_t *worldBuff = vx_world_get_buffer(layerData->world, "world_map");
+	pthread_mutex_lock(&state->world_map_mutex);
+
+	vx_object_t *vo = vxo_chain(
+			vxo_mat_scale3(WORLD_MAP_RES, WORLD_MAP_RES, WORLD_MAP_RES),
+			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+			vxo_mat_translate3(-(int)(state->world_map.width/2), -(int)(state->world_map.height/2), -1),
+			vxo_image_from_u32(state->world_map.image, 0, 0)
+			);
+
+	pthread_mutex_unlock(&state->world_map_mutex);
+	vx_buffer_add_back(worldBuff, vo);
+
+	vx_buffer_swap(gridBuff);
+	vx_buffer_swap(worldBuff);
+
 	return 1;
 }
 
-int destroyWorldPOVLayer(state_t *state, layer_data_t *layerData) {
+int destroyWorldSeenLayer(state_t *state, layer_data_t *layerData) {
+	vx_world_destroy(layerData->world);
 	return 1;
 }
 
@@ -510,15 +517,15 @@ void* gui_create(void *data) {
 	state->layers[1].destroy = destroyCameraPOVLayer;
 
 	state->layers[2].enable = 1;
-	state->layers[2].name = "WorldPOV";
+	state->layers[2].name = "WorldSeen";
 	state->layers[2].position[0] = 0.666f;
 	state->layers[2].position[1] = 0;
 	state->layers[2].position[2] = 0.333f;
 	state->layers[2].position[3] = 0.5f;
-	state->layers[2].init = initWorldPOVLayer;
-	state->layers[2].displayInit = displayInitWorldPOVLayer;
-	state->layers[2].render = renderWorldPOVLayer;
-	state->layers[2].destroy = destroyWorldPOVLayer;
+	state->layers[2].init = initWorldSeenLayer;
+	state->layers[2].displayInit = displayInitWorldSeenLayer;
+	state->layers[2].render = renderWorldSeenLayer;
+	state->layers[2].destroy = destroyWorldSeenLayer;
 
 	state->layers[3].enable = 1;
 	state->layers[3].name = "Debug";

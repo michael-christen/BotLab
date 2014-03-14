@@ -168,6 +168,8 @@ struct state_t {
     int imageValid;
     image_u32_t *im;
     pthread_mutex_t image_mutex;
+    pthread_mutex_t haz_map_mutex;
+	pthread_mutex_t world_map_mutex;
 	pthread_cond_t  image_cv;
     pthread_t camera_thread;
 
@@ -187,7 +189,6 @@ struct state_t {
     int layerCount;
     layer_data_t layers[NUM_LAYERS];
 
-    vx_world_t * vw;
     zhash_t *layer_map; // <display, layer>
 
     // Mouse event stuff
@@ -195,6 +196,7 @@ struct state_t {
     vx_mouse_event_t last_mouse;
     double mouseDownX, mouseDownY;
     double goalMouseX, goalMouseY;
+    uint8_t goToMouseCoords;
 
     pthread_t dmon_thread;
 
