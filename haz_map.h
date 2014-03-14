@@ -62,5 +62,6 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, dou
 void haz_map_destroy(haz_map_t *hm);
 int haz_map_in_bounds(haz_map_t *hm, int x, int y);
 path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY);
+void haz_map_cleanup(haz_map_t *hm);
 
 #endif

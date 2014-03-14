@@ -59,7 +59,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	int maxV, minV;
 	hm->clock = clock();
 	//Bounds checking
-	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
+	if(y*hm->image->width + x >= hm->image->height*hm->image->width) {
 		return;
 	}
 
@@ -67,7 +67,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 		case HAZ_MAP_OBSTACLE:
 			tile.type = HAZ_MAP_OBSTACLE;
 			haz_map_set_data(hm, x, y, &tile);
-			offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
+			/*offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
 			obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
 			maxV = fmin(y + offset, hm->height - 1);
 			minV = fmax(y - offset, 0);
@@ -92,7 +92,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 					}
 
 				}
-			}
+			}*/
 		break;
 
 		default:
@@ -116,7 +116,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 		case HAZ_MAP_FREE:
 			offset = map(data->val, 0, hm->max_free_val, 0, 255);
 			//color = 0xFF5EFFFF;
-			color = 0xFFFF00FF | (offset << 8);
+			color = 0xFFFF00FF | ((255 - offset) << 8);
 			//printf("val: 0x%10x\n", color);
 		break;
 		case HAZ_MAP_OBSTACLE:
@@ -126,7 +126,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->stride + x] = color;
+	hm->image->buf[y*hm->image->width + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY) {
@@ -162,7 +162,7 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, dou
 			highY = hm->width - diffY;
 		}
 	}
-	
+
 	if (diffY != 0 || diffX != 0) {
 		for (int y = 0; y < hm->height; y++) {
 			for (int x = 0; x < hm->width; x++) {
@@ -180,8 +180,20 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, dou
 }
 
 void haz_map_get(haz_map_t *hm, haz_map_tile_t *tile, int x, int y) {
-	tile->type = hm->hazMap[y*hm->width + x].type;
-	tile->val = hm->hazMap[y*hm->width + x].val;
+	int i;
+	haz_map_tile_t *tTile = &hm->hazMap[y*hm->width + x];
+	tile->type = tTile->type;
+	tile->val = tTile->val;
+	tile->timestamp = tTile->timestamp;
+	tile->x = tTile->x;
+	tile->y = tTile->y;
+	tile->numNeighbors = tTile->numNeighbors;
+	tile->type = tTile->type;
+	tile->val = tTile->val;
+	for (i = 0; i < tile->numNeighbors; i++) {
+		tile->neighbors[i] = tTile->neighbors[i];
+	}
+	
 }
 
 void haz_map_destroy(haz_map_t *hm) {
@@ -318,4 +330,24 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	}
 	zarray_destroy(dData);
 	return retPath;
+}
+
+void haz_map_cleanup(haz_map_t *hm) {
+	uint32_t x, y, n, count;
+	haz_map_tile_t tile;
+	for (y = 0; y < hm->height; y++) {
+		for (x = 0; x < hm->width; x++) {
+			count = 0;
+			haz_map_get(hm, &tile, x, y);
+			for (n = 0; n < tile.numNeighbors; n++) {
+				if (tile.neighbors[n].tile->type == HAZ_MAP_OBSTACLE) {
+					count++;
+				}
+			}
+
+			if (count < 1) {
+				haz_map_set(hm, x, y, HAZ_MAP_FREE);
+			}
+		}
+	}
 }
