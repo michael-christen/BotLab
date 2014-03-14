@@ -5,8 +5,8 @@
 #include "path.h"
 #include "haz_map.h"
 
-#define WORLD_MAP_MAX_WIDTH 999
-#define WORLD_MAP_MAX_HEIGHT 999
+#define WORLD_MAP_MAX_WIDTH 541
+#define WORLD_MAP_MAX_HEIGHT 541
 #define WORLD_MAP_UNSEEN 0
 #define WORLD_MAP_SEEN 1
 #define WORLD_MAP_RES 10
@@ -20,6 +20,7 @@ struct world_map_tile_t {
 
 struct world_map_t {
 	int width, height;
+	int top, bottom, left, right; //highest, lowest, leftest and rightest seen so far
 	world_map_tile_t worldMap[WORLD_MAP_MAX_WIDTH * WORLD_MAP_MAX_HEIGHT];
 	image_u32_t *image;
 };
