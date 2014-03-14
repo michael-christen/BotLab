@@ -152,7 +152,7 @@ struct state_t {
 	double alpha, beta;
 
 	//map
-	grid_cell obstacle_map[200][200]; //10cm x 10 cm
+	world_map_t world_map;
 
 	//bot is moving forward or back
 	int translating;
