@@ -92,10 +92,10 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	//place point on haz_map
 	if(obstacle == 1){
 		//printf("grid cell on haz map filled  x: %d, y: %d\n", map_x_scaled, map_y_scaled);
-		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
+		//haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
-		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
+		//haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
 	}
 
 	matd_destroy(rel_coords);

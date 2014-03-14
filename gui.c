@@ -106,6 +106,7 @@ void draw_path(vx_buffer_t *buf, path_t *path, float color[]) {
     float *traj = malloc(sizeof(float) * numCoords);
     uint32_t i, baseIndex;
     for (i = 0; i < path->length; i++) {
+        //printf("x: %f, y: %f\n", path->waypoints[i].x, path->waypoints[i].y);
         if (i == 0) {
             baseIndex = 0;
         } else {

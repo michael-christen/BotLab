@@ -665,7 +665,7 @@ void * calibrator(void* data){
 int main(int argc, char ** argv)
 {
 	vx_global_init();
-
+	int i, j;
 	state_t * state = calloc(1, sizeof(state_t));
 	global_state = state;
 	state->gopt = getopt_create();
@@ -706,6 +706,14 @@ int main(int argc, char ** argv)
 	pid_init(state->theta_pid, 5.0, 0, 1, 0, .1, 2*M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
+	/*for (i = 0; i < 10; i++) {
+		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
+		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + 10 + i, HAZ_MAP_OBSTACLE);
+		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2 + i, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
+	}*/
+	
+	state->targetPath = haz_map_get_path(&state->hazMap, 40, 40);
+	state->targetPathValid = 1;
 
 	//Should be width
 	state->tape = calloc(1000, sizeof(pixel_t));
@@ -718,8 +726,6 @@ int main(int argc, char ** argv)
 	state->sensor_channel = "MAEBOT_SENSOR";
 	state->odometry_channel = "MAEBOT_ODOMETRY";
 
-
-	int i, j;
 	for(i = 0; i < 200; i++){
 		for( j = 0; j < 200; j++){
 			state->obstacle_map[i][j].status = UNKNOWN;

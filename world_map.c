@@ -14,8 +14,8 @@ void world_map_init(world_map_t *wm, int w, int h) {
 }
 
 void world_map_set(world_map_t *wm, int x, int y, int8_t type) {
-	int adjX = x / wm->width + wm->width / 2;
-	int adjY = y / wm->height + wm->height / 2;
+	int adjX = x / WORLD_MAP_RES + wm->width / 2;
+	int adjY = y / WORLD_MAP_RES + wm->height / 2;
 	int color;
 
 	wm->worldMap[adjY*wm->width + adjX].seen = type;

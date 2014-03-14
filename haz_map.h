@@ -20,6 +20,7 @@ typedef struct haz_map_t haz_map_t;
 typedef struct haz_map_tile_t haz_map_tile_t;
 typedef struct dijkstra_data_t dijkstra_data_t;
 typedef struct dijkstra_dists_t dijkstra_dists_t;
+typedef struct haz_map_neighbor_t haz_map_neighbor_t;
 
 struct dijkstra_data_t {
 	uint8_t shortestPathKnown;
@@ -31,12 +32,17 @@ struct dijkstra_dists_t {
 	double dist;
 };
 
+struct haz_map_neighbor_t {
+	double distFactor;
+	haz_map_tile_t *tile;
+};
+
 struct haz_map_tile_t {
 	int32_t timestamp;
 	int x, y, numNeighbors;
 	uint8_t type;
 	double val;
-	haz_map_tile_t *neighbors[8];
+	haz_map_neighbor_t neighbors[8];
 };
 
 struct haz_map_t {
@@ -55,6 +61,6 @@ void haz_map_get(haz_map_t *hm, haz_map_tile_t *tile, int x, int y);
 void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY);
 void haz_map_destroy(haz_map_t *hm);
 int haz_map_in_bounds(haz_map_t *hm, int x, int y);
-path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int endY);
+path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY);
 
 #endif

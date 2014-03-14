@@ -11,6 +11,7 @@ double map(double x, double in_min, double in_max, double out_min, double out_ma
 }
 
 void haz_map_init(haz_map_t *hm, int w, int h) {
+	int i, j, k, count, newX, newY;
 	hm->image = image_u32_create(w, h);
 	hm->width = w;
 	hm->height = h;
@@ -19,8 +20,12 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 	hm->max_free_val = pow(HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES, 2);
 	hm->clock = clock();
 	position_t o[8] = {{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}};
+	double distFactors[8];
 
-	int i, j, k, count, newX, newY;
+	for (i = 0; i < 8; i++) {
+		distFactors[i] = sqrt(fabs(o[i].x) + fabs(o[i].y));
+	}
+
 	haz_map_tile_t tile;
 	haz_map_tile_t *tileP;
 	tile.type = HAZ_MAP_FREE;
@@ -30,12 +35,16 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 			tileP = &hm->hazMap[i*hm->width + j];
 			tileP->x = j;
 			tileP->y = i;
+			if (tileP->x == 0 && tileP->y == 0) {
+				printf("DOUBLE 0s\n");
+			}
 			count = 0;
 			for (k = 0; k < 8; k++) {
 				newX = j + o[k].x;
 				newY = i + o[k].y;
 				if (haz_map_in_bounds(hm, newX, newY)) {
-					tileP->neighbors[count++] = &hm->hazMap[newY*hm->width + newX];
+					tileP->neighbors[count].distFactor = distFactors[k];
+					tileP->neighbors[count++].tile = &hm->hazMap[newY*hm->width + newX];
 				}
 			}
 			tileP->numNeighbors = count;
@@ -120,7 +129,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->width + x] = color;
+	hm->image->buf[y*hm->image->stride + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY) {
@@ -190,7 +199,7 @@ int haz_map_in_bounds(haz_map_t *hm, int x, int y) {
 	}
 }
 
-path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int endY) {
+path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	uint32_t i, checkIndex;
 	int64_t startIndex;
 	uint8_t cont = 1;
@@ -198,7 +207,17 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 	dijkstra_data_t curData, checkData;
 	zarray_t *dData, *pq;
 	haz_map_tile_t *curTile, *checkTile;
-	uint32_t checkX, checkY;
+	int adjEndX = ((endX - hm->x) / GRID_RES) + hm->width/2;
+	int adjEndY = ((endY - hm->y) / GRID_RES) + hm->height/2;
+	//int adjEndX = 0;
+	//int adjEndY = 4;
+	int startX = hm->width/2;
+	int startY = hm->height/2;
+	int testindex = adjEndY*hm->width + adjEndX;
+	curTile = &hm->hazMap[testindex];
+	//printf("i: %d, cX: %d, cY: %d, eX: %d, eY: %d\n", testindex, curTile->x, curTile->y, adjEndX, adjEndY);
+	//int startX = 0;
+	//int startY = 0;
 
 	dData = zarray_create(sizeof(dijkstra_data_t));
 	pq = zarray_create(sizeof(dijkstra_dists_t));
@@ -221,11 +240,12 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 	curDist.dist = 0;
 
 	zarray_add(pq, &curDist);
+	double newD;
 
 	while (cont && zarray_size(pq) > 0) {
 		uint8_t valid = 0;
 		dijkstra_dists_t minDist;
-		uint32_t newD, minIndex;
+		uint32_t minIndex;
 		// Find current smallest distance
 		// NOTE: should be replaced by a priority queue
 		for (i = 0; i < zarray_size(pq); i++) {
@@ -247,22 +267,23 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 		zarray_get(dData, minDist.tileIndex, &curData);
 		//printf("curData.dist %d\n", curData.dist);
 		curTile = &hm->hazMap[minDist.tileIndex];
+
 		if (curData.shortestPathKnown == 0) {
 			curData.shortestPathKnown = 1;
 
-			if (curTile->x == endX && curTile->y == endY) {
+			/*if (curTile->x == adjEndX && curTile->y == adjEndY) {
 				printf("Found path at %d, %d of length %d\n", curTile->x, curTile->y, curData.pathCount);
 				cont = 0;
 				break;
-			}
+			}*/
 
 			// for each neighbor
 			//printf("cur tile: %u, %u\n", curTile->x, curTile->y);
 			for (i = 0; i < curTile->numNeighbors; i++) {
-				checkTile = curTile->neighbors[i];
+				checkTile = curTile->neighbors[i].tile;
 				//printf("check tile: %u, %u\n", checkTile->x, checkTile->y);
 				checkIndex = checkTile->y*hm->width + checkTile->x;
-				newD = curData.dist + checkTile->val;
+				newD = curData.dist + (checkTile->val * curTile->neighbors[i].distFactor);
 				zarray_get(dData, checkIndex, &checkData);
 				//printf("newD %d, data %d\n", newD, checkData.dist);
 				if (newD < checkData.dist) {
@@ -279,11 +300,9 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 			// end for each
 		}
 	}
-
-	printf("Path Start of count %d\n", curData.pathCount);
-	printf("startIndex %u\n", startIndex);
-	printf("endTile %u, %u\n", curTile->x, curTile->y);
-	int curIndex;
+	int curIndex = adjEndY*hm->width + adjEndX;
+	curTile = &hm->hazMap[curIndex];
+	zarray_get(dData, curIndex, &curData);
 	path_t *retPath;
 	retPath = malloc(sizeof(path_t));
 	retPath->waypoints = malloc(sizeof(position_t) * curData.pathCount);
@@ -293,9 +312,9 @@ path_t* haz_map_get_path(haz_map_t *hm, int startX, int startY, int endX, int en
 		curIndex = curTile->y*hm->width + curTile->x;
 		if (curIndex != startIndex) {
 			zarray_get(dData, curIndex, &curData);
+			retPath->waypoints[i].x = (((double)curTile->x - hm->width/2) * GRID_RES) + hm->x;
+			retPath->waypoints[i].y = (((double)curTile->y - hm->height/2) * GRID_RES) + hm->y;
 			curTile = &hm->hazMap[curData.parentIndex];
-			retPath->waypoints[i].x = curTile->x;// - hm->width/2;
-			retPath->waypoints[i].y = curTile->y;// - hm->height/2;
 		} else {
 			break;
 		}
