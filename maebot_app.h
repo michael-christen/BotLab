@@ -169,6 +169,7 @@ struct state_t {
     image_u32_t *im;
     pthread_mutex_t image_mutex;
     pthread_mutex_t haz_map_mutex;
+	pthread_mutex_t world_map_mutex;
 	pthread_cond_t  image_cv;
     pthread_t camera_thread;
 

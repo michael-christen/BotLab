@@ -31,6 +31,7 @@
 #include "blob_detection.h"
 #include "line_detection.h"
 #include "haz_map.h"
+#include "world_map.h"
 
 int displayCount;
 
@@ -369,7 +370,22 @@ int renderWorldSeenLayer(state_t *state, layer_data_t *layerData) {
 	vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
 	vx_buffer_add_back(gridBuff, vxo_grid());
 
+	vx_buffer_t *worldBuff = vx_world_get_buffer(layerData->world, "world_map");
+	pthread_mutex_lock(&state->world_map_mutex);
+
+	vx_object_t *vo = vxo_chain(
+			vxo_mat_scale3(WORLD_MAP_RES, WORLD_MAP_RES, WORLD_MAP_RES),
+			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
+			vxo_mat_translate3(-(int)(state->world_map.width/2), -(int)(state->world_map.height/2), -1),
+			vxo_image_from_u32(state->world_map.image, 0, 0)
+			);
+
+	pthread_mutex_unlock(&state->world_map_mutex);
+	vx_buffer_add_back(worldBuff, vo);
+
 	vx_buffer_swap(gridBuff);
+	vx_buffer_swap(worldBuff);
+
 	return 1;
 }
 
