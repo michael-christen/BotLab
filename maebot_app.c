@@ -38,7 +38,7 @@
 #define RIGHT 8
 #define PID 16
 
-#define LONG_SPEED 0.5
+#define LONG_SPEED 0.3
 #define ROT_SPEED 0.2
 
 #define FBDIV 100000.0
@@ -213,6 +213,9 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if(key->key_code == 'l' || key->key_code == 'L') {
 			// fire laser
 			fireLaser(state);
+		} else if(key->key_code == '0') {
+			printf("%f, \n",state->dist);
+			state->dist = 0;
 		} else if(key->key_code == 'r') {
 			state->red ++;
 		} else if(key->key_code == 'g') {
@@ -677,14 +680,29 @@ int main(int argc, char ** argv)
 	state->veh.mouse_event = mouse_event;
 	state->veh.key_event = key_event;
 	state->veh.destroy = nodestroy;
-	state->veh.impl = state;
-	state->pos_x    = 0;
-	state->pos_y    = 0;
-	state->pos_z    = 0;
-	state->pos_theta= 0;
+	state->veh.impl  = state;
+	state->pos.x     = 0;
+	state->pos.y     = 0;
+	state->pos.theta = 0;
+	state->pos_x     = 0;
+	state->pos_y     = 0;
+	state->pos_z     = 0;
+	state->pos_theta = 0;
     state->pathTakenValid = 0;
     state->targetPathValid = 0;
 	state->odometry_seen = 0;
+	//Initialize to identity so, can multiply
+	state->var_matrix    = matd_identity(2);
+	state->stored_matrices = malloc(sizeof(matd_t*)*MAX_NUM_ELLIPSES);
+	state->stored_pos    = malloc(sizeof(odometry_t)*MAX_NUM_ELLIPSES);
+	state->stored_mat_num = 0;
+
+	state->cur_var       = matd_create(3,3);
+	state->last_var      = matd_create(3,3);
+
+	state->alpha = 0.05;
+	state->beta  = 0.02;
+
 	state->init_last_mouse = 0;
 	state->red = 0x3a;
 	state->green = 0x76;
@@ -699,6 +717,7 @@ int main(int argc, char ** argv)
 	state->cmd_val = 0;
 	state->motor_count = 0;
 	state->diff_x        = 0;
+	state->dist          = 0;
 	state->diamond_seen  = 0;
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;

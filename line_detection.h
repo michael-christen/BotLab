@@ -15,7 +15,7 @@
 #define SHOW_PX 0xff00ff00
 #define MAX_NUM_POINTS 1000
 //Number of places to look up, to filter out fake tape
-#define SEARCH_DIST 5
+#define SEARCH_DIST 1
 
 unsigned int is_tape(uint32_t px);
 
