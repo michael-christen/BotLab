@@ -79,10 +79,9 @@ void fireLaser(state_t* state){
 }
 
 void moveBot(state_t* state){
-	double arc_val = 5;
-	if(state->cmd_val & PID | state->doing_pid) {
-		uint32_t color_detect = state->red | state->green << 8 |
-			state->blue << 16 | 0xff << 24;
+	//double arc_val = 5;
+	if(((state->cmd_val & PID) | state->doing_pid) != 0) {
+		//uint32_t color_detect = state->red | state->green << 8 | state->blue << 16 | 0xff << 24;
 		//printf("color: %x\n",color_detect);
 		//printf("thresh: %f\n",state->thresh);
 		pthread_mutex_lock(&state->image_mutex);
@@ -453,41 +452,16 @@ void * camera_analyze(void * data)
 			pthread_mutex_lock(&state->haz_map_mutex);
 			find_point_pos(state, obstacle);
 			pthread_mutex_unlock(&state->haz_map_mutex);
-			state->num_pts_tape = 0;
-			int x = 190; //525
-			int y = 300;
-			for(x; x < 560; x++){
-				pixel_t px;
-				px.x = x;
-				px.y = y;
-				state->tape[x-190] = px;
-				state->num_pts_tape++;
-			}
 
-			obstacle = 1;
 			//find_point_pos( state, obstacle);
 		} else {
 			//printf("shouldn't get heree!!!\n");
-
-			state->num_pts_tape = 0;
-			int x = 370; //525
-			int y = 280;
-			for(y; y < 320; y++){
-				pixel_t px;
-				px.x = x;
-				px.y = y;
-				state->tape[y-280] = px;
-				state->num_pts_tape++;
-			}
-
-			int obstacle = 1;
-			find_point_pos( state, obstacle);
 		}
 		pthread_mutex_unlock(&state->image_mutex);
 		usleep(10000);
 	}
 
-	if (state->imageValid = 1) {
+	if (state->imageValid == 1) {
 		//printf("Final image destroy\n");
 		pthread_mutex_lock(&state->image_mutex);
 		image_u32_destroy(state->im);
@@ -548,7 +522,7 @@ void* lcm_handle_loop(void *data) {
 										  "MAEBOT_MOTOR_FEEDBACK",
 										  &odometry_handler, state); //subscribe to odometry data
 
-	int hz = 15;
+	//int hz = 15;
 	while (state->running) {
 		// Set up the LCM file descriptor for waiting. This lets us monitor it
 		// until somethign is "ready" to happen. In this case, we are ready to
@@ -613,7 +587,7 @@ void* FSM(void* data){
 				break;}
 			case EX_ZAP_DIAMOND:{
 				//Still need to get diamond coords
-				double diamond_x, diamond_y;
+				double diamond_x = 0, diamond_y = 0;
 				double dx = diamond_x - state->pos_x;
 				double dy = diamond_y - state->pos_y;
 				double dtheta = atan2(dy, dx);

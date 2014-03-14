@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "common/zarray.h"
 
+
 // Haz Map origin at bottom left corner
 
 double map(double x, double in_min, double in_max, double out_min, double out_max)
@@ -18,7 +19,6 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 	hm->x = 0;
 	hm->y = 0;
 	hm->max_free_val = pow(HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES, 2) + HAZ_MAP_REPULSE_FACTOR;
-	hm->clock = clock();
 	position_t o[8] = {{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}};
 	double distFactors[8];
 
@@ -54,7 +54,7 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 
 void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	haz_map_tile_t tile;
-	hm->clock = clock();
+	tile.timestamp = clock();
 	//Bounds checking
 	if(y*hm->image->width + x >= hm->image->height*hm->image->width) {
 		return;
@@ -79,7 +79,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 	int color, offset;
 	hm->hazMap[y*hm->width + x].type = data->type;
 	hm->hazMap[y*hm->width + x].val = data->val;
-	hm->hazMap[y*hm->width + x].timestamp = hm->clock;
+	hm->hazMap[y*hm->width + x].timestamp = data->timestamp;
 
 	switch (data->type) {
 		case HAZ_MAP_UNKNOWN:
@@ -234,7 +234,7 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	while (cont && zarray_size(pq) > 0) {
 		uint8_t valid = 0;
 		dijkstra_dists_t minDist;
-		uint32_t minIndex;
+		uint32_t minIndex = 0;
 		// Find current smallest distance
 		// NOTE: should be replaced by a priority queue
 		for (i = 0; i < zarray_size(pq); i++) {
@@ -313,11 +313,15 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 
 void haz_map_cleanup(haz_map_t *hm) {
 	uint32_t x, y, n, count;
+	clock_t now = clock();
 	haz_map_tile_t tile;
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
 			haz_map_get(hm, &tile, x, y);
-			if (tile.type == HAZ_MAP_OBSTACLE) {
+
+			if (((float)now - tile.timestamp) / CLOCKS_PER_SEC > HAZ_MAP_TTL) {
+				haz_map_set(hm, x, y, HAZ_MAP_FREE);
+			} else if (tile.type == HAZ_MAP_OBSTACLE) {
 				count = 0;
 				for (n = 0; n < tile.numNeighbors; n++) {
 					if (tile.neighbors[n].tile->type == HAZ_MAP_OBSTACLE) {
@@ -329,6 +333,8 @@ void haz_map_cleanup(haz_map_t *hm) {
 					haz_map_set(hm, x, y, HAZ_MAP_FREE);
 				}
 			}
+
+			
 		}
 	}
 }
@@ -337,7 +343,7 @@ void haz_map_compute_config(haz_map_t *hm) {
 	int maxU, minU, x, y, u, v;
 	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
-	int maxV, minV, count;
+	int maxV, minV; //count;
 	offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
 	obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
 	for (y = 0; y < hm->height; y++) {
