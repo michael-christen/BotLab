@@ -50,9 +50,9 @@ void driveToTheta(state_t * state, double theta) {
 		//
 		double difference = state->pos_theta - state->goal_theta;
 		if(difference > M_PI){
-			state->goal_theta -= 2 * M_PI;
-		}else if(difference < -M_PI){
 			state->goal_theta += 2 * M_PI;
+		}else if(difference < -M_PI){
+			state->goal_theta -= 2 * M_PI;
 		}
 
 		/*if(state->pos_theta > 3*M_PI/2 && state->goal_theta < M_PI/2){
