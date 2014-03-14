@@ -643,7 +643,7 @@ void* position_tracker(void *data) {
         }
         path->waypoints[path->length - 1].x = state->pos_x;
         path->waypoints[path->length - 1].y = state->pos_y;
-
+	
         world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
 
 

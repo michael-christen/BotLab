@@ -26,7 +26,7 @@ struct world_map_t {
 };
 
 void world_map_init(world_map_t *wm, int w, int h);
-void world_map_set(world_map_t *wm, int x, int y, int8_t type);
+void world_map_set(world_map_t *wm, double x, double y, int8_t type);
 void world_map_destroy(world_map_t *wm);
 
 #endif

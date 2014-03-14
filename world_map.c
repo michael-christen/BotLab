@@ -1,5 +1,21 @@
 #include "world_map.h"
 
+void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
+	
+	int color;	
+	wm->worldMap[adjY*wm->width + adjX].seen = type;
+
+	switch (type) {
+		case WORLD_MAP_SEEN:
+			color = 0xFF8AE051;
+		break;
+		default: // unseen
+			color = 0xFFBBBBBB;
+		break;
+	}
+	wm->image->buf[adjY*wm->image->width + adjX] = color;
+}
+
 void world_map_init(world_map_t *wm, int w, int h) {
 	wm->image = image_u32_create(w, h);
 	wm->width = w;
@@ -12,45 +28,33 @@ void world_map_init(world_map_t *wm, int w, int h) {
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			world_map_set(wm, x, y, WORLD_MAP_UNSEEN);
+			data_set(wm, x, y, WORLD_MAP_UNSEEN);
 		}
 	}
 }
 
-void world_map_set(world_map_t *wm, int x, int y, int8_t type) {
+void world_map_set(world_map_t *wm, double x, double y, int8_t type) {
 	int adjX = x / WORLD_MAP_RES + wm->width / 2;
 	int adjY = y / WORLD_MAP_RES + wm->height / 2;
-	int color;
 
-	wm->worldMap[adjY*wm->width + adjX].seen = type;
+	data_set(wm, adjX, adjY, type);
 
-	switch (type) {
-		case WORLD_MAP_SEEN:
-			color = 0xFF8AE051;
-		break;
-		default: // unseen
-			color = 0xFFBBBBBB;
-		break;
-	}
-	wm->image->buf[adjY*wm->image->width + adjX] = color;
-
-	printf("seen x: %d, y: %f \n", adjX, adjY);
 	//reset t/b/l/r if necessary
 	if(adjX < wm->left){
 		wm->left = adjX;
-		printf("went lefter\n");
+		printf("new max left\n");
 	}
 	if(adjX > wm->right){
 		wm->right = adjX;
-		printf("went righter\n");
+		printf("new max right\n");
 	}
 	if(adjY < wm->bottom){
 		wm->bottom = adjY;
-		printf("went lower\n");
+		printf("new max low\n");
 	}
 	if(adjY > wm->top){
 		wm->top = adjY;
-		printf("went higher\n");
+		printf("new max high\n");
 	}
 }
 
