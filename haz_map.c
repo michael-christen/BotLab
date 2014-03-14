@@ -35,9 +35,6 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 			tileP = &hm->hazMap[i*hm->width + j];
 			tileP->x = j;
 			tileP->y = i;
-			if (tileP->x == 0 && tileP->y == 0) {
-				printf("DOUBLE 0s\n");
-			}
 			count = 0;
 			for (k = 0; k < 8; k++) {
 				newX = j + o[k].x;
