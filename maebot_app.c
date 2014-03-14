@@ -252,7 +252,9 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->hue --;
 		}else if(key->key_code == 'm') {
 			rotateTheta(state, -M_PI/2.0);
-		} else if(key->key_code == 'c') {
+		}else if(key->key_code == 'k') {
+			rotateTheta(state, M_PI/2.0);
+		}else if(key->key_code == 'c') {
 			if(!state->calibrate && !state->calibrating){
 				state->calibrate = 1;
 			}else if(state->calibrating){
@@ -659,6 +661,11 @@ void* position_tracker(void *data) {
         path->waypoints[path->length - 1].x = state->pos_x;
         path->waypoints[path->length - 1].y = state->pos_y;
 
+	
+        world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+
+
+
         usleep(POS_SAMPLES_INTERVAL);
     }
 
@@ -684,7 +691,7 @@ void * calibrator(void* data){
 int main(int argc, char ** argv)
 {
 	vx_global_init();
-	int i, j;
+
 	state_t * state = calloc(1, sizeof(state_t));
 	global_state = state;
 	state->gopt = getopt_create();
@@ -739,7 +746,7 @@ int main(int argc, char ** argv)
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
-	pid_init(state->theta_pid, 10.0, 0, 1, 0, .1, 2*M_PI);
+	pid_init(state->theta_pid, 5.0, 0, 0, 0, .1, 2*M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
@@ -750,8 +757,13 @@ int main(int argc, char ** argv)
 		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2 + i, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
 	}*/
 
+
+	world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
+
+
 	//state->targetPath = haz_map_get_path(&state->hazMap, 40, 40);
 	//state->targetPathValid = 1;
+
 
 	//Should be width
 	state->tape = calloc(1000, sizeof(pixel_t));
@@ -763,13 +775,6 @@ int main(int argc, char ** argv)
 	state->lcm = lcm;
 	state->sensor_channel = "MAEBOT_SENSOR";
 	state->odometry_channel = "MAEBOT_ODOMETRY";
-
-	for(i = 0; i < 200; i++){
-		for( j = 0; j < 200; j++){
-			state->obstacle_map[i][j].status = UNKNOWN;
-			state->obstacle_map[i][j].created = clock();
-		}
-	}
 
 	state->vw = vx_world_create();
 	state->displayStarted = state->displayFinished = 0;

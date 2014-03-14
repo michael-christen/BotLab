@@ -49,21 +49,23 @@ void driveToTheta(state_t * state, double theta) {
 		//from green targeting pid
 		//
 		double difference = state->pos_theta - state->goal_theta;
-
-		if(difference > M_PI){
-			difference = 2*M_PI - difference;
-		}else if(difference < -M_PI){
-			difference += 2* M_PI;
+		if(fabs(difference) > M_PI){
+			//difference        -= sign(difference) * 2 * M_PI;
+			difference = -sign(difference)*fmod(difference,M_PI);
+			//state->goal_theta += sign(difference) * 2 * M_PI;
 		}
 
-		/*if(state->pos_theta > 3*M_PI/2 && state->goal_theta < M_PI/2){
-			difference -= 2*M_PI;
-		}else if(state->pos_theta < M_PI/2 && state->goal_theta > 3*M_PI/2){
-			difference += 2*M_PI;
+		/*if(difference > M_PI){
+			state->goal_theta += 2 * M_PI;
+		}else if(difference < -M_PI){
+			state->goal_theta -= 2 * M_PI;
 		}*/
-		double pid_out = pid_get_output(state->theta_pid,
-				difference);
-		double motor_val = pid_to_rot(state->theta_pid, pid_out);
+
+		printf("difference: %f",difference);
+		double pid_out = pid_get_output(state->theta_pid, difference);
+		// / by 2 to decrease speed
+		double motor_val = pid_to_rot(state->theta_pid, pid_out)/2;
+		motor_val = 0;
 
 
 		driveRot(state, motor_val);
