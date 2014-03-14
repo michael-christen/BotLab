@@ -92,14 +92,22 @@ void driveToPosition(state_t * state, position_t position){
 
 	state->goal_x = position.x;
 	state->goal_y = position.y;
+	double dist = getDist(state->pos_x, state->pos_y,
+			state->goal_x, state->goal_y);
+	double theta= getTheta(state->pos_x, state->pos_y,
+			state->goal_x, state->goal_y);
 
-	if(fabs(state->goal_x - state->pos_x) > thresh ||
-		fabs(state->goal_y - state->pos_y) > thresh){
-		double dx = position.x - state->pos_x;
-		double dy = position.y - state->pos_y;
-		double dtheta = atan2(dy, dx);
-		driveToTheta(state, dtheta);
+	if(dist > thresh) {
+		driveToTheta(state, theta);
+	}
+	while(dist > thresh){
+		dist = getDist(state->pos_x, state->pos_y,
+			state->goal_x, state->goal_y);
+		theta= getTheta(state->pos_x, state->pos_y,
+			state->goal_x, state->goal_y);
+		driveRad(state, 1000, 0.5);
 
+		/*
 		state->waiting_on_pos = 1;
 		state->waiting_on_theta = 0;
 		//drive to position
@@ -110,6 +118,19 @@ void driveToPosition(state_t * state, position_t position){
 		pthread_mutex_unlock(&state->drive_mutex);
 
 		state->waiting_on_pos = 0;
-		driveStop(state);
+		*/
 	}
+	driveStop(state);
+}
+
+double getDist(double cur_x, double cur_y,
+						double new_x, double new_y) {
+	return sqrt(pow(cur_x-new_x,2) + pow(cur_y-new_y,2));
+}
+
+double getTheta(double cur_x, double cur_y,
+						double new_x, double new_y) {
+	double v_x = cur_x - new_x;
+	double v_y = cur_y - new_y;
+	return atan2(v_y, v_x);
 }
