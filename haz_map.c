@@ -322,13 +322,13 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 
 void haz_map_cleanup(haz_map_t *hm) {
 	uint32_t x, y, n, count;
-	haz_map_tile_t *tile;
+	haz_map_tile_t tile;
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
 			count = 0;
-			haz_map_get(hm, tile, x, y);
-			for (n = 0; n < tile->numNeighbors; n++) {
-				if (tile->neighbors[n].tile->type == HAZ_MAP_OBSTACLE) {
+			haz_map_get(hm, &tile, x, y);
+			for (n = 0; n < tile.numNeighbors; n++) {
+				if (tile.neighbors[n].tile->type == HAZ_MAP_OBSTACLE) {
 					count++;
 				}
 			}
