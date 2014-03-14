@@ -50,7 +50,8 @@ void driveToTheta(state_t * state, double theta) {
 		//
 		double difference = state->pos_theta - state->goal_theta;
 		if(fabs(difference) > M_PI){
-			difference        -= sign(difference) * 2 * M_PI;
+			//difference        -= sign(difference) * 2 * M_PI;
+			difference = -sign(difference)*fmod(difference,M_PI);
 			//state->goal_theta += sign(difference) * 2 * M_PI;
 		}
 
@@ -64,6 +65,7 @@ void driveToTheta(state_t * state, double theta) {
 		double pid_out = pid_get_output(state->theta_pid, difference);
 		// / by 2 to decrease speed
 		double motor_val = pid_to_rot(state->theta_pid, pid_out)/2;
+		motor_val = 0;
 
 
 		driveRot(state, motor_val);
