@@ -95,7 +95,7 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
-		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
+		//haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
 	}
 
 	matd_destroy(rel_coords);
@@ -115,7 +115,7 @@ void find_point_pos( void * data, int obstacle){
 		int obstacle: 0 if free space, 1 if obstacle
 	*/
 	state_t * state = data;
-	haz_map_t hm = state->hazMap;
+	haz_map_t *hm = &state->hazMap;
 
 	matd_t * H = matd_create_data(3, 3, (double[]) { 0.014442,       0.002133,      -6.026192,
       															-0.001299,      -0.000377,       5.889305,
@@ -143,9 +143,11 @@ void find_point_pos( void * data, int obstacle){
 	//	printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);
 
 
-		add_obstacles_to_haz_map( x_cm, y_cm, data, &hm, obstacle);
+		add_obstacles_to_haz_map( x_cm, y_cm, data, hm, obstacle);
 	}
 
+	haz_map_cleanup(hm);
+	haz_map_compute_config(hm);
 
 	matd_destroy(H);
 	return;

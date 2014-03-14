@@ -39,21 +39,47 @@ void driveStop(state_t * state) {
     driveRad(state, 0, 0);
 }
 
+double getThetaDist(double from, double to) {
+
+	from = fmod(from, 2*M_PI);
+	to   = fmod(to, 2*M_PI);
+	double difference = fmod(from - to, 2*M_PI);
+	double sn = sign(difference);
+	if(fabs(difference) > M_PI) {
+		difference = -sn*M_PI + fmod(difference, M_PI);
+	} else {
+		difference = fmod(difference,M_PI);
+	}
+	return difference;
+}
+
 void driveToTheta(state_t * state, double theta) {
 	double thresh = 0.1;
 
 	state->goal_theta = theta;
 
-	while(abs(state->goal_theta - state->pos_theta) > thresh){
+	while(abs(getThetaDist(state->pos_theta,state->goal_theta)) > thresh){
 		//Won't quite work yet, I have some left overs
 		//from green targeting pid
-		double pid_out = pid_get_output(state->theta_pid,
-				state->pos_theta - state->goal_theta);
-		double motor_val = pid_to_rot(state->theta_pid, pid_out);
+		//
+		double difference = getThetaDist(state->pos_theta, state->goal_theta);
+
+		/*if(difference > M_PI){
+			state->goal_theta += 2 * M_PI;
+		}else if(difference < -M_PI){
+			state->goal_theta -= 2 * M_PI;
+		}*/
+
+		//printf("difference: %f\n",difference);
+		double pid_out = pid_get_output(state->theta_pid, difference);
+		// / by 2 to decrease speed
+		double motor_val = pid_to_rot(state->theta_pid, pid_out)/2;
 
 		driveRot(state, motor_val);
 		usleep(10000);
 	}
+	printf("stopping pid with diff: %f\n",
+		   getThetaDist(state->pos_theta, state->goal_theta));
 	driveStop(state);
 }
 

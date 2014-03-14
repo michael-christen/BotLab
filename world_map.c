@@ -1,48 +1,68 @@
 #include "world_map.h"
 
+void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
+
+	if(adjX < 0 || adjX >= WORLD_MAP_MAX_WIDTH
+		|| adjY < 0 || adjY >= WORLD_MAP_MAX_HEIGHT){
+		return;
+	}
+	int color;	
+	wm->worldMap[adjY*wm->width + adjX].seen = type;
+
+	switch (type) {
+		case WORLD_MAP_SEEN:
+			printf ("setting x: %d, y: %d \n", adjX, adjY);
+			color = 0xFF8AE051;
+		break;
+		default: // unseen
+			color = 0xFFBBBBBB;
+		break;
+	}
+	wm->image->buf[adjY*wm->image->stride + adjX] = color;
+	return;
+}
+
 void world_map_init(world_map_t *wm, int w, int h) {
 	wm->image = image_u32_create(w, h);
 	wm->width = w;
 	wm->height = h;
+	wm->top = wm->height / 2;
+	wm->bottom = wm->height / 2;
+	wm->left = wm->width / 2;
+	wm->right = wm->width / 2;
 
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			wm->worldMap[y*wm->width + x].count = 0;
-			wm->worldMap[y*wm->width + x].type = WORLD_MAP_UNKNOWN;
-			wm->image->buf[y*wm->image->width + x] = 0xFFCCCCCC;
+			data_set(wm, x, y, WORLD_MAP_UNSEEN);
 		}
 	}
 }
 
-void world_map_set(world_map_t *wm, int x, int y, int type) {
-	int color;
+void world_map_set(world_map_t *wm, double x, double y, int8_t type) {
+	int adjX = x / WORLD_MAP_RES + wm->width / 2;
+	int adjY = y / WORLD_MAP_RES + wm->height / 2;
 
-	wm->worldMap[y*wm->width + x].type = type;
-
-	switch (type) {
-		case WORLD_MAP_UNKNOWN:
-			color = 0xFFCCCCCC;
-		break;
-		case WORLD_MAP_FREE:
-			color = 0xFFFFFFFF;
-		break;
-		case WORLD_MAP_OBSTACLE:
-			color = 0xFFFF0000;
-		break;
-		default:
-			color = 0xFF000000;
-		break;
+	data_set(wm, adjX, adjY, type);
+//	printf("in map cell x: %d y: %d\n", adjX, adjY);
+	//reset t/b/l/r if necessary
+	if(adjX < wm->left){
+		wm->left = adjX;
+		//printf("new max left\n");
 	}
-	wm->image->buf[y*wm->image->width + x] = color;
-}
+	if(adjX > wm->right){
+		wm->right = adjX;
+		//printf("new max right\n");
+	}
+	if(adjY < wm->bottom){
+		wm->bottom = adjY;
+		//printf("new max low\n");
+	}
+	if(adjY > wm->top){
+		wm->top = adjY;
+		//printf("new max high\n");
 
-void world_map_update(world_map_t *wm, int x, int y, haz_map_t *hm) {
-	return;
-}
-
-void world_map_getPath(world_map_t *wm, path_t *path) {
-	return;
+	}
 }
 
 void world_map_destroy(world_map_t *wm) {
