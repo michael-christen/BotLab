@@ -661,8 +661,9 @@ void* position_tracker(void *data) {
         path->waypoints[path->length - 1].x = state->pos_x;
         path->waypoints[path->length - 1].y = state->pos_y;
 
-
-        world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+//	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
+        
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
 			state->pos_x += 1;
 			state->pos_y += 2;
 

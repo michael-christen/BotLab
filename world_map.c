@@ -1,6 +1,7 @@
 #include "world_map.h"
 
 void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
+
 	if(adjX < 0 || adjX >= WORLD_MAP_MAX_WIDTH
 		|| adjY < 0 || adjY >= WORLD_MAP_MAX_HEIGHT){
 		return;
@@ -43,7 +44,7 @@ void world_map_set(world_map_t *wm, double x, double y, int8_t type) {
 	int adjY = y / WORLD_MAP_RES + wm->height / 2;
 
 	data_set(wm, adjX, adjY, type);
-
+//	printf("in map cell x: %d y: %d\n", adjX, adjY);
 	//reset t/b/l/r if necessary
 	if(adjX < wm->left){
 		wm->left = adjX;
