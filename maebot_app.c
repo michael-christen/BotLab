@@ -175,8 +175,10 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			vx_camera_pos_compute_ray(pos, mouse->x, mouse->y, &ray);
 			vx_ray3_intersect_xy(&ray, 0, man_point);
 			// Add state machine flag here
-			state->goalMouseX = man_point[0];
-			state->goalMouseY = man_point[1];
+			state->goalMouseX = man_point[0] / CM_TO_VX;
+			state->goalMouseY = man_point[1] / CM_TO_VX;
+			printf("Clicked: %f cm's x, %f cm's y\n",
+					state->goalMouseX, state->goalMouseY);
 		}
 	}
 
