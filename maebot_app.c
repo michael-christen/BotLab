@@ -486,12 +486,12 @@ void * camera_analyze(void * data)
 			//might wanna make diff d.s.
 			//Also, gonna need to copy image
 			//Green
-			int obstacle = 1;
 			if(!state->doing_pid) {
 				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
 			}
 			pthread_mutex_lock(&state->haz_map_mutex);
 			//haz_map_translate(&state->hazMap, state->pos_x, state->pos_y, state->last_x, state->last_y);
+			int obstacle = 1;
 			find_point_pos(state, obstacle);
 			pthread_mutex_unlock(&state->haz_map_mutex);
 
