@@ -48,7 +48,7 @@ struct haz_map_tile_t {
 
 struct haz_map_t {
 	uint32_t width, height;
-	double x, y, max_free_val, diffX, diffY;
+	double x, y, max_free_val, gridX, gridY;
 	haz_map_tile_t hazMap[HAZ_MAP_MAX_WIDTH * HAZ_MAP_MAX_HEIGHT];
 	image_u32_t *image;
 };

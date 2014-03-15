@@ -51,7 +51,6 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, double bruce_x, doubl
 																y_rel,
 																1});
 
-
 	//printf("original coords x: %f, y: %f\n", x_rel, y_rel);
 	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(theta),	-sin(theta),	0,
 													sin(theta),	 cos(theta),	0,
