@@ -56,7 +56,7 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	haz_map_tile_t tile;
 	tile.timestamp = clock();
 	//Bounds checking
-	if(y*hm->image->width + x >= hm->image->height*hm->image->width) {
+	if(y*hm->image->stride + x >= hm->image->height*hm->image->stride) {
 		return;
 	}
 
@@ -76,11 +76,13 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 }
 
 void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
-	int color, offset;
 	hm->hazMap[y*hm->width + x].type = data->type;
 	hm->hazMap[y*hm->width + x].val = data->val;
 	hm->hazMap[y*hm->width + x].timestamp = data->timestamp;
+}
 
+void haz_map_set_image_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
+	int color, offset;
 	switch (data->type) {
 		case HAZ_MAP_UNKNOWN:
 			color = 0xFF777777;
@@ -100,7 +102,7 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->width + x] = color;
+	hm->image->buf[y*hm->image->stride + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY) {
@@ -345,12 +347,16 @@ void haz_map_compute_config(haz_map_t *hm) {
 	int maxU, minU, x, y, u, v;
 	double mapAngle, dist, val, offset, obstOffset;
 	haz_map_tile_t tile;
+	uint8_t tileType;
 	int maxV, minV; //count;
 	offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
 	obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
 			haz_map_get(hm, &tile, x, y);
+			if (tile.type == HAZ_MAP_FREE) {
+				tile.val = 1;
+			}
 			if (tile.type == HAZ_MAP_OBSTACLE) {
 				maxV = fmin(y + offset, hm->height - 1);
 				minV = fmax(y - offset, 0);
@@ -368,7 +374,12 @@ void haz_map_compute_config(haz_map_t *hm) {
 								tile.type = HAZ_MAP_FREE;
 								tile.val = val;
 								haz_map_set_data(hm, u, v, &tile);
+								haz_map_set_image_data(hm, u, v, &tile);
 							}
+						} else {
+							tile.type = HAZ_MAP_OBSTACLE;
+							tile.val = HAZ_MAP_HUGE_DIST;
+							haz_map_set_image_data(hm, u, v, &tile);
 						}
 
 					}
