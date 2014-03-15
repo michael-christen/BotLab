@@ -15,7 +15,7 @@ void odometry_handler (
 	//printf("left: %d\tright: %d\n",msg->encoder_left_ticks, msg->encoder_right_ticks);
 	if(state->odometry_seen){
 		state->last_x     = state->pos_x;
-		state->last_y     = state->last_y;
+		state->last_y     = state->pos_y;
 		state->last_theta = state->pos_theta;
 		state->last_pos   = state->pos;
 		matd_destroy(state->last_var);
