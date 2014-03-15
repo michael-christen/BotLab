@@ -136,7 +136,8 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, dou
 			highY = hm->height + diffY;
 		}
 	}
-
+	printf("nX: %f, nY: %f, oX: %f, oY: %f\n", newX, newY, oldX, oldY);
+	printf("diffX: %f, diffY: %f\n", hm->diffX, hm->diffY);
 	if (diffY != 0 || diffX != 0) {
 		printf("Translating!\n");
 		for (int y = 0; y < hm->height; y++) {
