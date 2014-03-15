@@ -43,12 +43,10 @@ double getThetaDist(double from, double to) {
 
 	from = fmod(from, 2*M_PI);
 	to   = fmod(to, 2*M_PI);
-	double difference = fmod(from - to, 2*M_PI);
+	double difference = fmod(to - from, 2*M_PI);
 	double sn = sign(difference);
 	if(fabs(difference) > M_PI) {
 		difference = -sn*M_PI + fmod(difference, M_PI);
-	} else {
-		difference = fmod(difference,M_PI);
 	}
 	return difference;
 }
@@ -57,6 +55,9 @@ void driveToTheta(state_t * state, double theta) {
 	double thresh = 0.01;
 
 	state->goal_theta = theta;
+	state->gyro_int[2] = 0;
+	int64_t beginningInt = state->gyro_int[2];
+	double beginningTheta = state->pos_theta;
 
 	while(abs(getThetaDist(state->pos_theta,state->goal_theta)) > thresh){
 		//Won't quite work yet, I have some left overs
@@ -78,8 +79,16 @@ void driveToTheta(state_t * state, double theta) {
 		driveRot(state, motor_val);
 		usleep(5000);
 	}
+	int64_t endInt = state->gyro_int[2];
+	double endTheta = state->pos_theta;
+	double gyroTheta = (endInt - beginningInt)/state->gyro_ticks_per_theta;
+	double stateTheta = endTheta - beginningTheta;
+	gyroTheta = gyroTheta/M_PI * 180.0;
+	stateTheta = stateTheta/M_PI * 180.0;
 	printf("stopping pid with diff: %f\n",
 		   getThetaDist(state->pos_theta, state->goal_theta));
+	printf("Theta measured by gyro: %g\n", gyroTheta);
+	printf("Theta measured by tick: %g\n", stateTheta);
 	driveStop(state);
 }
 
@@ -140,8 +149,9 @@ double getTheta(double x, double y) {
 double getDiffTraj(state_t *state) {
 	return fmod(
 			getThetaDist(
-				 state->pos_theta,
-				 getTheta(state->goal_x,state->goal_y) + M_PI/2
+				 state->pos_theta + M_PI/2,
+				 getTheta(state->goal_x - state->pos_x,
+					      state->goal_y - state->pos_y)
 			),
 			M_PI
 	);

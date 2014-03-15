@@ -117,13 +117,14 @@ struct state_t {
 	pthread_mutex_t drive_mutex;
 	pthread_cond_t drive_cond;
 	double goal_x, goal_y, goal_theta;
-	int waiting_on_pos, waiting_on_theta;
 
 
     int acc[3];
     int gyro[3];
     int64_t gyro_int[3];
 	double gyro_ticks_per_theta;
+	int64_t save_gyro;
+	double save_theta;
     const char *sensor_channel;
 
 	int calibrate;	//signal calibration
