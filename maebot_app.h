@@ -137,9 +137,9 @@ struct state_t {
 	odometry_t last_pos;
 	matd_t *cur_var;
 	matd_t *last_var;
-    double pos_x, pos_y, pos_z;
+	double pos_x, pos_y, pos_z;
 	double last_x, last_y;
-    double pos_theta;
+	double pos_theta;
 	double last_theta;
 
     int32_t prev_left_ticks, prev_right_ticks;

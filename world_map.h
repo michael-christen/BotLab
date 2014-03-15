@@ -16,6 +16,7 @@ typedef struct world_map_tile_t world_map_tile_t;
 
 struct world_map_tile_t {
 	uint8_t seen;
+	int shot_diamond; //1 true, 0 false
 };
 
 struct world_map_t {
