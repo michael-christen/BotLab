@@ -43,19 +43,18 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 }
 */
 
-void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_t *hm, int obstacle){
+void add_obstacles_to_haz_map( double x_rel, double y_rel, double bruce_x, double bruce_y, double theta, void * data, haz_map_t *hm, int obstacle){
 	state_t * state = data;
-
-	double rot_theta = -1 * state->pos_theta;
-
 
 	//matrices for position realtive to bruce, rotation, and multiplication of the 2
 	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
 																y_rel,
 																1});
 
-	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),	-sin(rot_theta),	state->pos_x,
-													sin(rot_theta),	 cos(rot_theta),	state->pos_y,
+
+	//printf("original coords x: %f, y: %f\n", x_rel, y_rel);
+	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(theta),	-sin(theta),	0,
+													sin(theta),	 cos(theta),	0,
 													0,					0,				1});
 
 	matd_t * real = matd_multiply(R, rel_coords);
@@ -115,7 +114,7 @@ void homography_project(const matd_t *H, double x, double y, double *ox, double 
 
 
 
-void find_point_pos( void * data, int obstacle){
+void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, int obstacle){
 	/*
 		int obstacle: 0 if free space, 1 if obstacle
 	*/
@@ -137,14 +136,13 @@ void find_point_pos( void * data, int obstacle){
 		double x_px = state->tape[i].x;
 		double y_px = state->tape[i].y;
 		homography_project(H, x_px, y_px, &x_cm, &y_cm);
-		add_obstacles_to_haz_map( x_cm, y_cm, data, hm, obstacle);
+		add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
 	
 		obstacle = 0;
 		for(y_px; y_px > 0; y_px -= 50){
 			homography_project(H, x_px, y_px, &x_cm, &y_cm);
-			add_obstacles_to_haz_map( x_cm, y_cm, data, hm, obstacle);			
+		add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
 		}
-	
 	}
 
 	haz_map_cleanup(hm);

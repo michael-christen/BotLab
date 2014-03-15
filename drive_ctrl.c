@@ -1,5 +1,6 @@
 #include "drive_ctrl.h"
 
+//+ Radius goes to left
 void driveRad(state_t * state, double radius, double speed) {
     double b        = DIST_BETWEEN_WHEELS;
     double rc       = abs(radius);
@@ -108,34 +109,46 @@ void driveToPosition(state_t * state, position_t position){
 
 	if(dist > thresh) {
 		printf("theta chosen: %f\n",theta);
-		rotateTheta(state, theta);
+		//rotateTheta(state, theta);
 	}
+	pid_ctrl_t *pos_pid = malloc(sizeof(pid_ctrl_t));
+	pid_init(pos_pid, 0.03, 0.0, 0.0, 0.0, 0, 0.3);
+	pid_ctrl_t *angle_pid = malloc(sizeof(pid_ctrl_t));
+	pid_init(angle_pid, 1.0, 0.0, 0.0, 0.0, 0, M_PI);
 	while(dist > thresh && state->goToMouseCoords){
 		dist = getDist(state->pos_x, state->pos_y,
 			state->goal_x, state->goal_y);
 		theta= getDiffTraj(state);
 		printf("dist: %f, theta: %f\n",dist, theta);
 
-		double radius = 1000 - theta;
-		double speed  = 0.15;// + dist/100;
+		//Negative is to the right
+		//Positive is to the left
+		double base   = 2;
+		double norm   = 1000;
+		double ang_f  = -pid_get_output(angle_pid, theta);
+		int    dir    = sign(ang_f);
+		double mag_ang= fabs(ang_f);
+		double radius = dir*norm*pow(base,-mag_ang);
+		//double radius = dir*norm / mag_ang;
 
-		//driveRad(state, radius, speed);
+		double speed_f= pid_get_output(pos_pid, dist);
+		double speed  = fabs(speed_f);
+		printf("radius: %f, speed: %f\n",radius, speed);
 
+		double thresh_rad = M_PI/2;
 		/*
-		state->waiting_on_pos = 1;
-		state->waiting_on_theta = 0;
-		//drive to position
-		driveStraight(state, 1);
-
-		pthread_mutex_lock(&state->drive_mutex);
-		pthread_cond_wait(&state->drive_cond, &state->drive_mutex);
-		pthread_mutex_unlock(&state->drive_mutex);
-
-		state->waiting_on_pos = 0;
+		if(fabs(radius) >= thresh_rad) {
+			rotateTheta(theta);
+		} else {
+			driveRad(state, radius, speed);
+		}
 		*/
+
 		usleep(10000);
 	}
 	driveStop(state);
+	free(pos_pid);
+	free(angle_pid);
 }
 
 double getDist(double cur_x, double cur_y,
@@ -147,13 +160,21 @@ double getTheta(double x, double y) {
 	return atan2(y, x);
 }
 
+//- is to the right
 double getDiffTraj(state_t *state) {
-	return fmod(
-			getThetaDist(
-				 state->pos_theta + M_PI/2,
-				 getTheta(state->goal_x - state->pos_x,
-					      state->goal_y - state->pos_y)
-			),
-			M_PI
-	);
+	double cur_theta = fmod(-state->pos_theta + M_PI/2, 2*M_PI);
+	double goal_theta = getTheta(state->goal_x - state->pos_x,
+					      state->goal_y - state->pos_y);
+	double diff_theta = fmod( getThetaDist(
+										   cur_theta,
+										   goal_theta
+										  ),
+							  M_PI
+							);
+	/*
+	printf("cur: %f, goal: %f, diff: %f\n",
+		   cur_theta, goal_theta, diff_theta
+		  );
+		  */
+	return diff_theta;
 }

@@ -6,7 +6,7 @@ double sign(double val) {
 	return 0;
 }
 
-void pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal, int min_output, int max_val) {
+void pid_init(pid_ctrl_t *pid, double P, double I, double D, double goal, double min_output, double max_val) {
 	pid->min_output = min_output;
 	pid->max_val = max_val;
     pid_update_pid(pid, P, I, D);

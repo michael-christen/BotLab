@@ -462,6 +462,9 @@ void * camera_analyze(void * data)
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
 		pthread_cond_signal(&state->image_cv);
+		double bruce_theta = -state->pos_theta;
+		double bruce_x = state->pos_x;
+		double bruce_y = state->pos_y;
 		res = isrc->get_frame(isrc, &isdata);
 		if (!res) {
 			if (state->imageValid == 1) {
@@ -492,7 +495,8 @@ void * camera_analyze(void * data)
 			pthread_mutex_lock(&state->haz_map_mutex);
 			//haz_map_translate(&state->hazMap, state->pos_x, state->pos_y, state->last_x, state->last_y);
 			int obstacle = 1;
-			find_point_pos(state, obstacle);
+			find_point_pos(state, bruce_theta, bruce_x, bruce_y, obstacle);
+
 			pthread_mutex_unlock(&state->haz_map_mutex);
 
 			//find_point_pos( state, obstacle);
