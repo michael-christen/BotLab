@@ -476,6 +476,7 @@ void * camera_analyze(void * data)
 				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
 			}
 			pthread_mutex_lock(&state->haz_map_mutex);
+			//haz_map_translate(&state->hazMap, state->pos_x, state->pos_y, state->last_x, state->last_y);
 			find_point_pos(state, obstacle);
 			pthread_mutex_unlock(&state->haz_map_mutex);
 
@@ -754,7 +755,7 @@ int main(int argc, char ** argv)
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
-	pid_init(state->theta_pid, 5.0, 0, 0, 0, .1, 2*M_PI);
+	pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);

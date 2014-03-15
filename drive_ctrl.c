@@ -57,6 +57,9 @@ void driveToTheta(state_t * state, double theta) {
 	double thresh = 0.01;
 
 	state->goal_theta = theta;
+	state->gyro_int[2] = 0;
+	int64_t beginningInt = state->gyro_int[2];
+	double beginningTheta = state->pos_theta;
 
 	while(abs(getThetaDist(state->pos_theta,state->goal_theta)) > thresh){
 		//Won't quite work yet, I have some left overs
@@ -78,8 +81,16 @@ void driveToTheta(state_t * state, double theta) {
 		driveRot(state, motor_val);
 		usleep(5000);
 	}
+	int64_t endInt = state->gyro_int[2];
+	double endTheta = state->pos_theta;
+	double gyroTheta = (endInt - beginningInt)/state->gyro_ticks_per_theta;
+	double stateTheta = endTheta - beginningTheta;
+	gyroTheta = gyroTheta/M_PI * 180.0;
+	stateTheta = stateTheta/M_PI * 180.0;
 	printf("stopping pid with diff: %f\n",
 		   getThetaDist(state->pos_theta, state->goal_theta));
+	printf("Theta measured by gyro: %g\n", gyroTheta);
+	printf("Theta measured by tick: %g\n", stateTheta);
 	driveStop(state);
 }
 

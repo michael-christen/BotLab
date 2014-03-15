@@ -147,7 +147,7 @@ void find_point_pos( void * data, int obstacle){
 	}
 
 	haz_map_cleanup(hm);
-	haz_map_compute_config(hm);
+	//haz_map_compute_config(hm);
 
 	matd_destroy(H);
 	return;

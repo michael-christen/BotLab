@@ -117,7 +117,6 @@ struct state_t {
 	pthread_mutex_t drive_mutex;
 	pthread_cond_t drive_cond;
 	double goal_x, goal_y, goal_theta;
-	int waiting_on_pos, waiting_on_theta;
 
 
     int acc[3];
