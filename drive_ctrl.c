@@ -54,7 +54,7 @@ double getThetaDist(double from, double to) {
 }
 
 void driveToTheta(state_t * state, double theta) {
-	double thresh = 0.1;
+	double thresh = 0.01;
 
 	state->goal_theta = theta;
 
@@ -76,7 +76,7 @@ void driveToTheta(state_t * state, double theta) {
 		double motor_val = pid_to_rot(state->theta_pid, pid_out)/2;
 
 		driveRot(state, motor_val);
-		usleep(10000);
+		usleep(5000);
 	}
 	printf("stopping pid with diff: %f\n",
 		   getThetaDist(state->pos_theta, state->goal_theta));

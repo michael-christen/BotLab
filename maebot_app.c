@@ -239,7 +239,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if(key->key_code == '0') {
 			printf("%f, \n",state->dist);
 			state->dist = 0;
-		} else if(key->key_code == 'r') {
+		}/* else if(key->key_code == 'r') {
 			state->red ++;
 		} else if(key->key_code == 'g') {
 			state->green ++;
@@ -259,6 +259,25 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->hue ++;
 		} else if(key->key_code == 'x') {
 			state->hue --;
+		}*/
+		else if(key->key_code == 'g'){
+			pid_update_pid(state->theta_pid, state->theta_pid->P + 0.1, state->theta_pid->I, state->theta_pid->D);
+			printf("P updated to %g\n", state->theta_pid->P);
+		}else if(key->key_code == 'v'){
+			pid_update_pid(state->theta_pid, state->theta_pid->P - 0.1, state->theta_pid->I, state->theta_pid->D);
+			printf("P updated to %g\n", state->theta_pid->P);
+		}else if(key->key_code == 'h'){
+			pid_update_pid(state->theta_pid, state->theta_pid->P, state->theta_pid->I + 0.1, state->theta_pid->D);
+			printf("I updated to %g\n", state->theta_pid->I);
+		}else if(key->key_code == 'b'){
+			pid_update_pid(state->theta_pid, state->theta_pid->P, state->theta_pid->I - 0.1, state->theta_pid->D);
+			printf("I updated to %g\n", state->theta_pid->I);
+		}else if(key->key_code == 'j'){
+			pid_update_pid(state->theta_pid, state->theta_pid->P, state->theta_pid->I, state->theta_pid->D + 0.1);
+			printf("D updated to %g\n", state->theta_pid->D);
+		}else if(key->key_code == 'n'){
+			pid_update_pid(state->theta_pid, state->theta_pid->P, state->theta_pid->I, state->theta_pid->D - 0.1);
+			printf("D updated to %g\n", state->theta_pid->D);
 		}else if(key->key_code == 'm') {
 			rotateTheta(state, -M_PI/2.0);
 		}else if(key->key_code == 'k') {
