@@ -84,6 +84,7 @@ void driveToTheta(state_t * state, double theta) {
 }
 
 void rotateTheta(state_t * state, double theta) {
+	theta *= -1;
 	driveToTheta(state, fmod(state->pos_theta + theta, 2*M_PI));
 }
 

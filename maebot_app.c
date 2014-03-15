@@ -588,10 +588,10 @@ void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
 	explorer_state_t curState, nextState;
-	curState = EX_ANALYZE;
+	curState = EX_START;
 	nextState = curState;
+	clock_t start_time = clock();
 	while(state->running){
-
 		switch(curState){
 			case EX_MOVE_FORWARD:{
 				path_t* path = explorer_get_move(&explorer);
@@ -631,9 +631,20 @@ void* FSM(void* data){
 			case EX_GOHOME:{
 				break;}
 			case EX_EXIT:{
+				rotateTheta(state, -2*M_PI + 0.001);
+				rotateTheta(state, 2*M_PI - 0.001);
 				return NULL;
 				break;}
-			case EX_ANALYZE:
+			case EX_START:rotateTheta(state, 2*M_PI - 0.001);
+			case EX_ANALYZE:{
+				clock_t curTime = clock();
+				state->fsm_time_elapsed = 
+					(double)(curTime - start_time) / CLOCKS_PER_SEC;
+				if(state->fsm_time_elapsed >= 180){
+					nextState = EX_EXIT;
+					break;
+				}
+			}
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 		}
 		curState = nextState;

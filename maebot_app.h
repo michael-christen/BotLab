@@ -119,6 +119,7 @@ struct state_t {
 	double goal_x, goal_y, goal_theta;
 	int waiting_on_pos, waiting_on_theta;
 
+	double fsm_time_elapsed;
 
     int acc[3];
     int gyro[3];
