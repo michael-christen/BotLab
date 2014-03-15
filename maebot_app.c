@@ -135,11 +135,24 @@ void moveBot(state_t* state){
 	} else if(state->cmd_val & BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
 	} else if(state->cmd_val & RIGHT) {
+		state->save_gyro = state->gyro_int[2];
+		state->save_theta = state->pos_theta;
 		driveRot(state, -ROT_SPEED);
 	} else if(state->cmd_val & LEFT) {
+		state->save_gyro = state->gyro_int[2];
+		state->save_theta = state->pos_theta;
 		driveRot(state, ROT_SPEED);
 	}  else {
 		driveStop(state);
+		double gyroDif = (state->gyro_int[2] - state->save_gyro) / state->gyro_ticks_per_theta;
+		gyroDif = gyroDif / M_PI * 180;
+
+		double tickDif = state->pos_theta - state->save_theta;
+		tickDif = tickDif / M_PI * 180;
+
+		printf("Rotation stopped...\n");
+		printf("Change in gyro theta: %g\n", gyroDif);
+		printf("Change in tick theta: %g\n", tickDif);
 	}
 }
 

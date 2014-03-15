@@ -123,6 +123,8 @@ struct state_t {
     int gyro[3];
     int64_t gyro_int[3];
 	double gyro_ticks_per_theta;
+	int64_t save_gyro;
+	double save_theta;
     const char *sensor_channel;
 
 	int calibrate;	//signal calibration
