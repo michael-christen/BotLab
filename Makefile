@@ -8,6 +8,8 @@ LIB = ../../lib
 
 all: $(BINARIES)
 
+drive_test: ../../bin/drive_test
+
 ../../bin/maebot_app: maebot_app.o gui.o disjoint.o blob_detection.o \
 	calibration.o odometry.o barrel_distortion.o drive_ctrl.o \
 	pid_ctrl.o haz_map.o world_map.o image.o line_detection.o mapping.o \
@@ -19,6 +21,9 @@ all: $(BINARIES)
 	@echo "\t$@"
 	@$(CC) -o $@ $^ $(LDFLAGS)
 	
+../../bin/drive_test: drive_ctrl.o test_drive_ctrl.o pid_ctrl.o
+	@echo "\t$@"
+	@$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	@rm -f *.o *~ *.a
