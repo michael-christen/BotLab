@@ -9,13 +9,14 @@
 #define WORLD_MAP_MAX_HEIGHT 251
 #define WORLD_MAP_UNSEEN 0
 #define WORLD_MAP_SEEN 1
-#define WORLD_MAP_RES 10
+#define WORLD_MAP_RES 30
 
 typedef struct world_map_t world_map_t;
 typedef struct world_map_tile_t world_map_tile_t;
 
 struct world_map_tile_t {
 	uint8_t seen;
+	int shot_diamond; //1 true, 0 false
 };
 
 struct world_map_t {

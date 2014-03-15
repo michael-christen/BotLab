@@ -5,8 +5,8 @@
 #include "path.h"
 #include "time.h"
 
-#define HAZ_MAP_MAX_WIDTH  20
-#define HAZ_MAP_MAX_HEIGHT 20
+#define HAZ_MAP_MAX_WIDTH  40
+#define HAZ_MAP_MAX_HEIGHT 40
 #define HAZ_MAP_UNKNOWN 0
 #define HAZ_MAP_FREE 1
 #define HAZ_MAP_OBSTACLE 2

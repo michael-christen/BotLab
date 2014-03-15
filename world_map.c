@@ -35,6 +35,7 @@ void world_map_init(world_map_t *wm, int w, int h) {
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
 			data_set(wm, x, y, WORLD_MAP_UNSEEN);
+			wm->worldMap[y*w + x].shot_diamond = 0;
 		}
 	}
 }
