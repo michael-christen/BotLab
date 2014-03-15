@@ -135,11 +135,26 @@ void moveBot(state_t* state){
 	} else if(state->cmd_val & BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
 	} else if(state->cmd_val & RIGHT) {
+		state->save_gyro = state->gyro_int[2];
+		state->save_theta = state->pos_theta;
 		driveRot(state, -ROT_SPEED);
 	} else if(state->cmd_val & LEFT) {
+		state->save_gyro = state->gyro_int[2];
+		state->save_theta = state->pos_theta;
 		driveRot(state, ROT_SPEED);
 	}  else {
 		driveStop(state);
+		if(state->rotating){
+			double gyroDif = (state->gyro_int[2] - state->save_gyro) / state->gyro_ticks_per_theta;
+			gyroDif = gyroDif / M_PI * 180;
+
+			double tickDif = state->pos_theta - state->save_theta;
+			tickDif = tickDif / M_PI * 180;
+
+			printf("Rotation stopped...\n");
+			printf("Change in gyro theta: %g\n", gyroDif);
+			printf("Change in tick theta: %g\n", tickDif);
+		}
 	}
 }
 
@@ -476,6 +491,7 @@ void * camera_analyze(void * data)
 				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
 			}
 			pthread_mutex_lock(&state->haz_map_mutex);
+			//haz_map_translate(&state->hazMap, state->pos_x, state->pos_y, state->last_x, state->last_y);
 			find_point_pos(state, obstacle);
 			pthread_mutex_unlock(&state->haz_map_mutex);
 
@@ -588,10 +604,10 @@ void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
 	explorer_state_t curState, nextState;
-	curState = EX_ANALYZE;
+	curState = EX_START;
 	nextState = curState;
+	clock_t start_time = clock();
 	while(state->running){
-
 		switch(curState){
 			case EX_MOVE_FORWARD:{
 				path_t* path = explorer_get_move(&explorer);
@@ -631,9 +647,20 @@ void* FSM(void* data){
 			case EX_GOHOME:{
 				break;}
 			case EX_EXIT:{
+				rotateTheta(state, -2*M_PI + 0.001);
+				rotateTheta(state, 2*M_PI - 0.001);
 				return NULL;
 				break;}
-			case EX_ANALYZE:
+			case EX_START:rotateTheta(state, 2*M_PI - 0.001);
+			case EX_ANALYZE:{
+				clock_t curTime = clock();
+				state->fsm_time_elapsed = 
+					(double)(curTime - start_time) / CLOCKS_PER_SEC;
+				if(state->fsm_time_elapsed >= 180){
+					nextState = EX_EXIT;
+					break;
+				}
+			}
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 		}
 		curState = nextState;
@@ -754,7 +781,7 @@ int main(int argc, char ** argv)
 	state->doing_pid     = 0;
 	state->num_pid_zeros = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
-	pid_init(state->theta_pid, 5.0, 0, 0, 0, .1, 2*M_PI);
+	pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);

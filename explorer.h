@@ -32,6 +32,7 @@ enum explorer_state{
 	EX_TURN_RIGHT,
 	EX_ZAP_DIAMOND,
 	EX_GOHOME,
+	EX_START,
 	EX_EXIT
 };
 
