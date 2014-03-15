@@ -28,8 +28,8 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 
 	haz_map_tile_t tile;
 	haz_map_tile_t *tileP;
-	tile.type = HAZ_MAP_FREE;
-	tile.val = 1;
+	tile.type = HAZ_MAP_UNKNOWN;
+	tile.val = HAZ_MAP_HUGE_DIST;
 	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++) {
 			tileP = &hm->hazMap[i*hm->width + j];
@@ -45,8 +45,6 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 				}
 			}
 			tileP->numNeighbors = count;
-			tile.type = HAZ_MAP_FREE;
-			tile.val = 1;
 			haz_map_set_data(hm, j, i, &tile);
 		}
 	}
@@ -106,50 +104,52 @@ void haz_map_set_image_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 }
 
 void haz_map_translate(haz_map_t *hm, double newX, double newY, double oldX, double oldY) {
-	hm->diffX += newX - oldX;
-	hm->diffY += newY - oldY;
-	hm->x += hm->diffX;
-	hm->y += hm->diffY;
+	double diffX = newX - hm->gridX;
+	double diffY = newY - hm->gridY;
+	int transX = 0;
+	int transY = 0;
+	hm->x = newX;
+	hm->y = newY;
 
 	int lowX = 0;
 	int highX = hm->width;
 	int lowY = 0;
 	int highY = hm->height;
-	double diffX = 0;
-	double diffY = 0;
 	haz_map_tile_t tile;
 
-	if (fabs(hm->diffX) >= GRID_RES) {
-		diffX = hm->diffX;
-		hm->diffX = 0;
-		if (diffX >= 0) {
-			lowX = diffX;
+	if (fabs(diffX) >= GRID_RES) {
+		transX = (int) diffX;
+		if (transX >= 0) {
+			lowX = transX;
 		} else {
-			highX = hm->width + diffX;
+			highX = hm->width + transX;
 		}
 	}
 
-	if (fabs(hm->diffY) >= GRID_RES) {
-		diffY = hm->diffY;
-		hm->diffY = 0;
-		if (diffY >= 0) {
-			lowY = diffY;
+	if (fabs(diffY) >= GRID_RES) {
+		transY = (int) diffY;
+		if (transY >= 0) {
+			lowY = transY;
 		} else {
-			highY = hm->height + diffY;
+			highY = hm->height + transY;
 		}
 	}
+
 	//printf("nX: %f, nY: %f, oX: %f, oY: %f\n", newX, newY, oldX, oldY);
 	//printf("diffX: %f, diffY: %f\n", hm->diffX, hm->diffY);
-	if (diffY != 0 || diffX != 0) {
+	if (transY != 0 || transX != 0) {
+		hm->gridX += transX;
+		hm->gridY += transY;
 		printf("Translating!\n");
 		for (int y = 0; y < hm->height; y++) {
 			for (int x = 0; x < hm->width; x++) {
 				if (x < lowX || x > highX || y < lowY || y > highY) {
 					tile.type = HAZ_MAP_UNKNOWN;
+					tile.val = HAZ_MAP_HUGE_DIST;
 					haz_map_set_data(hm, x, y, &tile);
 				} else {
 					haz_map_get(hm, &tile, x, y);
-					haz_map_set_data(hm, x - diffX, y - diffY, &tile);
+					haz_map_set_data(hm, x - transX, y - transY, &tile);
 				}
 			}
 		}
