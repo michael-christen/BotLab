@@ -9,7 +9,7 @@
 #define WORLD_MAP_MAX_HEIGHT 251
 #define WORLD_MAP_UNSEEN 0
 #define WORLD_MAP_SEEN 1
-#define WORLD_MAP_RES 10
+#define WORLD_MAP_RES 30
 
 typedef struct world_map_t world_map_t;
 typedef struct world_map_tile_t world_map_tile_t;

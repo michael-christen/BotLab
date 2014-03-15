@@ -54,7 +54,6 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 																y_rel,
 																1});
 
-	//printf("original coords x: %f, y: %f\n", x_rel, y_rel);
 	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),	-sin(rot_theta),	state->pos_x,
 													sin(rot_theta),	 cos(rot_theta),	state->pos_y,
 													0,					0,				1});
@@ -64,38 +63,30 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 	x_rel = matd_get(real, 0, 0);
 	y_rel = matd_get(real, 1, 0);
 
-	//printf("rotated coords x: %f, y: %f\n", x_rel, y_rel);
 
 	//constant left bias
 	double xbias = 1.5; //cm
-
-	//printf("adding obstacle at x: %f, y: %f\n", x_rel + xbias, y_rel);
 
 
 	double map_x = x_rel + xbias;
 	double map_y = y_rel;
 
-	//printf("haz map max width: %d, grid res: %d\n", HAZ_MAP_MAX_WIDTH, GRID_RES);
-
 	int map_x_scaled = (map_x/GRID_RES) +(HAZ_MAP_MAX_WIDTH/2);
 	int map_y_scaled = (map_y/GRID_RES) +(HAZ_MAP_MAX_HEIGHT/2);
 
 	if ( map_x_scaled < 0 ||  map_x_scaled > HAZ_MAP_MAX_WIDTH){
-		//printf("x out of range\n");
 		return;
 	}
 	if ( map_y_scaled < 0 ||  map_y_scaled > HAZ_MAP_MAX_HEIGHT){
-		//printf("y out of range\n");
 		return;
 	}
 
 	//place point on haz_map
 	if(obstacle == 1){
-		//printf("grid cell on haz map filled  x: %d, y: %d\n", map_x_scaled, map_y_scaled);
 		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
-		//haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
+		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
 	}
 
 	matd_destroy(rel_coords);
@@ -104,6 +95,20 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, void * data, haz_map_
 
 	return;
 }
+
+
+
+
+void homography_project(const matd_t *H, double x, double y, double *ox, double *oy)
+{
+    double xx = MATD_EL(H, 0, 0)*x + MATD_EL(H, 0, 1)*y + MATD_EL(H, 0, 2);
+    double yy = MATD_EL(H, 1, 0)*x + MATD_EL(H, 1, 1)*y + MATD_EL(H, 1, 2);
+    double zz = MATD_EL(H, 2, 0)*x + MATD_EL(H, 2, 1)*y + MATD_EL(H, 2, 2);
+
+    *ox = xx / zz;
+    *oy = yy / zz;
+}
+
 
 
 
@@ -125,25 +130,21 @@ void find_point_pos( void * data, int obstacle){
 
 	int points = state->num_pts_tape;
 	int i;
+	double x_cm, y_cm;
 
 	for(i = 0; i < points; i++){
-		double x = state->tape[i].x;
-		double y = state->tape[i].y;
-
-		//printf("pixel at x: %f, y: %f\n", x, y);
-
-
-	 	double xx = MATD_EL(H, 0, 0)*x + MATD_EL(H, 0, 1)*y + MATD_EL(H, 0, 2);
-    	double yy = MATD_EL(H, 1, 0)*x + MATD_EL(H, 1, 1)*y + MATD_EL(H, 1, 2);
-		double zz = MATD_EL(H, 2, 0)*x + MATD_EL(H, 2, 1)*y + MATD_EL(H, 2, 2);
-
-  	  	double x_cm = xx / zz;
-    	double y_cm = yy / zz;
-
-	//	printf("tape at x: %f cm, y: %f cm\n", x_cm, y_cm);
-
-
+		obstacle = 1;
+		double x_px = state->tape[i].x;
+		double y_px = state->tape[i].y;
+		homography_project(H, x_px, y_px, &x_cm, &y_cm);
 		add_obstacles_to_haz_map( x_cm, y_cm, data, hm, obstacle);
+	
+		obstacle = 0;
+		for(y_px; y_px > 0; y_px -= 50){
+			homography_project(H, x_px, y_px, &x_cm, &y_cm);
+			add_obstacles_to_haz_map( x_cm, y_cm, data, hm, obstacle);			
+		}
+	
 	}
 
 	haz_map_cleanup(hm);
