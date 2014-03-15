@@ -192,7 +192,10 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 				state->targetPathValid = 0;
 			}
 			pthread_mutex_unlock(&state->haz_map_mutex);
-			printf("mx: %f, my: %f\n", man_point[0], man_point[1]);
+			position_t pos;
+			pos.x = state->goalMouseX;
+			pos.y = state->goalMouseY;
+			driveToPosition(state,pos);
 		}
 	}
 
