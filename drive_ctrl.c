@@ -151,8 +151,9 @@ double getTheta(double x, double y) {
 double getDiffTraj(state_t *state) {
 	return fmod(
 			getThetaDist(
-				 state->pos_theta,
-				 getTheta(state->goal_x,state->goal_y) + M_PI/2
+				 getTheta(state->goal_x - state->pos_x,
+					      state->goal_y - state->pos_y),
+				 state->pos_theta + M_PI/2
 			),
 			M_PI
 	);
