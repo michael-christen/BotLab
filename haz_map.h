@@ -41,7 +41,7 @@ struct haz_map_neighbor_t {
 struct haz_map_tile_t {
 	time_t timestamp;
 	int x, y, numNeighbors;
-	uint8_t type, translated;
+	uint8_t type;
 	double val;
 	haz_map_neighbor_t neighbors[8];
 };

@@ -318,20 +318,20 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		state->blue &= 0xff;
 	}
 	if (state->cmd_val & FORWARD) {
-		//state->last_y = state->pos_y;
-		//state->pos_y += 5;
+		state->last_y = state->pos_y;
+		state->pos_y += 5;
 		LEDStatus(state, MOVE_FORWARD);
 	} else if(state->cmd_val & BACKWARD) {
-		//state->last_y = state->pos_y;
-		//state->pos_y -= 5;
+		state->last_y = state->pos_y;
+		state->pos_y -= 5;
 		LEDStatus(state, MOVE_BACKWARD);
 	} else if(state->cmd_val & RIGHT) {
-		//state->last_x = state->pos_x;
-		//state->pos_x += 5;
+		state->last_x = state->pos_x;
+		state->pos_x += 5;
 		LEDStatus(state, TURN_RIGHT);
 	} else if(state->cmd_val & LEFT) {
-		//state->last_x = state->pos_x;
-		//state->pos_x -= 5;
+		state->last_x = state->pos_x;
+		state->pos_x -= 5;
 		LEDStatus(state, TURN_LEFT);
 	} else {
 		LEDStatus(state, NONE);
@@ -804,7 +804,7 @@ int main(int argc, char ** argv)
 	state->doing_pid_theta     = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
-	pid_init(state->theta_pid, 1.5, 0.0, 0.0, 0, .1, M_PI);
+	pid_init(state->theta_pid, 2.0, 0.0, 0.0, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_compute_config(&state->hazMap);
