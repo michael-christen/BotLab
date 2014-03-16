@@ -2,18 +2,171 @@
 #include "common/matd.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+int movement_compare(const void *elt1, const void *elt2){
+	//compares tiles, moving higher priority tiles to front of array
+	world_map_tile_t tile1 = *((world_map_tile_t*)elt1);
+	world_map_tile_t tile2 = *((world_map_tile_t*)elt2);
+
+	if(tile1.visited == WORLD_MAP_VISITED){
+		if(tile2.visited == WORLD_MAP_VISITED){
+			if(tile1.distance > tile2.distance) { return 1;} 	//both visited: tile 2 closer [tile2 | tile1]
+			if(tile1.distance < tile2.distance) { return -1;} 	//both visited: tile 1 closer [tile1 | tile2]
+			return(tile1.timestamp - tile2.timestamp); 			// if tile 2 older -> [tile2 | tile1]
+		}
+		else{
+			return 1; //1 visited, 2 unvisited [tile2 | tile1]
+		}
+	}
+	else{
+		if(tile2.visited == WORLD_MAP_VISITED){
+			return -1; //1 unvisited, 2 visited [tile1 | tile2]
+		}
+		else{
+			return(tile1.distance - tile2.distance); 	//both unvisited: tile 2 closer -> [tile2 | tile1]
+		}
+	}
+}
+
+
+
+
+
+void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
+		*gridx = x / WORLD_MAP_RES + WORLD_MAP_MAX_WIDTH / 2;
+		*gridy = y / WORLD_MAP_RES + WORLD_MAP_MAX_HEIGHT / 2;
+}
+
+
+
+
+
+
+
+path_t * choose_path(void * data){
+
+	//set max for bound checking
+	int max_x = (WORLD_MAP_RES * WORLD_MAP_MAX_WIDTH) / 2;
+	int max_y = (WORLD_MAP_RES * WORLD_MAP_MAX_HEIGHT) / 2;
+
+	//grab values
+	state_t * state = data;
+	world_map_t * wm = &state->world_map;
+	haz_map_t * hm = &state->hazMap;
+	int x = state->pos_x;
+	int y = state->pos_y;
+
+	//find grid map cell bruce is currently in
+	int gridx, gridy;
+	cm_to_world_cell(x, y, &gridx, &gridy);
+	world_map_tile_t * curr_tile = &wm->worldMap[gridy*(wm->width) + gridx];
+	
+	//find coordinates for center of all neighboring grid cells
+	int up, down, right, left;
+	up = gridy * WORLD_MAP_RES + WORLD_MAP_RES/2;
+	y = gridy * WORLD_MAP_RES - WORLD_MAP_RES/2;
+	down = gridy * WORLD_MAP_RES - 3 * WORLD_MAP_RES/2;
+	right = gridx * WORLD_MAP_RES + WORLD_MAP_RES/2;
+ 	x = gridx * WORLD_MAP_RES - WORLD_MAP_RES/2;
+	left = gridx * WORLD_MAP_RES - 3 * WORLD_MAP_RES/2;
+	
+
+	int num_neighbors = 0;
+	//bounds check before calling to get path
+	if( up <= max_y ) {
+		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx)];
+		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, x);
+		num_neighbors++;
+		if( left >= -max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx - 1)];
+			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, left);
+			num_neighbors++;
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*(wm->width) + (gridx - 1)];
+			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, left);
+			num_neighbors++;
+		}
+		if( right <= max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx + 1)];
+			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, right);
+			num_neighbors++;
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*(wm->width) + (gridx + 1)];
+			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, right);
+			num_neighbors++;
+		}
+	}
+	if( down >= -max_y ) {
+		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx)];
+		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, x);
+		num_neighbors ++;
+		if( left >= -max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx - 1)];
+			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, left);
+			num_neighbors ++;
+		}
+		if( right <= max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx + 1)];
+			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, right);
+			num_neighbors ++;	
+		}
+	}
+
+	//evaluate grid cell distance for all neighbors
+	for (int i = 0; i < num_neighbors; i++){
+		double distance = curr_tile->neighbors[i]->path_to->distance;
+		int grid_dist = (distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
+		curr_tile->neighbors[i]->distance = grid_dist;	
+	}
+
+	//qsort
+	qsort(curr_tile->neighbors, num_neighbors, sizeof(world_map_tile_t), movement_compare);
+
+    state->targetPath = curr_tile->neighbors[0]->path_to;
+    state->targetPathValid  = 1;
+
+
+	return curr_tile->neighbors[0]->path_to;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+//
+//
+//
+//
+//
+//
+//old stuff because i'm not sure how to make it compile without
+//
+//
+//
+//
+//
+//
+//
 void explorer_init(explorer_t *ex) {
 	ex->goHome = 0;
 }
 
-explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y, double theta) {
-	int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
-	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
-	printf("forwardDist: %d\n", forwardDist);
-	printf("leftDist: %d\n", leftDist);	
-	return EX_EXIT;
-}
+
 
 int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double theta) {
 	matd_t *forwardRot, *checkPosTrans, *checkPosRot, *checkPos, *origin, *pos, *trans;
@@ -77,10 +230,17 @@ int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double thet
 	return dist;
 }
 
+
+explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y, double theta) {
+	int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
+	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
+	printf("forwardDist: %d\n", forwardDist);
+	printf("leftDist: %d\n", leftDist);	
+	return EX_EXIT;
+}
+
 path_t* explorer_get_move(explorer_t *ex) {
 	return ex->path;
 }
 
-double explorer_get_theta(explorer_t *ex) {
-	return ex->theta;
-}
+

@@ -7,14 +7,14 @@ void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
 		return;
 	}
 	int color;
-	wm->worldMap[adjY*wm->width + adjX].seen = type;
+	wm->worldMap[adjY*wm->width + adjX].visited = type;
 
 	switch (type) {
-		case WORLD_MAP_SEEN:
+		case WORLD_MAP_VISITED:
 			//printf ("setting x: %d, y: %d \n", adjX, adjY);
 			color = 0xFF8AE051;
 		break;
-		default: // unseen
+		default: // unvisited
 			color = 0xFFBBBBBB;
 		break;
 	}
@@ -34,7 +34,7 @@ void world_map_init(world_map_t *wm, int w, int h) {
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			data_set(wm, x, y, WORLD_MAP_UNSEEN);
+			data_set(wm, x, y, WORLD_MAP_UNVISITED);
 			wm->worldMap[y*w + x].shot_diamond = 0;
 		}
 	}

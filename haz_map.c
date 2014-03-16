@@ -62,15 +62,17 @@ void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 		case HAZ_MAP_OBSTACLE:
 			tile.type = HAZ_MAP_OBSTACLE;
 			tile.val = HAZ_MAP_HUGE_DIST;
-			haz_map_set_data(hm, x, y, &tile);
 		break;
 
+		case HAZ_MAP_UNKNOWN:
+			tile.type = HAZ_MAP_UNKNOWN;
+			tile.val = HAZ_MAP_HUGE_DIST;
 		default:
 			tile.type = type;
 			tile.val = 1;
-			haz_map_set_data(hm, x, y, &tile);
 		break;
 	}
+	haz_map_set_data(hm, x, y, &tile);
 }
 
 void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
@@ -242,6 +244,7 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	int startY = hm->height/2;
 	int testindex = adjEndY*hm->width + adjEndX;
 	curTile = &hm->hazMap[testindex];
+	if(testindex > HAZ_MAP_MAX_WIDTH * HAZ_MAP_MAX_HEIGHT) { printf("out of range in djikstra\n"); return;}
 	if (curTile->type == HAZ_MAP_OBSTACLE) {
 		retPath = malloc(sizeof(path_t));
 		retPath->length = 0;
@@ -335,21 +338,33 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	int curIndex = adjEndY*hm->width + adjEndX;
 	curTile = &hm->hazMap[curIndex];
 	zarray_get(dData, curIndex, &curData);
+	double distance = 0;
+	haz_map_tile_t *prevTile = curTile;
 	retPath = malloc(sizeof(path_t));
 	retPath->waypoints = malloc(sizeof(position_t) * curData.pathCount);
 	retPath->length = curData.pathCount;
 	retPath->position = 0;
 	for (i = retPath->length - 1; i >= 0; i--) {
 		curIndex = curTile->y*hm->width + curTile->x;
+		if (curTile != prevTile) {
+			if (curTile->x != prevTile->x && curTile->y != prevTile->y) {
+				distance += GRID_RES * 1.41421; // GRID_RES * sqrt(2)
+			} else {
+				distance += GRID_RES;
+			}
+		}
 		if (curIndex != startIndex) {
 			zarray_get(dData, curIndex, &curData);
 			retPath->waypoints[i].x = (((double)curTile->x - hm->width/2) * GRID_RES) + hm->x;
 			retPath->waypoints[i].y = (((double)curTile->y - hm->height/2) * GRID_RES) + hm->y;
+			prevTile = curTile;
 			curTile = &hm->hazMap[curData.parentIndex];
 		} else {
 			break;
 		}
 	}
+	retPath->distance = distance;
+	printf("curDist: %f\n", retPath->distance);
 	zarray_destroy(dData);
 	return retPath;
 }
@@ -379,6 +394,16 @@ void haz_map_cleanup(haz_map_t *hm) {
 			} else if (tile.type == HAZ_MAP_FREE) {
 				tile.val = 1;
 				haz_map_set_data(hm, x, y, &tile);
+			}
+		}
+	}
+	// If the grid cells immediately touching bruce are unknown, set
+	// them as free
+	for (y = hm->height/2-2; y < hm->height/2 + 4; y++) {
+		for (x = hm->width/2-2; x < hm->width/2 + 4; x++) {
+			haz_map_get(hm, &tile, x, y);
+			if (tile.type == HAZ_MAP_UNKNOWN) {
+				haz_map_set(hm, x, y, HAZ_MAP_FREE);
 			}
 		}
 	}

@@ -43,8 +43,7 @@ void add_obstacles_to_map(double x_rel, double y_rel, void * data){
 }
 */
 
-void add_obstacles_to_haz_map( double x_rel, double y_rel, double bruce_x, double bruce_y, double theta, void * data, haz_map_t *hm, int obstacle){
-	state_t * state = data;
+void add_obstacles_to_haz_map( double x_rel, double y_rel, double bruce_x, double bruce_y, double theta, haz_map_t *hm, int obstacle){
 
 	//matrices for position realtive to bruce, rotation, and multiplication of the 2
 	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
@@ -135,11 +134,11 @@ void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, 
 		double x_px = state->tape[i].x;
 		double y_px = state->tape[i].y;
 		homography_project(H, x_px, y_px, &x_cm, &y_cm);
-		add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
+		add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, hm, obstacle);
 		obstacle = 0;
-		for(y_px = y_px + 50; y_px < 480; y_px += 50){
+		for(y_px = y_px + 10; y_px < 480; y_px += 10){
 			homography_project(H, x_px, y_px, &x_cm, &y_cm);
-			add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
+			add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, hm, obstacle);
 		}
 	}
 

@@ -142,7 +142,7 @@ void driveToPosition(state_t * state, position_t position){
 	pid_init(pos_pid, 0.03, 0.0, 0.0, 0.0, 0, 0.3);
 	pid_ctrl_t *angle_pid = malloc(sizeof(pid_ctrl_t));
 	pid_init(angle_pid, 1.0, 0.0, 0.0, 0.0, 0, M_PI);
-	while(dist > thresh && state->goToMouseCoords){
+	while(dist > thresh){
 		dist = getDist(state->pos_x, state->pos_y,
 			state->goal_x, state->goal_y);
 		theta= getDiffTraj(state);
