@@ -228,6 +228,7 @@ struct state_t {
 	double     dist;
 
 	pid_ctrl_t *theta_pid;
+	int         doing_pid_theta;
 };
 
 //////////////

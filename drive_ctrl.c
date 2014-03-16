@@ -53,14 +53,16 @@ double getThetaDist(double from, double to) {
 }
 
 void driveToTheta(state_t * state, double theta) {
-	double thresh = 0.01;
+	double thresh = 0.1;
 
+	//Need to do this to clear out previous integral and stuff
+	pid_update_goal(state->theta_pid, 0);
 	state->goal_theta = theta;
 	state->gyro_int[2] = 0;
 	int64_t beginningInt = state->gyro_int[2];
 	double beginningTheta = state->pos_theta;
 
-	while(abs(getThetaDist(state->pos_theta,state->goal_theta)) > thresh){
+	while(fabs(getThetaDist(state->pos_theta,state->goal_theta)) > thresh){
 		//Won't quite work yet, I have some left overs
 		//from green targeting pid
 		//
@@ -72,13 +74,17 @@ void driveToTheta(state_t * state, double theta) {
 			state->goal_theta -= 2 * M_PI;
 		}*/
 
-		//printf("difference: %f\n",difference);
-		double pid_out = pid_get_output(state->theta_pid, difference);
+		double pid_out = -pid_get_output(state->theta_pid, difference);
 		// / by 2 to decrease speed
 		double motor_val = pid_to_rot(state->theta_pid, pid_out)/2;
+		//offset to linearize
+	    motor_val += sign(motor_val)*0.05;
+		printf("difference: %f, pid: %f, motor_val: %f\n",difference, pid_out, motor_val);
 
 		driveRot(state, motor_val);
-		usleep(5000);
+		usleep(100000);
+		driveStop(state);
+		usleep(100000);
 	}
 	int64_t endInt = state->gyro_int[2];
 	double endTheta = state->pos_theta;
@@ -94,7 +100,6 @@ void driveToTheta(state_t * state, double theta) {
 }
 
 void rotateTheta(state_t * state, double theta) {
-	theta *= -1;
 	driveToTheta(state, fmod(state->pos_theta + theta, 2*M_PI));
 }
 
@@ -136,6 +141,7 @@ void driveToPosition(state_t * state, position_t position){
 		printf("radius: %f, speed: %f\n",radius, speed);
 
 		double thresh_rad = M_PI/2;
+		driveRad(state, radius, speed);
 		/*
 		if(fabs(radius) >= thresh_rad) {
 			rotateTheta(theta);
