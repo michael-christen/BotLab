@@ -318,12 +318,20 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		state->blue &= 0xff;
 	}
 	if (state->cmd_val & FORWARD) {
+		//state->last_y = state->pos_y;
+		//state->pos_y += 5;
 		LEDStatus(state, MOVE_FORWARD);
 	} else if(state->cmd_val & BACKWARD) {
+		//state->last_y = state->pos_y;
+		//state->pos_y -= 5;
 		LEDStatus(state, MOVE_BACKWARD);
 	} else if(state->cmd_val & RIGHT) {
+		//state->last_x = state->pos_x;
+		//state->pos_x += 5;
 		LEDStatus(state, TURN_RIGHT);
 	} else if(state->cmd_val & LEFT) {
+		//state->last_x = state->pos_x;
+		//state->pos_x -= 5;
 		LEDStatus(state, TURN_LEFT);
 	} else {
 		LEDStatus(state, NONE);
@@ -799,7 +807,6 @@ int main(int argc, char ** argv)
 	pid_init(state->theta_pid, 2.0, 0.0, 0.0, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
-	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
 	//haz_map_compute_config(&state->hazMap);
 	/*for (i = 0; i < 10; i++) {
 		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);

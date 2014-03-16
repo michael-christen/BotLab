@@ -136,11 +136,11 @@ void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, 
 		double y_px = state->tape[i].y;
 		homography_project(H, x_px, y_px, &x_cm, &y_cm);
 		add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
-		obstacle = 0;
+		/*obstacle = 0;
 		for(y_px = y_px + 5; y_px < 480; y_px += 5){
 			homography_project(H, x_px, y_px, &x_cm, &y_cm);
 			add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, data, hm, obstacle);
-		}
+		}*/
 	}
 
 	haz_map_cleanup(hm);
