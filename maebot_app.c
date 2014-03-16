@@ -327,6 +327,8 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->left_offset += 5;
 		} else if(key->key_code =='\'') {
 			state->left_offset -= 5;
+		} else if(key->key_code == 'f') {
+			state->FSM = !state->FSM;
 		}
 
 		state->red &= 0xff;
@@ -647,21 +649,27 @@ void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
 	explorer_state_t curState, nextState;
-	curState = EX_START;
+	curState = EX_MOVE;
 	nextState = curState;
+	path_t* path = haz_map_get_path(&state->hazMap, 10, 20);
+	while(!state->FSM){
+		usleep(1000);
+	}
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
-	while(state->running){
+	while(state->running && state->FSM){
 		switch(curState){
-			case EX_MOVE_FORWARD:{
-				path_t* path = explorer_get_move(&explorer);
-				while(path->position != path->length){
+			case EX_MOVE:{
+				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
 					driveToPosition(state, waypoint);
 					path->position++;
+					nextState = EX_MOVE;
+				}else{
+					path_destroy(path);
+					return NULL;
+					nextState = EX_ANALYZE;
 				}
-				path_destroy(path);
-				nextState = EX_ANALYZE;
 				break;}
 			case EX_TURN:{
 				double theta = explorer_get_theta(&explorer);
@@ -713,6 +721,9 @@ void* FSM(void* data){
 				camera_process(state);
 			}
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
+				if(nextState == EX_MOVE){
+					path = explorer_get_move(&explorer);
+				} 
 		}
 		curState = nextState;
 	}
@@ -801,6 +812,7 @@ int main(int argc, char ** argv)
 	state->odometry_seen = 0;
 	state->goToMouseCoords = 0;
 	state->gyro_ticks_per_theta = -145000.0;	//obtained through testing
+	state->FSM = 0;
 
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
@@ -907,7 +919,7 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->led_thread,  NULL, send_led, state);
 	pthread_create(&state->gui_thread,  NULL, gui_create, state);
 	pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
-	//pthread_create(&state->fsm_thread, NULL, FSM, state);
+	pthread_create(&state->fsm_thread, NULL, FSM, state);
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 	pthread_create(&state->motion_thread,  NULL, motionFxn, state);
 

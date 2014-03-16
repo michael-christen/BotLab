@@ -119,6 +119,7 @@ struct state_t {
 	pthread_cond_t drive_cond;
 	double goal_x, goal_y, goal_theta;
 
+	int FSM;
 	double fsm_time_elapsed; //time_t
 	double fsmTimeElapsed; //clock_t
 

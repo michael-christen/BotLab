@@ -28,7 +28,7 @@ struct explorer_t {
 
 enum explorer_state{
 	EX_ANALYZE,
-	EX_MOVE_FORWARD,
+	EX_MOVE,
 	EX_TURN,
 	EX_ZAP_DIAMOND,
 	EX_GOHOME,
