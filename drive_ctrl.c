@@ -61,12 +61,19 @@ void driveToTheta(state_t * state, double theta) {
 	state->gyro_int[2] = 0;
 	int64_t beginningInt = state->gyro_int[2];
 	double beginningTheta = state->pos_theta;
+	int    num_zeros      = 0;
+	int    min_zeros      = 50;
 
-	while(fabs(getThetaDist(state->pos_theta,state->goal_theta)) > thresh){
+	while(num_zeros < min_zeros){
 		//Won't quite work yet, I have some left overs
 		//from green targeting pid
 		//
 		double difference = getThetaDist(state->pos_theta, state->goal_theta);
+		if(fabs(difference) < thresh) {
+			num_zeros ++;
+		} else {
+			num_zeros = 0;
+		}
 
 		/*if(difference > M_PI){
 			state->goal_theta += 2 * M_PI;
@@ -82,9 +89,12 @@ void driveToTheta(state_t * state, double theta) {
 		printf("difference: %f, pid: %f, motor_val: %f\n",difference, pid_out, motor_val);
 
 		driveRot(state, motor_val);
+		usleep(10000);
+		/*
 		usleep(100000);
 		driveStop(state);
 		usleep(100000);
+		*/
 	}
 	int64_t endInt = state->gyro_int[2];
 	double endTheta = state->pos_theta;
