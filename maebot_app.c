@@ -135,6 +135,7 @@ void moveBot(state_t* state){
 		driveStop(state);
 	} else if (state->cmd_val & FORWARD) {
 		driveRad(state, -1000, LONG_SPEED);
+		//printf("ARC: %f\n", state->left_offset);
 	} else if(state->cmd_val & BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
 	} else if(state->cmd_val & RIGHT) {
@@ -317,7 +318,12 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			}else if(state->calibrating){
 				state->calibrating = 0;
 			}
+		} else if(key->key_code ==';') {
+			state->left_offset += 5;
+		} else if(key->key_code =='\'') {
+			state->left_offset -= 5;
 		}
+
 		state->red &= 0xff;
 		state->green &= 0xff;
 		state->blue &= 0xff;
@@ -801,7 +807,7 @@ int main(int argc, char ** argv)
 	state->doing_pid_theta     = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
-	pid_init(state->theta_pid, 1.5, 0.0, 0.0, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
@@ -832,6 +838,7 @@ int main(int argc, char ** argv)
 	state->odometry_channel = "MAEBOT_ODOMETRY";
 	state->displayStarted = state->displayFinished = 0;
 
+	state->left_offset = 50;
 
 	pthread_mutex_init(&state->layer_mutex, NULL);
 	pthread_mutex_init(&state->cmd_mutex, NULL);

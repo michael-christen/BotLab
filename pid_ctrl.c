@@ -45,8 +45,15 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
     if(pid->first_meas) {
 		pid->first_meas = 0;
     } else {
+		//Don't want any nasty nan's
 		pid->integral   += err*dt;
-		derivative      = (err - pid->prev_err)/dt;
+		if(dt == 0) {
+			derivative = 0;
+		} else {
+			derivative = (err - pid->prev_err)/dt;
+		}
+		//printf("err: %f, prev_err: %f\n",err, pid->prev_err);
+		//printf("derivative: %f, dt: %f\n",derivative, dt);
     }
 
 	//If passes, get rid of integral
@@ -57,10 +64,12 @@ double pid_get_output(pid_ctrl_t *pid, double meas) {
 
 	double proportion   = pid->P * err;
 	double integral     = pid->I * pid->integral;
-	double deriv_out    = pid->D * -derivative;
-	//printf("proportion: %f\n",proportion);
-	//printf("integral  : %f\n",integral);
-	//printf("derivative: %f\n",deriv_out);
+	double deriv_out    = pid->D * derivative;
+	/*
+	   printf("proportion: %f\n",proportion);
+	   printf("integral  : %f\n",integral);
+	   printf("derivative: %f\n",deriv_out);
+	*/
     double output       = proportion +
 		                  integral   +
 						  deriv_out;

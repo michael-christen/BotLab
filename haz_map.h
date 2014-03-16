@@ -14,7 +14,7 @@
 #define HAZ_MAP_OBSTACLE_RADIUS 5
 #define HAZ_MAP_CONFIG_RAIDUS 15
 #define HAZ_MAP_HUGE_DIST 999
-#define HAZ_MAP_TTL 5
+#define HAZ_MAP_TTL 30
 #define HAZ_MAP_REPULSE_FACTOR 50
 
 typedef struct haz_map_t haz_map_t;
@@ -39,9 +39,9 @@ struct haz_map_neighbor_t {
 };
 
 struct haz_map_tile_t {
-	clock_t timestamp;
+	time_t timestamp;
 	int x, y, numNeighbors;
-	uint8_t type;
+	uint8_t type, translated;
 	double val;
 	haz_map_neighbor_t neighbors[8];
 };

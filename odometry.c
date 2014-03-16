@@ -96,6 +96,7 @@ void odometry_handler (
 	}
 	state->prev_left_ticks = msg->encoder_left_ticks;
 	state->prev_right_ticks = msg->encoder_right_ticks;
+	//printf("odometry\n");
 }
 
 odometry_t get_odometry_data(int32_t diff_left, int32_t diff_right) {
