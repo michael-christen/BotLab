@@ -5,6 +5,7 @@
 #include "pid_ctrl.h"
 #include "drive_ctrl.h"
 #include "barrel_distortion.h"
+#include "line_detection.h"
 #include "mapping.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -476,16 +477,15 @@ int camera_init(state_t *state){
 
 	state->isrcReady = 1;
 	state->imageValid = 0;
+	return 1;
 }
 
-void * camera_analyze(void * data){
-	state_t * state = data;
-	camera_init(state);
+void camera_process(state_t* state){
 
 	int res;
 	image_source_data_t isdata;
 	image_source_t *isrc = state->isrc;
-	while (state->running) {
+		
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
 		pthread_cond_signal(&state->image_cv);
@@ -510,8 +510,7 @@ void * camera_analyze(void * data){
 			// HOMOGRAPHY BEFORE BARREL DISTORTION CORRECTION GOES HERE
 			correctDistortion(state->im, state->lookupTable);
 			//Blue
-			state->num_pts_tape =
-				line_detection(state->im, state->tape);
+			state->num_pts_tape = line_detection(state->im, state->tape);
 			//printf("Pts: %d\n",state->num_pts_tape);
 			//might wanna make diff d.s.
 			//Also, gonna need to copy image
@@ -531,8 +530,9 @@ void * camera_analyze(void * data){
 			//printf("shouldn't get heree!!!\n");
 		}
 		pthread_mutex_unlock(&state->image_mutex);
-		usleep(10000);
-	}
+}
+
+void camera_destroy(state_t* state){
 
 	if (state->imageValid == 1) {
 		//printf("Final image destroy\n");
@@ -545,6 +545,18 @@ void * camera_analyze(void * data){
 	if (!state->getopt_options.no_video) {
 		state->isrc->close(state->isrc);
 	}
+}
+
+void * camera_analyze(void * data){
+	state_t * state = data;
+	camera_init(state);
+	
+	while(state->running){
+		camera_process(state);
+		usleep(10000);
+	}
+
+	camera_destroy(state);
 	return NULL;
 }
 

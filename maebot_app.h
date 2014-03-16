@@ -22,6 +22,7 @@
 #include "path.h"
 #include "world_map.h"
 #include "explorer.h"
+#include "line_detection.h"
 
 // EECS 467 Libraries
 #include "common/getopt.h"
