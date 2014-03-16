@@ -278,6 +278,11 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if(key->key_code == 'x') {
 			state->hue --;
 		}*/
+		/*   <  >
+		   P v  g
+		   I b  b
+		   D n  j
+		 */
 		else if(key->key_code == 'g'){
 			pid_update_pid(state->theta_pid, state->theta_pid->P + 0.1, state->theta_pid->I, state->theta_pid->D);
 			printf("P updated to %g\n", state->theta_pid->P);
