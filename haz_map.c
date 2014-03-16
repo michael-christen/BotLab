@@ -244,6 +244,7 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	int startY = hm->height/2;
 	int testindex = adjEndY*hm->width + adjEndX;
 	curTile = &hm->hazMap[testindex];
+	if(testindex > HAZ_MAP_MAX_WIDTH * HAZ_MAP_MAX_HEIGHT) { printf("out of range in djikstra\n"); return;}
 	if (curTile->type == HAZ_MAP_OBSTACLE) {
 		retPath = malloc(sizeof(path_t));
 		retPath->length = 0;
