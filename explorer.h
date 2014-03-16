@@ -1,6 +1,6 @@
 #ifndef EXPLORER_H
 #define EXPLORER_H
-
+#include "maebot_app.h"
 #include "path.h"
 #include "haz_map.h"
 #include "world_map.h"
@@ -37,6 +37,6 @@ enum explorer_state{
 	EX_EXIT
 };
 
-
+path_t * choose_path(void * data);
 
 #endif

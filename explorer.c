@@ -34,8 +34,8 @@ int movement_compare(const void *elt1, const void *elt2){
 
 
 void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
-		gridx = x / WORLD_MAP_RES + WORLD_MAP_MAX_WIDTH / 2;
-		gridy = y / WORLD_MAP_RES + WORLD_MAP_MAX_HEIGHT / 2;
+		*gridx = x / WORLD_MAP_RES + WORLD_MAP_MAX_WIDTH / 2;
+		*gridy = y / WORLD_MAP_RES + WORLD_MAP_MAX_HEIGHT / 2;
 }
 
 
@@ -44,14 +44,24 @@ void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
 
 
 
-path_t * sort_neighbors(world_map_tile_t *curr_tile, haz_map_t *hm, int x, int y){
+path_t * choose_path(void * data){
 
+	//set max for bound checking
 	int max_x = (WORLD_MAP_RES * WORLD_MAP_MAX_WIDTH) / 2;
 	int max_y = (WORLD_MAP_RES * WORLD_MAP_MAX_HEIGHT) / 2;
 
+	//grab values
+	state_t * state = data;
+	world_map_t * wm = &state->world_map;
+	haz_map_t * hm = &state->hazMap;
+	int x = state->pos_x;
+	int y = state->pos_y;
+
+	//find grid map cell bruce is currently in
 	int gridx, gridy;
 	cm_to_world_cell(x, y, &gridx, &gridy);
-
+	world_map_tile_t * curr_tile = &wm->worldMap[gridy*(wm->width) + gridx];
+	
 	//find coordinates for center of all neighboring grid cells
 	int up, down, right, left;
 	up = gridy * WORLD_MAP_RES + WORLD_MAP_RES/2;
@@ -65,27 +75,37 @@ path_t * sort_neighbors(world_map_tile_t *curr_tile, haz_map_t *hm, int x, int y
 	int num_neighbors = 0;
 	//bounds check before calling to get path
 	if( up <= max_y ) {
+		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, x);
 		num_neighbors++;
 		if( left >= -max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx - 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, left);
+			num_neighbors++;
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*(wm->width) + (gridx - 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, left);
-			num_neighbors += 2;
+			num_neighbors++;
 		}
 		if( right <= max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, right);
+			num_neighbors++;
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, right);
-			num_neighbors += 2;
+			num_neighbors++;
 		}
 	}
 	if( down >= -max_y ) {
+		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, x);
 		num_neighbors ++;
 		if( left >= -max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx - 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, left);
 			num_neighbors ++;
 		}
 		if( right <= max_x ){
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, right);
 			num_neighbors ++;	
 		}
@@ -101,7 +121,126 @@ path_t * sort_neighbors(world_map_tile_t *curr_tile, haz_map_t *hm, int x, int y
 	//qsort
 	qsort(curr_tile->neighbors, num_neighbors, sizeof(world_map_tile_t), movement_compare);
 
+    state->targetPath = curr_tile->neighbors[0]->path_to;
+    state->targetPathValid  = 1;
+
+
 	return curr_tile->neighbors[0]->path_to;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+//
+//
+//
+//
+//
+//
+//old stuff because i'm not sure how to make it compile without
+//
+//
+//
+//
+//
+//
+//
+void explorer_init(explorer_t *ex) {
+	ex->goHome = 0;
+}
+
+
+
+int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double theta) {
+	matd_t *forwardRot, *checkPosTrans, *checkPosRot, *checkPos, *origin, *pos, *trans;
+	double originD[3] = {0, 0, 1};
+	double fRotD[9] = {cos(theta), -sin(theta), 0, sin(theta), cos(theta), 0, 0, 0, 1};
+
+	origin = matd_create_data(3, 1, originD);
+	pos = matd_identity(3);
+	matd_put(pos, 0, 2, hm->width/2);
+	matd_put(pos, 1, 2, hm->height/2);
+	forwardRot = matd_create_data(3, 3, fRotD);
+	trans = matd_identity(3);
+	int count = 1;
+	int u, v;
+	int hmMaxY = hm->height;
+	int hmMinY = 0;
+	int hmMaxX = hm->width;
+	int hmMinX = 0;
+	int cont = 1;
+	int dist = -1;
+	haz_map_tile_t tile;
+
+	while (cont == 1) {
+		if (region == EXPLORER_REGION_FORWARD) {
+			matd_put(trans, 1, 2, count * EXPLORER_TRACE_DIST);
+		} else {
+			matd_put(trans, 0, 2, -count * EXPLORER_TRACE_DIST);
+		}
+		checkPosTrans = matd_multiply(pos, forwardRot);
+		checkPosRot = matd_multiply(checkPosTrans, trans);
+		checkPos = matd_multiply(checkPosRot, origin);
+		u = matd_get(checkPos, 0, 0);
+		v = matd_get(checkPos, 1, 0);
+		matd_destroy(checkPosTrans);
+		matd_destroy(checkPosRot);
+		matd_destroy(checkPos);
+		//printf("u: %d, v: %d\n", u, v);
+
+		if (u > hmMinX && u < hmMaxX && v > hmMinY && v < hmMaxY) {
+			haz_map_get(hm, &tile, u, v);
+
+			switch (tile.type) {
+				case HAZ_MAP_OBSTACLE:
+					dist = count;
+					cont = 0;
+				break;
+				default:
+					count++;
+				break;
+			}
+		} else {
+			// wall not found
+			cont = 0;
+			break;
+		}
+	}
+
+	matd_destroy(forwardRot);
+	matd_destroy(pos);
+	matd_destroy(trans);
+	return dist;
+}
+
+
+explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y, double theta) {
+	int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
+	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
+	printf("forwardDist: %d\n", forwardDist);
+	printf("leftDist: %d\n", leftDist);	
+	return EX_EXIT;
+}
+
+path_t* explorer_get_move(explorer_t *ex) {
+	return ex->path;
 }
 
 

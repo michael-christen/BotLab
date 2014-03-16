@@ -165,7 +165,7 @@ struct state_t {
 	int translating;
 	int rotating;
 	int moving;
-    explorer_t explorer;
+    //explorer_t explorer;
 
     getopt_t * gopt;
     char * url;
