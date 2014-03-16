@@ -30,7 +30,6 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 	haz_map_tile_t *tileP;
 	tile.type = HAZ_MAP_UNKNOWN;
 	tile.val = HAZ_MAP_HUGE_DIST;
-	tile.translated = 0;
 	for (i = 0; i < h; i++) {
 		for (j = 0; j < w; j++) {
 			tileP = &hm->hazMap[i*hm->width + j];
@@ -54,7 +53,6 @@ void haz_map_init(haz_map_t *hm, int w, int h) {
 void haz_map_set(haz_map_t *hm, int x, int y, uint8_t type) {
 	haz_map_tile_t tile;
 	time(&(tile.timestamp));
-	tile.translated = 0;
 	//Bounds checking
 	if(y*hm->width + x >= hm->height*hm->width) {
 		return;
@@ -79,7 +77,6 @@ void haz_map_set_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 	hm->hazMap[y*hm->width + x].type = data->type;
 	hm->hazMap[y*hm->width + x].val = data->val;
 	hm->hazMap[y*hm->width + x].timestamp = data->timestamp;
-	hm->hazMap[y*hm->width + x].translated = data->translated;
 }
 
 void haz_map_set_image_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
@@ -103,7 +100,7 @@ void haz_map_set_image_data(haz_map_t *hm, int x, int y, haz_map_tile_t *data) {
 			color = 0xFF000000;
 		break;
 	}
-	hm->image->buf[y*hm->image->width + x] = color;
+	hm->image->buf[y*hm->image->stride + x] = color;
 }
 
 void haz_map_translate(haz_map_t *hm, double newX, double newY) {
@@ -140,26 +137,60 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY) {
 
 	//printf("nX: %f, nY: %f, oX: %f, oY: %f\n", newX, newY, oldX, oldY);
 	//printf("diffX: %f, diffY: %f\n", hm->diffX, hm->diffY);
+	int x, y;
 	if (transY != 0 || transX != 0) {
 		hm->gridX += (transX * GRID_RES);
 		hm->gridY += (transY * GRID_RES);
-		for (int y = 0; y < hm->height; y++) {
-			for (int x = 0; x < hm->width; x++) {
-				haz_map_get(hm, &tile, x, y);
-				if (x >= lowX && x < highX && y >= lowY && y < lowY) {
-				//if (x < lowX || x >= highX || y < lowY || y >= highY) {
-					tile.translated = 1;
+		printf("Translating!\n");
+		printf("lowX: %d, highX: %d, lowY: %d, highY: %d\n", lowX, highX, lowY, highY);
+		if (transY >= 0) {
+			y = 0;
+		} else {
+			y = hm->width - 1;
+		}
+		while (1) {
+			if (transY >= 0) {
+				if (y >= hm->height) break;
+			} else {
+				if (y < 0) break;
+			}
+
+			if (transX >= 0) {
+				x = 0;
+			} else {
+				x = hm->width - 1;
+			}
+
+			while(1) {
+				if (transX >= 0) {
+					if (x >= hm->width) break;
+				} else {
+					if (x < 0) break;
+				}
+
+				if (x >= lowX && x < highX && y >= lowY && y < highY) {
+					haz_map_get(hm, &tile, x, y);
 					haz_map_set_data(hm, x - transX, y - transY, &tile);
 					tile.type = HAZ_MAP_UNKNOWN;
 					tile.val = HAZ_MAP_HUGE_DIST;
-					tile.translated = 0;
 					haz_map_set_data(hm, x, y, &tile);
-				} else if (tile.translated == 1) {
-					tile.translated = 1;
+				} else {
 					tile.type = HAZ_MAP_UNKNOWN;
 					tile.val = HAZ_MAP_HUGE_DIST;
 					haz_map_set_data(hm, x, y, &tile);
 				}
+
+				if (transX >= 0) {
+					x++;
+				} else {
+					x--;
+				}
+			}
+
+			if (transY >= 0) {
+				y++;
+			} else {
+				y--;
 			}
 		}
 	}
@@ -347,7 +378,6 @@ void haz_map_cleanup(haz_map_t *hm) {
 				}
 			} else if (tile.type == HAZ_MAP_FREE) {
 				tile.val = 1;
-				tile.translated = 0;
 				haz_map_set_data(hm, x, y, &tile);
 			}
 		}
@@ -356,19 +386,24 @@ void haz_map_cleanup(haz_map_t *hm) {
 
 void haz_map_compute_config(haz_map_t *hm) {
 	//return;
-	int maxU, minU, x, y, u, v;
-	double mapAngle, dist, val, offset, obstOffset;
+	int maxU, minU, x, y, u, v, confDist;
+	double mapAngle, dist, obstDist, val, offset, obstOffset;
 	haz_map_tile_t tile;
 	uint8_t tileType;
 	int maxV, minV; //count;
+	double originX = hm->width / 2;
+	double originY = hm->height / 2;
 	offset = HAZ_MAP_CONFIG_RAIDUS * 1.0 / GRID_RES;
 	obstOffset = HAZ_MAP_OBSTACLE_RADIUS * 1.0 / GRID_RES;
+	obstDist = 0;
+	confDist = 0;
 	for (y = 0; y < hm->height; y++) {
 		for (x = 0; x < hm->width; x++) {
 			haz_map_get(hm, &tile, x, y);
 			if (tile.type == HAZ_MAP_OBSTACLE) {
 				maxV = fmin(y + offset, hm->height - 1);
 				minV = fmax(y - offset, 0);
+				obstDist = sqrt(pow(x - originX, 2) + pow(y - originY, 2));
 				for (v = minV; v <= maxV; v++) {
 					mapAngle = map(v, minV, maxV, 0, M_PI);
 					maxU = fmin(x + offset * sin(mapAngle), hm->width - 1);
@@ -376,14 +411,17 @@ void haz_map_compute_config(haz_map_t *hm) {
 					//printf("maxU: %d, minU: %d\n", maxU, minU);
 					for (u = minU; u <= maxU; u++) {
 						dist = sqrt(pow(u - x, 2) + pow(y - v, 2));
+						confDist  = sqrt(pow(u - originX, 2) + pow(v - originY, 2));
 						if (dist >= obstOffset) {
-							haz_map_get(hm, &tile, u, v);
-							val = pow(offset - dist, 2) + HAZ_MAP_REPULSE_FACTOR;
-							if (tile.type == HAZ_MAP_UNKNOWN || (tile.type == HAZ_MAP_FREE && tile.val < val)) {
-								tile.type = HAZ_MAP_FREE;
-								tile.val = val;
-								haz_map_set_data(hm, u, v, &tile);
-								haz_map_set_image_data(hm, u, v, &tile);
+							if (confDist < obstDist) {
+								haz_map_get(hm, &tile, u, v);
+								val = pow(offset - dist, 2) + HAZ_MAP_REPULSE_FACTOR;
+								if (tile.type == HAZ_MAP_UNKNOWN || (tile.type == HAZ_MAP_FREE && tile.val < val)) {
+									tile.type = HAZ_MAP_FREE;
+									tile.val = val;
+									haz_map_set_data(hm, u, v, &tile);
+									haz_map_set_image_data(hm, u, v, &tile);
+								}
 							}
 						} else {
 							tile.type = HAZ_MAP_OBSTACLE;
