@@ -435,10 +435,7 @@ static void * send_led(void * data){
 	return NULL;
 }
 
-void * camera_analyze(void * data)
-{
-	state_t * state = data;
-
+int camera_init(state_t *state){
 	zarray_t *urls = image_source_enumerate();
 
 	//printf("Cameras:\n");
@@ -478,10 +475,16 @@ void * camera_analyze(void * data)
 	state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
 
 	state->isrcReady = 1;
-	image_source_data_t isdata;
-	int res;
 	state->imageValid = 0;
+}
 
+void * camera_analyze(void * data){
+	state_t * state = data;
+	camera_init(state);
+
+	int res;
+	image_source_data_t isdata;
+	image_source_t *isrc = state->isrc;
 	while (state->running) {
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
@@ -647,12 +650,9 @@ void* FSM(void* data){
 				path_destroy(path);
 				nextState = EX_ANALYZE;
 				break;}
-			case EX_TURN_LEFT:{
-				rotateTheta(state, M_PI/2.0);
-				nextState = EX_ANALYZE;
-				break;}
-			case EX_TURN_RIGHT:{
-				rotateTheta(state, -M_PI/2.0);
+			case EX_TURN:{
+				double theta = explorer_get_theta(&explorer);
+				rotateTheta(state, theta);
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_ZAP_DIAMOND:{
@@ -675,11 +675,11 @@ void* FSM(void* data){
 			case EX_GOHOME:{
 				break;}
 			case EX_EXIT:{
-				rotateTheta(state, -2*M_PI + 0.001);
 				rotateTheta(state, 2*M_PI - 0.001);
+				rotateTheta(state, -2*M_PI + 0.001);
 				return NULL;
 				break;}
-			case EX_START:rotateTheta(state, 2*M_PI - 0.001);
+			case EX_START:
 			case EX_ANALYZE:{
 				clock_t curTime = clock();
 				state->fsm_time_elapsed =
