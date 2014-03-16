@@ -761,7 +761,7 @@ void* position_tracker(void *data) {
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
 
-		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
 	//		state->pos_x += 1;
 	//		state->pos_y += 2;
 

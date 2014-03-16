@@ -3,6 +3,7 @@
 
 #include "path.h"
 #include "haz_map.h"
+#include "world_map.h"
 
 #define EXPLORER_MOVE			0
 #define EXPLORER_DIAMOND		1
@@ -36,10 +37,6 @@ enum explorer_state{
 	EX_EXIT
 };
 
-void explorer_init(explorer_t *ex);
-explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y, double theta);
-int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double theta);
-path_t* explorer_get_move(explorer_t *ex);
-double explorer_get_theta(explorer_t *ex);
+
 
 #endif
