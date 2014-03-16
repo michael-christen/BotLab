@@ -494,7 +494,7 @@ void * camera_analyze(void * data)
 			}
 			pthread_mutex_lock(&state->haz_map_mutex);
 			int obstacle = 1;
-			//haz_map_translate(&state->hazMap, bruce_x, bruce_y);
+			haz_map_translate(&state->hazMap, bruce_x, bruce_y);
 			find_point_pos(state, bruce_theta, bruce_x, bruce_y, obstacle);
 
 			pthread_mutex_unlock(&state->haz_map_mutex);
