@@ -5,6 +5,7 @@
 #include "pid_ctrl.h"
 #include "drive_ctrl.h"
 #include "barrel_distortion.h"
+#include "line_detection.h"
 #include "mapping.h"
 #include <stdio.h>
 #include <unistd.h>
@@ -135,6 +136,7 @@ void moveBot(state_t* state){
 		driveStop(state);
 	} else if (state->cmd_val & FORWARD) {
 		driveRad(state, -1000, LONG_SPEED);
+		//printf("ARC: %f\n", state->left_offset);
 	} else if(state->cmd_val & BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
 	} else if(state->cmd_val & RIGHT) {
@@ -147,7 +149,7 @@ void moveBot(state_t* state){
 		driveRot(state, ROT_SPEED);
 	}  else {
 		driveStop(state);
-		if(state->rotating){
+		/*if(state->rotating){
 			double gyroDif = (state->gyro_int[2] - state->save_gyro) / state->gyro_ticks_per_theta;
 			gyroDif = gyroDif / M_PI * 180;
 
@@ -157,7 +159,7 @@ void moveBot(state_t* state){
 			printf("Rotation stopped...\n");
 			printf("Change in gyro theta: %g\n", gyroDif);
 			printf("Change in tick theta: %g\n", tickDif);
-		}
+		}*/
 	}
 }
 
@@ -278,12 +280,21 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 		} else if(key->key_code == 'x') {
 			state->hue --;
 		}*/
+		/*   <  >
+		   P v  g
+		   I b  b
+		   D n  j
+		 */
 		else if(key->key_code == 'g'){
 			pid_update_pid(state->theta_pid, state->theta_pid->P + 0.1, state->theta_pid->I, state->theta_pid->D);
 			printf("P updated to %g\n", state->theta_pid->P);
+			/*state->gyro_ticks_per_theta += 500;
+			printf("Gyro ticks per theta updated to %f\n", state->gyro_ticks_per_theta);*/
 		}else if(key->key_code == 'v'){
 			pid_update_pid(state->theta_pid, state->theta_pid->P - 0.1, state->theta_pid->I, state->theta_pid->D);
 			printf("P updated to %g\n", state->theta_pid->P);
+			/*state->gyro_ticks_per_theta -= 500;
+			printf("Gyro ticks per theta updated to %f\n", state->gyro_ticks_per_theta);*/
 		}else if(key->key_code == 'h'){
 			pid_update_pid(state->theta_pid, state->theta_pid->P, state->theta_pid->I + 0.1, state->theta_pid->D);
 			printf("I updated to %g\n", state->theta_pid->I);
@@ -312,26 +323,23 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			}else if(state->calibrating){
 				state->calibrating = 0;
 			}
+		} else if(key->key_code ==';') {
+			state->left_offset += 5;
+		} else if(key->key_code =='\'') {
+			state->left_offset -= 5;
 		}
+
 		state->red &= 0xff;
 		state->green &= 0xff;
 		state->blue &= 0xff;
 	}
 	if (state->cmd_val & FORWARD) {
-		state->last_y = state->pos_y;
-		state->pos_y += 5;
 		LEDStatus(state, MOVE_FORWARD);
 	} else if(state->cmd_val & BACKWARD) {
-		state->last_y = state->pos_y;
-		state->pos_y -= 5;
 		LEDStatus(state, MOVE_BACKWARD);
 	} else if(state->cmd_val & RIGHT) {
-		state->last_x = state->pos_x;
-		state->pos_x += 5;
 		LEDStatus(state, TURN_RIGHT);
 	} else if(state->cmd_val & LEFT) {
-		state->last_x = state->pos_x;
-		state->pos_x -= 5;
 		LEDStatus(state, TURN_LEFT);
 	} else {
 		LEDStatus(state, NONE);
@@ -428,10 +436,7 @@ static void * send_led(void * data){
 	return NULL;
 }
 
-void * camera_analyze(void * data)
-{
-	state_t * state = data;
-
+int camera_init(state_t *state){
 	zarray_t *urls = image_source_enumerate();
 
 	//printf("Cameras:\n");
@@ -471,11 +476,16 @@ void * camera_analyze(void * data)
 	state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
 
 	state->isrcReady = 1;
-	image_source_data_t isdata;
-	int res;
 	state->imageValid = 0;
+	return 1;
+}
 
-	while (state->running) {
+void camera_process(state_t* state){
+
+	int res;
+	image_source_data_t isdata;
+	image_source_t *isrc = state->isrc;
+		
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
 		pthread_cond_signal(&state->image_cv);
@@ -500,8 +510,7 @@ void * camera_analyze(void * data)
 			// HOMOGRAPHY BEFORE BARREL DISTORTION CORRECTION GOES HERE
 			correctDistortion(state->im, state->lookupTable);
 			//Blue
-			state->num_pts_tape =
-				line_detection(state->im, state->tape);
+			state->num_pts_tape = line_detection(state->im, state->tape);
 			//printf("Pts: %d\n",state->num_pts_tape);
 			//might wanna make diff d.s.
 			//Also, gonna need to copy image
@@ -521,8 +530,9 @@ void * camera_analyze(void * data)
 			//printf("shouldn't get heree!!!\n");
 		}
 		pthread_mutex_unlock(&state->image_mutex);
-		usleep(10000);
-	}
+}
+
+void camera_destroy(state_t* state){
 
 	if (state->imageValid == 1) {
 		//printf("Final image destroy\n");
@@ -535,6 +545,18 @@ void * camera_analyze(void * data)
 	if (!state->getopt_options.no_video) {
 		state->isrc->close(state->isrc);
 	}
+}
+
+void * camera_analyze(void * data){
+	state_t * state = data;
+	camera_init(state);
+	
+	while(state->running){
+		camera_process(state);
+		usleep(10000);
+	}
+
+	camera_destroy(state);
 	return NULL;
 }
 
@@ -640,12 +662,9 @@ void* FSM(void* data){
 				path_destroy(path);
 				nextState = EX_ANALYZE;
 				break;}
-			case EX_TURN_LEFT:{
-				rotateTheta(state, M_PI/2.0);
-				nextState = EX_ANALYZE;
-				break;}
-			case EX_TURN_RIGHT:{
-				rotateTheta(state, -M_PI/2.0);
+			case EX_TURN:{
+				double theta = explorer_get_theta(&explorer);
+				rotateTheta(state, theta);
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_ZAP_DIAMOND:{
@@ -668,11 +687,11 @@ void* FSM(void* data){
 			case EX_GOHOME:{
 				break;}
 			case EX_EXIT:{
-				rotateTheta(state, -2*M_PI + 0.001);
 				rotateTheta(state, 2*M_PI - 0.001);
+				rotateTheta(state, -2*M_PI + 0.001);
 				return NULL;
 				break;}
-			case EX_START:rotateTheta(state, 2*M_PI - 0.001);
+			case EX_START:
 			case EX_ANALYZE:{
 				clock_t curTime = clock();
 				state->fsm_time_elapsed =
@@ -770,6 +789,7 @@ int main(int argc, char ** argv)
     state->targetPathValid = 0;
 	state->odometry_seen = 0;
 	state->goToMouseCoords = 0;
+	state->gyro_ticks_per_theta = -145000.0;	//obtained through testing
 
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
@@ -804,9 +824,10 @@ int main(int argc, char ** argv)
 	state->doing_pid_theta     = 0;
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
-	pid_init(state->theta_pid, 2.0, 0.0, 0.0, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
+	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
 	//haz_map_compute_config(&state->hazMap);
 	/*for (i = 0; i < 10; i++) {
 		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
@@ -834,6 +855,7 @@ int main(int argc, char ** argv)
 	state->odometry_channel = "MAEBOT_ODOMETRY";
 	state->displayStarted = state->displayFinished = 0;
 
+	state->left_offset = 50;
 
 	pthread_mutex_init(&state->layer_mutex, NULL);
 	pthread_mutex_init(&state->cmd_mutex, NULL);

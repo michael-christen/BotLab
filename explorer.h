@@ -23,13 +23,13 @@ typedef enum explorer_state explorer_state_t;
 struct explorer_t {
 	int goHome;
 	path_t *path;
+	double theta;
 };
 
 enum explorer_state{
 	EX_ANALYZE,
 	EX_MOVE_FORWARD,
-	EX_TURN_LEFT,
-	EX_TURN_RIGHT,
+	EX_TURN,
 	EX_ZAP_DIAMOND,
 	EX_GOHOME,
 	EX_START,
@@ -40,5 +40,6 @@ void explorer_init(explorer_t *ex);
 explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y, double theta);
 int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double theta);
 path_t* explorer_get_move(explorer_t *ex);
+double explorer_get_theta(explorer_t *ex);
 
 #endif

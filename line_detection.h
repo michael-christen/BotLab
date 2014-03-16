@@ -1,5 +1,5 @@
-#ifndef __BLOB_DETECTION__H__
-#define __BLOB_DETECTION__H__
+#ifndef __LINE_DETECTION__H__
+#define __LINE_DETECTION__H__
 #include "common/image_util.h"
 #include "pixel.h"
 #include "image.h"

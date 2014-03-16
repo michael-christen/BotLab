@@ -22,6 +22,7 @@
 #include "path.h"
 #include "world_map.h"
 #include "explorer.h"
+#include "line_detection.h"
 
 // EECS 467 Libraries
 #include "common/getopt.h"
@@ -229,6 +230,8 @@ struct state_t {
 
 	pid_ctrl_t *theta_pid;
 	int         doing_pid_theta;
+
+	double left_offset;
 };
 
 //////////////
