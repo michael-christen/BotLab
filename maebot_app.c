@@ -649,7 +649,8 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_START;
 	nextState = curState;
-	clock_t start_time = clock();
+	time_t start_time = time(NULL);
+	clock_t startTime = clock();
 	while(state->running){
 		switch(curState){
 			case EX_MOVE_FORWARD:{
@@ -689,17 +690,27 @@ void* FSM(void* data){
 			case EX_EXIT:{
 				rotateTheta(state, 2*M_PI - 0.001);
 				rotateTheta(state, -2*M_PI + 0.001);
+				camera_destroy(state);
 				return NULL;
 				break;}
-			case EX_START:
+			case EX_START:{
+				if(!camera_init(state)){
+					nextState = EX_EXIT;
+					break;
+				}
+				time(&start_time);
+				startTime = clock();
+			}
 			case EX_ANALYZE:{
+				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
-				state->fsm_time_elapsed =
-					(double)(curTime - start_time) / CLOCKS_PER_SEC;
+				state->fsm_time_elapsed = difftime(cur_time, start_time);
+				state->fsmTimeElapsed = (double)(curTime - startTime)/CLOCKS_PER_SEC;
 				if(state->fsm_time_elapsed >= 180){
 					nextState = EX_EXIT;
 					break;
 				}
+				camera_process(state);
 			}
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 		}
