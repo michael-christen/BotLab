@@ -232,11 +232,11 @@ int explorer_check_region(explorer_t *ex, haz_map_t *hm, int region, double thet
 
 
 explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y, double theta) {
-	int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
+	/*int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
 	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
 	printf("forwardDist: %d\n", forwardDist);
-	printf("leftDist: %d\n", leftDist);	
-	return EX_EXIT;
+	printf("leftDist: %d\n", leftDist);*/
+	return EX_MOVE;
 }
 
 path_t* explorer_get_move(explorer_t *ex) {
