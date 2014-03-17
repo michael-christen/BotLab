@@ -129,7 +129,7 @@ void moveBot(state_t* state){
 		usleep(50000);
 		driveStop(state);
 	} else if (state->cmd_val == FORWARD) {
-		driveRad(state, -1000, LONG_SPEED);
+		driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		//printf("ARC: %f\n", state->left_offset);
 	} else if(state->cmd_val == BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
@@ -988,7 +988,7 @@ int main(int argc, char ** argv)
 	state->odometry_channel = "MAEBOT_ODOMETRY";
 	state->displayStarted = state->displayFinished = 0;
 
-	state->left_offset = 50;
+	state->left_offset = 0;
 
 	pthread_mutex_init(&state->layer_mutex, NULL);
 	pthread_mutex_init(&state->cmd_mutex, NULL);
