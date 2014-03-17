@@ -390,8 +390,8 @@ void haz_map_cleanup(haz_map_t *hm) {
 	}
 	// If the grid cells immediately touching bruce are unknown, set
 	// them as free
-	for (y = hm->height/2-2; y < hm->height/2 + 4; y++) {
-		for (x = hm->width/2-2; x < hm->width/2 + 4; x++) {
+	for (y = hm->height/2-2; y < hm->height/2 + 2; y++) {
+		for (x = hm->width/2-2; x < hm->width/2 + 2; x++) {
 			haz_map_get(hm, &tile, x, y);
 			if (tile.type == HAZ_MAP_UNKNOWN) {
 				haz_map_set(hm, x, y, HAZ_MAP_FREE);

@@ -10,7 +10,7 @@
 #include <math.h>
 #include <float.h>
 
-#define STRAIGHT_OFFSET -205
+#define STRAIGHT_OFFSET -95
 
 // dl / dr = (rc - b/2)/(rc + b/2)
 // w = speed / rc

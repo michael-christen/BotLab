@@ -350,7 +350,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			exit(0);
 
 			//printf("Finished 36 tests:\nAverage gyro integral: %f\nAverage theta(r): %g\nAverage theta(d): %g\n", average_change_int, average_theta, average_theta_degrees);
-		
+
 		}	*/
 
 		state->red &= 0xff;
@@ -414,6 +414,7 @@ static void * send_cmds(void * data)
 		{
 			//state->cmd.timestamp = utime_now();
 			maebot_diff_drive_t_publish(state->lcm,  "MAEBOT_DIFF_DRIVE", &(state->cmd));
+			//printf("SEND-> L: %f, R: %f\n",state->cmd.motor_left_speed,state->cmd.motor_right_speed);
 		}
 		pthread_mutex_unlock(&state->cmd_mutex);
 		pthread_mutex_unlock(&state->lcm_mutex);
@@ -705,6 +706,7 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_START;
 	nextState = curState;
+	//choose_path(state);
 	path_t* path = state->targetPath;
 	path = dumb_explore(state);
 	time_t start_time = time(NULL);
@@ -732,7 +734,14 @@ void* FSM(void* data){
 				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
 				nextState = EX_ANALYZE; */
-				break;} 
+				break;}
+			case EX_WAIT: {
+				while (!state->FSM) {
+					usleep(1000);
+					break;
+				}
+				nextState = EX_ANALYZE;
+			break;}
 			case EX_ZAP_DIAMOND:{
 				for(int h = 0; h < state->num_balls; h++){
 					ball_t diamond = state->balls[h];
@@ -749,6 +758,7 @@ void* FSM(void* data){
 						continue;
 					}
 
+/*
 					for(int k = 0; k < state->num_pts_tape; k++){
 						if(state->tape[k].x == image_x){
 							image_y = state->tape[k].y;
@@ -777,9 +787,8 @@ void* FSM(void* data){
 				
 					state->doing_pid_theta = 1;
 					driveToTheta(state, originalTheta);
-					state->doing_pid_theta = 0;
+					state->doing_pid_theta = 0; */
 				}
-
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_GOHOME:
@@ -798,7 +807,8 @@ void* FSM(void* data){
 				}
 				time(&start_time);
 				startTime = clock();
-			}
+				nextState = EX_WAIT;
+			break;}
 			case EX_ANALYZE:{
 				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
@@ -808,8 +818,10 @@ void* FSM(void* data){
 					nextState = EX_EXIT;
 					break;
 				}
+
 				for (; turnIndex < 5; turnIndex++) {
 					analyzeAngle = turnIndex * 2.0 * M_PI / 5;
+
 					state->doing_pid_theta = 1;
 					driveToTheta(state, analyzeAngle);
 					state->doing_pid_theta = 0;
@@ -824,12 +836,19 @@ void* FSM(void* data){
 					turnIndex = 0;
 				}
 			}
-			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
-				if(nextState == EX_MOVE){
-					while (state->targetPathValid == 0) {
-						usleep(1000);
+			default:
+				if (!state->FSM) {
+					nextState = EX_WAIT;
+				} else {
+					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
+					if(nextState == EX_MOVE){
+						while (state->targetPathValid == 0) {
+							usleep(1000);
+						}
+						path = state->targetPath;
+						path = dumb_explore(state);
 					}
-					path = dumb_explore(state);
+
 				}
 		}
 		curState = nextState;
@@ -958,7 +977,8 @@ int main(int argc, char ** argv)
 
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
-	pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
+	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.5, 0.3, 0.04, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
@@ -1027,13 +1047,13 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
 	pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
 	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-	pthread_create(&state->led_thread,  NULL, send_led, state);
+	//pthread_create(&state->led_thread,  NULL, send_led, state);
 	pthread_create(&state->gui_thread,  NULL, gui_create, state);
 	pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 	pthread_create(&state->motion_thread,  NULL, motionFxn, state);
 	//pthread_create(&state->calibrator_thread, NULL, calibrator, state);
-	pthread_create(&state->fsm_thread, NULL, FSM, state);
+	//pthread_create(&state->fsm_thread, NULL, FSM, state);
 
 
 

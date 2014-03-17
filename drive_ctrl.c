@@ -25,7 +25,7 @@ void driveRad(state_t * state, double radius, double speed) {
 	l_speed  *= speed;
 	r_speed  *= speed;
 
-	//printf("L: %f, R: %f, offset: %f\n",l_speed, r_speed, state->left_offset);
+	//printf("RAD-> L: %f, R: %f\n",l_speed, r_speed);
 
 
 	pthread_mutex_lock(&state->cmd_mutex);
@@ -140,7 +140,7 @@ void driveToPosition(state_t * state, position_t position){
 		rotateTheta(state,-theta);
 	}
 	pid_ctrl_t *pos_pid = malloc(sizeof(pid_ctrl_t));
-	pid_init(pos_pid, 0.03, 0.0, 0.0, 0.0, 0, 0.3);
+	pid_init(pos_pid, 0.03, 0.0, 0.0, 0.0, 0, 0.2);
 	pid_ctrl_t *angle_pid = malloc(sizeof(pid_ctrl_t));
 	pid_init(angle_pid, 1.0, 0.0, 0.0, 0.0, 0, M_PI);
 	while(dist > thresh){
@@ -159,7 +159,8 @@ void driveToPosition(state_t * state, position_t position){
 		//We want to oscillate around STRAIGHT_OFFSET
 		//adding to it will cause it to rotate more to
 		//the right, subtracting will rotate more to left
-		double offset = ang_f;
+		double angle_mag = 1;
+		double offset = ang_f*angle_mag;
 		double radius = STRAIGHT_OFFSET + offset;
 
 		//radius        = -norm;
