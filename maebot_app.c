@@ -711,7 +711,6 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_START;
 	nextState = curState;
-	//choose_path(state);
 	path_t* path = state->targetPath;
 	path = dumb_explore(state);
 	time_t start_time = time(NULL);
@@ -748,7 +747,7 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE;
 			break;}
 			case EX_ZAP_DIAMOND:{
-				for(int h = 0; h < state->num_balls; h++){
+				/*for(int h = 0; h < state->num_balls; h++){
 					ball_t diamond = state->balls[h];
 					double image_x = diamond.x;
 					double image_y = diamond.y;
@@ -792,8 +791,9 @@ void* FSM(void* data){
 				
 					state->doing_pid_theta = 1;
 					driveToTheta(state, originalTheta);
+
 					state->doing_pid_theta = 0; */
-				}
+
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_GOHOME:
@@ -823,7 +823,6 @@ void* FSM(void* data){
 					nextState = EX_EXIT;
 					break;
 				}
-
 				for (; turnIndex < 5; turnIndex++) {
 					analyzeAngle = turnIndex * 2.0 * M_PI / 5;
 
