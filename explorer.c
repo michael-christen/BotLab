@@ -63,7 +63,8 @@ path_t * choose_path(void * data){
 	world_map_tile_t * curr_tile = &wm->worldMap[gridy*(wm->width) + gridx];
 	
 	//find coordinates for center of all neighboring grid cells
-	int mid_x, mid_y, up, down, right, left;
+	int mid_x, mid_y;
+	int up, down, right, left;
 
 	mid_y = WORLD_MAP_RES/2 + WORLD_MAP_RES*gridy;
  	mid_x = WORLD_MAP_RES/2 + WORLD_MAP_RES*gridx;
@@ -72,6 +73,7 @@ path_t * choose_path(void * data){
 	right = mid_x + WORLD_MAP_RES;
 	left = mid_x - WORLD_MAP_RES;
 	
+	printf("midx, midy: (%d, %d) up: %d down: %d right %d left %d)\n", mid_x, mid_y, up, down, left, right);
 
 	int num_neighbors = 0;
 	//bounds check before calling to get path
@@ -123,6 +125,7 @@ path_t * choose_path(void * data){
 	//qsort
 	qsort(curr_tile->neighbors, num_neighbors, sizeof(world_map_tile_t), movement_compare);
 
+	printf("target path length: %d \n", curr_tile->neighbors[0]->path_to->length);
     state->targetPath = curr_tile->neighbors[0]->path_to;
     state->targetPathValid  = 1;
 
