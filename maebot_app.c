@@ -670,6 +670,7 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_START;
 	nextState = curState;
+	//choose_path(state);
 	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
@@ -696,7 +697,14 @@ void* FSM(void* data){
 				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
 				nextState = EX_ANALYZE; */
-				break;} 
+				break;}
+			case EX_WAIT: {
+				while (!state->FSM) {
+					usleep(1000);
+					break;
+				}
+				nextState = EX_ANALYZE;
+			break;}
 			case EX_ZAP_DIAMOND:{
 				//Still need to get diamond coords
 				double diamond_x = 0, diamond_y = 0;
@@ -735,7 +743,8 @@ void* FSM(void* data){
 				}
 				time(&start_time);
 				startTime = clock();
-			}
+				nextState = EX_WAIT;
+			break;}
 			case EX_ANALYZE:{
 				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
@@ -746,6 +755,7 @@ void* FSM(void* data){
 					break;
 				}
 				for (i = 0; i < 5; i++) {
+					if (!state->FSM) break;
 					analyzeAngle = i * 2.0 * M_PI / 5;
 					state->doing_pid_theta = 1;
 					driveToTheta(state, analyzeAngle);
@@ -753,12 +763,18 @@ void* FSM(void* data){
 					camera_process(state);
 				}
 			}
-			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
-				if(nextState == EX_MOVE){
-					while (state->targetPathValid == 0) {
-						usleep(1000);
+			default:
+				if (!state->FSM) {
+					nextState = EX_WAIT;
+				} else {
+					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
+					if(nextState == EX_MOVE){
+						while (state->targetPathValid == 0) {
+							usleep(1000);
+						}
+						path = state->targetPath;
+						//path = choose_path(state);
 					}
-					//path = choose_path(state);
 				}
 		}
 		curState = nextState;
@@ -952,7 +968,7 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
 	pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
 	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-	pthread_create(&state->led_thread,  NULL, send_led, state);
+	//pthread_create(&state->led_thread,  NULL, send_led, state);
 	pthread_create(&state->gui_thread,  NULL, gui_create, state);
 	pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);

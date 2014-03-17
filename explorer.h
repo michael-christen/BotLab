@@ -34,7 +34,8 @@ enum explorer_state{
 	EX_ZAP_DIAMOND,
 	EX_GOHOME,
 	EX_START,
-	EX_EXIT
+	EX_EXIT,
+	EX_WAIT
 };
 
 path_t * choose_path(void * data);
