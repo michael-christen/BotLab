@@ -10,6 +10,8 @@
 #include <math.h>
 #include <float.h>
 
+#define STRAIGHT_OFFSET -205
+
 // dl / dr = (rc - b/2)/(rc + b/2)
 // w = speed / rc
 //+radius veers to left, - radius veers to right
