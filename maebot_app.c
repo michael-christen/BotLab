@@ -329,7 +329,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->left_offset -= 5;
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
-		} else if(key->key_code == 'z') {
+		} /*else if(key->key_code == 'z') {
 			double average_change_int[120];
 			double average_theta[120];
 			double average_theta_degrees[120];
@@ -357,7 +357,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 
 			//printf("Finished 36 tests:\nAverage gyro integral: %f\nAverage theta(r): %g\nAverage theta(d): %g\n", average_change_int, average_theta, average_theta_degrees);
 		
-		}	
+		}	*/
 
 		state->red &= 0xff;
 		state->green &= 0xff;
@@ -712,13 +712,18 @@ void* FSM(void* data){
 				double dtheta = atan2(dy, dx);
 				double originalTheta = state->pos_theta;
 				//rotate toward diamond
+				state->doing_pid_theta = 1;
 				driveToTheta(state, dtheta);
+				state->doing_pid_theta = 0;
 
 				//shoot diamond
 				fireLaser(state);
 				//update diamond to zapped
-
+			
+				state->doing_pid_theta = 1;
 				driveToTheta(state, originalTheta);
+				state->doing_pid_theta = 0;
+
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_GOHOME:{
@@ -729,8 +734,10 @@ void* FSM(void* data){
 				nextState = EX_MOVE;
 				break;}
 			case EX_EXIT:{
+				state->doing_pid_theta = 1;
 				rotateTheta(state, 2*M_PI - 0.001);
 				rotateTheta(state, -2*M_PI + 0.001);
+				state->doing_pid_theta = 0;
 				camera_destroy(state);
 				return NULL;
 				break;}
