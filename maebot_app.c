@@ -135,7 +135,7 @@ void moveBot(state_t* state){
 		usleep(50000);
 		driveStop(state);
 	} else if (state->cmd_val & FORWARD) {
-		driveRad(state, state->left_offset, LONG_SPEED);
+		driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		//printf("ARC: %f\n", state->left_offset);
 	} else if(state->cmd_val & BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
@@ -325,10 +325,12 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			}
 		} else if(key->key_code ==';') {
 			state->left_offset += 5;
-			printf("Left_offset = %f\n",state->left_offset);
+			printf("offset = %f\n",state->left_offset +
+					STRAIGHT_OFFSET);
 		} else if(key->key_code =='\'') {
 			state->left_offset -= 5;
-			printf("Left_offset = %f\n",state->left_offset);
+			printf("Left_offset = %f\n",state->left_offset +
+					STRAIGHT_OFFSET);
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
 		} /*else if(key->key_code == 'z') {
@@ -921,7 +923,7 @@ int main(int argc, char ** argv)
 	state->odometry_channel = "MAEBOT_ODOMETRY";
 	state->displayStarted = state->displayFinished = 0;
 
-	state->left_offset = -205;
+	state->left_offset = 0;
 
 	pthread_mutex_init(&state->layer_mutex, NULL);
 	pthread_mutex_init(&state->cmd_mutex, NULL);
