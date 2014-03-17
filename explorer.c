@@ -40,23 +40,28 @@ void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
 
 
 
-path_t * dumb_explore(){
+path_t * dumb_explore(void * data){
+
+	state_t * state = data;
 
 	double theta = state->pos_theta;
 	double bruce_x = state->pos_x;
 	double bruce_y = state->pos_y;
-	haz_map * hm = state->haz_map;
+	haz_map_t * hm = &state->hazMap;
 	
 		theta = theta + M_PI/2;
 		if (theta >= 2*M_PI) {
 			theta = theta - 2*M_PI;
 		}
 
+	path_t * dumb_path;
+	dumb_path->length = 0;
+
 	while(dumb_path->length == 0){
 		double x = 5 * cos(theta);
 		double y = 5 * sin(theta);
 
-		path_t * dumb_path = curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, bruce_y + y, bruce_x + x);
+		dumb_path = haz_map_get_path(hm, bruce_y + y, bruce_x + x);
 		theta = theta + M_PI/4;
 		if (theta >= 2*M_PI) {
 			theta = theta - 2*M_PI;
@@ -269,8 +274,10 @@ explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y,
 	/*int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
 	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
 	printf("forwardDist: %d\n", forwardDist);
+<<<<<<< HEAD
 	printf("leftDist: %d\n", leftDist);*/
 	return EX_MOVE;
+
 
 }
 

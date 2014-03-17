@@ -35,7 +35,8 @@ void driveRad(state_t * state, double radius, double speed) {
 }
 
 void driveStraight(state_t * state, double speed) {
-    driveRad(state, DBL_MAX, speed);
+    //driveRad(state, DBL_MAX, speed);
+    driveRad(state, STRAIGHT_OFFSET, speed);
 }
 
 void driveRot(state_t * state, double omega) {
@@ -155,7 +156,12 @@ void driveToPosition(state_t * state, position_t position){
 		double ang_f  = -pid_get_output(angle_pid, theta);
 		int    dir    = sign(ang_f);
 		double mag_ang= fabs(ang_f);
-		double radius = -dir*norm*pow(base,-mag_ang);
+		//We want to oscillate around STRAIGHT_OFFSET
+		//adding to it will cause it to rotate more to
+		//the right, subtracting will rotate more to left
+		double offset = ang_f;
+		double radius = STRAIGHT_OFFSET + offset;
+
 		//radius        = -norm;
 		//double radius = dir*norm / mag_ang;
 
