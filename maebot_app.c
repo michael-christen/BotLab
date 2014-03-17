@@ -967,13 +967,6 @@ int main(int argc, char ** argv)
 	pthread_create(&state->calibrator_thread, NULL, calibrator, state);
 
 
-
-	/*	find_H_matrix(state);
-		int obstacle = 0, x_px = 156, y_px = 352;
-		for(x_px; x_px < 525; x_px++){
-		find_point_pos( state, x_px, y_px, &state->hazMap, obstacle);
-		} */
-
 	//pthread_join(state->camera_thread, NULL);
 
 	if (pthread_join(state->gui_thread, NULL) != 0) {
