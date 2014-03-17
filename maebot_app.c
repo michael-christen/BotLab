@@ -135,7 +135,7 @@ void moveBot(state_t* state){
 		usleep(50000);
 		driveStop(state);
 	} else if (state->cmd_val & FORWARD) {
-		driveRad(state, -1000, LONG_SPEED);
+		driveRad(state, state->left_offset, LONG_SPEED);
 		//printf("ARC: %f\n", state->left_offset);
 	} else if(state->cmd_val & BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
@@ -325,8 +325,10 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			}
 		} else if(key->key_code ==';') {
 			state->left_offset += 5;
+			printf("Left_offset = %f\n",state->left_offset);
 		} else if(key->key_code =='\'') {
 			state->left_offset -= 5;
+			printf("Left_offset = %f\n",state->left_offset);
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
 		} /*else if(key->key_code == 'z') {
@@ -356,7 +358,7 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			exit(0);
 
 			//printf("Finished 36 tests:\nAverage gyro integral: %f\nAverage theta(r): %g\nAverage theta(d): %g\n", average_change_int, average_theta, average_theta_degrees);
-		
+
 		}	*/
 
 		state->red &= 0xff;
@@ -678,6 +680,7 @@ void* FSM(void* data){
 	explorer_state_t curState, nextState;
 	curState = EX_GOHOME;
 	nextState = curState;
+	//path_t* path = choose_path(state);
 	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
@@ -703,7 +706,7 @@ void* FSM(void* data){
 				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
 				nextState = EX_ANALYZE; */
-				break;} 
+				break;}
 			case EX_ZAP_DIAMOND:{
 				//Still need to get diamond coords
 				double diamond_x = 0, diamond_y = 0;
@@ -719,7 +722,7 @@ void* FSM(void* data){
 				//shoot diamond
 				fireLaser(state);
 				//update diamond to zapped
-			
+
 				state->doing_pid_theta = 1;
 				driveToTheta(state, originalTheta);
 				state->doing_pid_theta = 0;
@@ -918,7 +921,7 @@ int main(int argc, char ** argv)
 	state->odometry_channel = "MAEBOT_ODOMETRY";
 	state->displayStarted = state->displayFinished = 0;
 
-	state->left_offset = 50;
+	state->left_offset = -205;
 
 	pthread_mutex_init(&state->layer_mutex, NULL);
 	pthread_mutex_init(&state->cmd_mutex, NULL);
