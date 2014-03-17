@@ -15,7 +15,7 @@
 #define HAZ_MAP_CONFIG_RAIDUS 15
 #define HAZ_MAP_HUGE_DIST 999
 #define HAZ_MAP_MEGA_DIST 99999999
-#define HAZ_MAP_TTL 30
+#define HAZ_MAP_TTL 60
 #define HAZ_MAP_REPULSE_FACTOR 50
 
 typedef struct haz_map_t haz_map_t;

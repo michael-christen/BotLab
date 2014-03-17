@@ -41,7 +41,7 @@
 //////////////
 // CONSTANTS
 //////////////
-#define MAX_POS_SAMPLES 20
+#define MAX_POS_SAMPLES 50
 #define POS_SAMPLES_INTERVAL 500000
 #define NUM_LAYERS 4
 #define BRUCE_DIAMETER 10.5
