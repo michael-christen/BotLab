@@ -49,10 +49,9 @@ path_t * dumb_explore(void * data){
 	double bruce_y = state->pos_y;
 	haz_map_t * hm = &state->hazMap;
 	
+		theta = -theta;	
 		theta = theta + M_PI/2;
-		if (theta >= 2*M_PI) {
-			theta = theta - 2*M_PI;
-		}
+
 
 	path_t * dumb_path;
 	dumb_path->length = 0;
@@ -63,9 +62,7 @@ path_t * dumb_explore(void * data){
 
 		dumb_path = haz_map_get_path(hm, bruce_y + y, bruce_x + x);
 		theta = theta + M_PI/4;
-		if (theta >= 2*M_PI) {
-			theta = theta - 2*M_PI;
-		}
+
 	}
 	
 	return dumb_path;	
