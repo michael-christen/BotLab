@@ -327,7 +327,37 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			state->left_offset += 5;
 		} else if(key->key_code =='\'') {
 			state->left_offset -= 5;
-		}
+		} else if(key->key_code == 'f') {
+			state->FSM = !state->FSM;
+		} /*else if(key->key_code == 'z') {
+			double average_change_int[120];
+			double average_theta[120];
+			double average_theta_degrees[120];
+			for(int i = 0; i < 36; i++){
+				state->gyro_int[2] = 0;
+				for(int k = 0; k < 120; k++){
+					sleep(1);
+					int64_t change_int = state->gyro_int[2];
+					double theta = change_int / state->gyro_ticks_per_theta;
+					double thetaDegrees = theta/M_PI * 180.0;
+					average_change_int[k] += change_int;
+					average_theta[k] += theta;
+					average_theta_degrees[k] += thetaDegrees;
+					printf("%f, %f, %f\n", average_change_int[k], average_theta[i], average_theta_degrees[i]);
+				}
+				//printf("Test %d:\nGyro integral: %lld\nTheta(r): %g\nTheta(d): %g\n\n\n", i, change_int, theta, thetaDegrees);
+			}
+			for(int i = 0; i < 120; i++){
+				average_change_int[i] /= 36.0;
+				average_theta[i] /= 36.0;
+				average_theta_degrees[i] /= 36.0;
+				printf("%f, %f, %f\n", average_change_int[i], average_theta[i], average_theta_degrees[i]);
+			}
+			exit(0);
+
+			//printf("Finished 36 tests:\nAverage gyro integral: %f\nAverage theta(r): %g\nAverage theta(d): %g\n", average_change_int, average_theta, average_theta_degrees);
+		
+		}	*/
 
 		state->red &= 0xff;
 		state->green &= 0xff;
@@ -474,7 +504,6 @@ int camera_init(state_t *state){
 	image_source_format_t isrc_format;
 	state->isrc->get_format(state->isrc, 0, &isrc_format);
 	state->lookupTable = getLookupTable(isrc_format.width, isrc_format.height);
-
 	state->isrcReady = 1;
 	state->imageValid = 0;
 	return 1;
@@ -485,7 +514,7 @@ void camera_process(state_t* state){
 	int res;
 	image_source_data_t isdata;
 	image_source_t *isrc = state->isrc;
-		
+
 		pthread_mutex_lock(&state->image_mutex);
 		//Let PID know that I am here
 		pthread_cond_signal(&state->image_cv);
@@ -550,7 +579,7 @@ void camera_destroy(state_t* state){
 void * camera_analyze(void * data){
 	state_t * state = data;
 	camera_init(state);
-	
+
 	while(state->running){
 		camera_process(state);
 		usleep(10000);
@@ -647,27 +676,34 @@ void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
 	explorer_state_t curState, nextState;
-	curState = EX_START;
+	curState = EX_GOHOME;
 	nextState = curState;
+	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
 	while(state->running){
 		switch(curState){
-			case EX_MOVE_FORWARD:{
-				path_t* path = explorer_get_move(&explorer);
-				while(path->position != path->length){
+			case EX_MOVE:{
+				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
 					driveToPosition(state, waypoint);
 					path->position++;
+					printf("Completed move %d\n", path->position);
+					nextState = EX_MOVE;
+				}else{
+					state->targetPathValid = 0;
+					path_destroy(path);
+					state->FSM = 0;
+					printf("FSM done\n");
+					nextState = EX_GOHOME;
+					//nextState = EX_ANALYZE;
 				}
-				path_destroy(path);
-				nextState = EX_ANALYZE;
 				break;}
 			case EX_TURN:{
-				double theta = explorer_get_theta(&explorer);
+				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
-				nextState = EX_ANALYZE;
-				break;}
+				nextState = EX_ANALYZE; */
+				break;} 
 			case EX_ZAP_DIAMOND:{
 				//Still need to get diamond coords
 				double diamond_x = 0, diamond_y = 0;
@@ -676,20 +712,32 @@ void* FSM(void* data){
 				double dtheta = atan2(dy, dx);
 				double originalTheta = state->pos_theta;
 				//rotate toward diamond
+				state->doing_pid_theta = 1;
 				driveToTheta(state, dtheta);
+				state->doing_pid_theta = 0;
 
 				//shoot diamond
 				fireLaser(state);
 				//update diamond to zapped
-
+			
+				state->doing_pid_theta = 1;
 				driveToTheta(state, originalTheta);
+				state->doing_pid_theta = 0;
+
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_GOHOME:{
+				while (!state->FSM) {
+					usleep(1000);
+				}
+				path = state->targetPath;
+				nextState = EX_MOVE;
 				break;}
 			case EX_EXIT:{
+				state->doing_pid_theta = 1;
 				rotateTheta(state, 2*M_PI - 0.001);
 				rotateTheta(state, -2*M_PI + 0.001);
+				state->doing_pid_theta = 0;
 				camera_destroy(state);
 				return NULL;
 				break;}
@@ -713,6 +761,9 @@ void* FSM(void* data){
 				camera_process(state);
 			}
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
+				if(nextState == EX_MOVE){
+					path = choose_path(state);
+				}
 		}
 		curState = nextState;
 	}
@@ -745,7 +796,7 @@ void* position_tracker(void *data) {
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
 
-		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_SEEN);
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
 	//		state->pos_x += 1;
 	//		state->pos_y += 2;
 
@@ -801,6 +852,7 @@ int main(int argc, char ** argv)
 	state->odometry_seen = 0;
 	state->goToMouseCoords = 0;
 	state->gyro_ticks_per_theta = -145000.0;	//obtained through testing
+	state->FSM = 0;
 
 	//Initialize to identity so, can multiply
 	state->var_matrix    = matd_identity(2);
@@ -907,7 +959,7 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->led_thread,  NULL, send_led, state);
 	pthread_create(&state->gui_thread,  NULL, gui_create, state);
 	pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
-	//pthread_create(&state->fsm_thread, NULL, FSM, state);
+	pthread_create(&state->fsm_thread, NULL, FSM, state);
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 	pthread_create(&state->motion_thread,  NULL, motionFxn, state);
 

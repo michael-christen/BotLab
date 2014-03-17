@@ -510,8 +510,8 @@ void* gui_create(void *data) {
 	state->layers[0].destroy = destroyWorldTopDownLayer;
 
 
-	//state->layers[1].enable = !state->getopt_options.no_video;
-	state->layers[1].enable = 1;
+	state->layers[1].enable = !state->getopt_options.no_video;
+	//state->layers[1].enable = 1;
 	state->layers[1].name = "CameraPOV";
 	state->layers[1].position[0] = 0.666f;
 	state->layers[1].position[1] = 0.5f;
