@@ -703,7 +703,14 @@ void* FSM(void* data){
 				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
 				nextState = EX_ANALYZE; */
-				break;} 
+				break;}
+			case EX_WAIT: {
+				while (!state->FSM) {
+					usleep(1000);
+					break;
+				}
+				nextState = EX_ANALYZE;
+			break;}
 			case EX_ZAP_DIAMOND:{
 				//Still need to get diamond coords
 				double diamond_x = 0, diamond_y = 0;
@@ -742,7 +749,8 @@ void* FSM(void* data){
 				}
 				time(&start_time);
 				startTime = clock();
-			}
+				nextState = EX_WAIT;
+			break;}
 			case EX_ANALYZE:{
 				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
@@ -753,6 +761,7 @@ void* FSM(void* data){
 					break;
 				}
 				for (i = 0; i < 5; i++) {
+					if (!state->FSM) break;
 					analyzeAngle = i * 2.0 * M_PI / 5;
 					state->doing_pid_theta = 1;
 					driveToTheta(state, analyzeAngle);
@@ -760,12 +769,17 @@ void* FSM(void* data){
 					camera_process(state);
 				}
 			}
-			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
-				if(nextState == EX_MOVE){
-					while (state->targetPathValid == 0) {
-						usleep(1000);
+			default: 
+				if (!state->FSM) {
+					nextState = EX_WAIT;
+				} else {
+					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
+					if(nextState == EX_MOVE){
+						while (state->targetPathValid == 0) {
+							usleep(1000);
+						}
+						//path = choose_path(state);
 					}
-					//path = choose_path(state);
 				}
 		}
 		curState = nextState;
