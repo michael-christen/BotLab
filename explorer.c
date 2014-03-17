@@ -40,7 +40,32 @@ void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
 
 
 
+path_t * dumb_explore(){
 
+	double theta = state->pos_theta;
+	double bruce_x = state->pos_x;
+	double bruce_y = state->pos_y;
+	haz_map * hm = state->haz_map;
+	
+		theta = theta + M_PI/2;
+		if (theta >= 2*M_PI) {
+			theta = theta - 2*M_PI;
+		}
+
+	while(dumb_path->length == 0){
+		double x = 5 * cos(theta);
+		double y = 5 * sin(theta);
+
+		path_t * dumb_path = curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, bruce_y + y, bruce_x + x);
+		theta = theta + M_PI/4;
+		if (theta >= 2*M_PI) {
+			theta = theta - 2*M_PI;
+		}
+	}
+	
+	return dumb_path;	
+
+}
 
 
 
@@ -103,16 +128,16 @@ path_t * choose_path(void * data){
 	if( down >= -max_y ) {
 		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, x);
-		num_neighbors ++;
+		num_neighbors++;
 		if( left >= -max_x ){
 			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx - 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, left);
-			num_neighbors ++;
+			num_neighbors++;
 		}
 		if( right <= max_x ){
 			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, right);
-			num_neighbors ++;
+			num_neighbors++;
 		}
 	}
 
