@@ -38,6 +38,6 @@ enum explorer_state{
 	EX_WAIT
 };
 
-path_t * choose_path(void * data);
+path_t * choose_path(void * data, double pre_analyze_theta);
 
 #endif

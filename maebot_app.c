@@ -709,10 +709,11 @@ void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
 	explorer_state_t curState, nextState;
+	double pre_analyze_theta = 0;
 	curState = EX_START;
 	nextState = curState;
 	path_t* path = state->targetPath;
-	path = dumb_explore(state);
+	path = dumb_explore(state, pre_analyze_theta);
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
 	int turnIndex = 0;
@@ -814,6 +815,7 @@ void* FSM(void* data){
 				nextState = EX_WAIT;
 			break;}
 			case EX_ANALYZE:{
+				pre_analyze_theta = state->pos_theta;
 				printf("STATE: Analyze");
 				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
@@ -852,7 +854,7 @@ void* FSM(void* data){
 							usleep(1000);
 						}*/
 						//path = state->targetPath;
-						path = dumb_explore(state);
+						path = dumb_explore(state, pre_analyze_theta);
 						state->targetPath = path;
 						state->targetPathValid = 1;
 						printf("after path calc\n");

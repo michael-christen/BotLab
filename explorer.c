@@ -72,7 +72,7 @@ path_t * dumb_explore(void * data){
 
 
 
-path_t * choose_path(void * data){
+path_t * choose_path(void * data, double pre_analyze_theta){
 	//printf("in choose path");
 	//set max for bound checking
 	int max_x = (WORLD_MAP_RES * WORLD_MAP_MAX_WIDTH) / 2;
