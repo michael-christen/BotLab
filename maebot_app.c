@@ -740,7 +740,7 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE;
 			break;}
 			case EX_ZAP_DIAMOND:{
-				for(int h = 0; h < state->num_balls; h++){
+				/*for(int h = 0; h < state->num_balls; h++){
 					ball_t diamond = state->balls[h];
 					double image_x = diamond.x;
 					double image_y = diamond.y;
@@ -784,7 +784,7 @@ void* FSM(void* data){
 					state->doing_pid_theta = 1;
 					driveToTheta(state, originalTheta);
 					state->doing_pid_theta = 0;
-				}
+				}*/
 
 				nextState = EX_ANALYZE;
 				break;}
