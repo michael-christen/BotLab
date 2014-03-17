@@ -959,7 +959,7 @@ int main(int argc, char ** argv)
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
 	pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
 	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
-	//pthread_create(&state->led_thread,  NULL, send_led, state);
+	pthread_create(&state->led_thread,  NULL, send_led, state);
 	pthread_create(&state->gui_thread,  NULL, gui_create, state);
 	pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
