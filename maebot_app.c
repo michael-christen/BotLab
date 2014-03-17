@@ -7,6 +7,7 @@
 #include "barrel_distortion.h"
 #include "line_detection.h"
 #include "mapping.h"
+#include "explorer.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -459,6 +460,19 @@ static void * send_led(void * data){
 	return NULL;
 }
 
+int diamondIsZapped(state_t *state, double diamond_x, double diamond_y){
+	double thresh = 10.0;
+	for(int k = 0; k < state->num_zapped_diamonds; k++){
+		if(fabs(diamond_x - state->zapped_diamonds[k].x) < thresh &&
+			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh){
+			//Diamond's been zapped already
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 int camera_init(state_t *state){
 	zarray_t *urls = image_source_enumerate();
 
@@ -539,6 +553,27 @@ void camera_process(state_t* state){
 			if(!state->doing_pid) {
 				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
 			}
+			//DO NOT DELETE
+			//Uncommont to filter zapped diamonds from detection
+			/*int updated_num_balls = 0;
+			ball_t diamonds[MAX_NUM_BALLS];
+			for(int i = 0; i < state->num_balls; i++){
+				ball_t diamond = state->balls[i];
+				double image_x = diamond.x;
+				double image_y = diamond.y;
+
+				double diamond_x = 0, diamond_y = 0;
+				homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
+				double pos_x = diamond_x + state->pos_x;
+				double pos_y = diamond_y + state->pos_y;
+				if(!diamondIsZapped(state, pos_x, pos_y)){
+					diamonds[updated_num_balls] = diamond;
+					updated_num_balls++;
+				}
+			}
+			*state->balls = *diamonds;
+			state->num_balls = updated_num_balls;*/
+
 			pthread_mutex_lock(&state->haz_map_mutex);
 			int obstacle = 1;
 			haz_map_translate(&state->hazMap, bruce_x, bruce_y);
@@ -673,7 +708,7 @@ void* FSM(void* data){
 	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
-	int i;
+	int turnIndex = 0;
 	double analyzeAngle;
 	while(state->running){
 		switch(curState){
@@ -698,24 +733,51 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE; */
 				break;} 
 			case EX_ZAP_DIAMOND:{
-				//Still need to get diamond coords
-				double diamond_x = 0, diamond_y = 0;
-				double dx = diamond_x - state->pos_x;
-				double dy = diamond_y - state->pos_y;
-				double dtheta = atan2(dy, dx);
-				double originalTheta = state->pos_theta;
-				//rotate toward diamond
-				state->doing_pid_theta = 1;
-				driveToTheta(state, dtheta);
-				state->doing_pid_theta = 0;
+				for(int h = 0; h < state->num_balls; h++){
+					ball_t diamond = state->balls[h];
+					double image_x = diamond.x;
+					double image_y = diamond.y;
+	
+					double diamond_x = 0, diamond_y = 0;
+					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
+					double pos_x = diamond_x + state->pos_x;
+					double pos_y = diamond_y + state->pos_y;
+					
+					if(diamondIsZapped(state, pos_x, pos_y)){
+						//Go to next diamond in image
+						continue;
+					}
 
-				//shoot diamond
-				fireLaser(state);
-				//update diamond to zapped
-			
-				state->doing_pid_theta = 1;
-				driveToTheta(state, originalTheta);
-				state->doing_pid_theta = 0;
+					for(int k = 0; k < state->num_pts_tape; k++){
+						if(state->tape[k].x == image_x){
+							image_y = state->tape[k].y;
+						}
+					}
+	
+					homography_project(state->H ,image_x, image_y, &diamond_x, &diamond_y);
+					pos_x = diamond_x + state->pos_x;
+					pos_y = diamond_y + state->pos_y;
+
+					double dx = pos_x - state->pos_x;
+					double dy = pos_y - state->pos_y;
+					double dtheta = atan2(dy, dx);
+					double originalTheta = state->pos_theta;
+					//rotate toward diamond
+					state->doing_pid_theta = 1;
+					driveToTheta(state, dtheta);
+					state->doing_pid_theta = 0;
+
+					//shoot diamond
+					fireLaser(state);
+					//update diamond to zapped
+					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
+					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
+					state->num_zapped_diamonds++;
+				
+					state->doing_pid_theta = 1;
+					driveToTheta(state, originalTheta);
+					state->doing_pid_theta = 0;
+				}
 
 				nextState = EX_ANALYZE;
 				break;}
@@ -745,12 +807,20 @@ void* FSM(void* data){
 					nextState = EX_EXIT;
 					break;
 				}
-				for (i = 0; i < 5; i++) {
-					analyzeAngle = i * 2.0 * M_PI / 5;
+				for (; turnIndex < 5; turnIndex++) {
+					analyzeAngle = turnIndex * 2.0 * M_PI / 5;
 					state->doing_pid_theta = 1;
 					driveToTheta(state, analyzeAngle);
 					state->doing_pid_theta = 0;
 					camera_process(state);
+					//Uncomment to zap diamonds (pew pew)
+					/*if(state->num_balls){
+						nextState = EX_ZAP_DIAMOND;
+						break;
+					}*/
+				}
+				if(turnIndex == 5){
+					turnIndex = 0;
 				}
 			}
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
@@ -881,6 +951,10 @@ int main(int argc, char ** argv)
 	state->num_pid_zeros = 0;
 	state->doing_pid     = 0;
 	state->doing_pid_theta     = 0;
+	state->H = matd_create_data(3, 3, (double[]) { 0.014442, 0.002133, -6.026192,
+	-0.001299, -0.000377, 5.889305,
+	-0.000036, 0.001629, -0.385430});
+
 	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 	pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
@@ -979,7 +1053,7 @@ int main(int argc, char ** argv)
 	// clean up
 	destroyLookupTable(state->lookupTable);
     haz_map_destroy(&state->hazMap);
-    if (state->pathTaken == 1) {
+    if (state->pathTakenValid == 1) {
         path_destroy(state->pathTaken);
     }
     if (state->targetPathValid == 1) {

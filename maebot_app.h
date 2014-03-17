@@ -192,6 +192,9 @@ struct state_t {
 
     int num_balls;
     ball_t balls[MAX_NUM_BALLS];
+	pixel_t* zapped_diamonds;
+	int num_zapped_diamonds;
+	
 
     lcm_t * lcm;
     pthread_mutex_t lcm_mutex;
@@ -226,6 +229,7 @@ struct state_t {
     //Tape data
     pixel_t* tape;
     unsigned int num_pts_tape;
+	matd_t* H;
 
     uint32_t red, green, blue;
     double thresh;
