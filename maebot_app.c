@@ -538,7 +538,6 @@ void camera_process(state_t* state){
 			//printf("Got frame %p\n", state->im);
 		}
 		if (state->imageValid == 1) {
-			// HOMOGRAPHY BEFORE BARREL DISTORTION CORRECTION GOES HERE
 			correctDistortion(state->im, state->lookupTable);
 			//Blue
 			state->num_pts_tape = line_detection(state->im, state->tape);
@@ -678,12 +677,14 @@ void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
 	explorer_state_t curState, nextState;
-	curState = EX_GOHOME;
+	curState = EX_START;
 	nextState = curState;
 	//path_t* path = choose_path(state);
 	path_t* path = state->targetPath;
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
+	int i;
+	double analyzeAngle;
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
@@ -696,9 +697,8 @@ void* FSM(void* data){
 				}else{
 					state->targetPathValid = 0;
 					path_destroy(path);
-					state->FSM = 0;
-					printf("FSM done\n");
-					nextState = EX_GOHOME;
+					printf("Path done, going to analyze\n");
+					nextState = EX_ANALYZE;
 					//nextState = EX_ANALYZE;
 				}
 				break;}
@@ -729,13 +729,7 @@ void* FSM(void* data){
 
 				nextState = EX_ANALYZE;
 				break;}
-			case EX_GOHOME:{
-				while (!state->FSM) {
-					usleep(1000);
-				}
-				path = state->targetPath;
-				nextState = EX_MOVE;
-				break;}
+			case EX_GOHOME:
 			case EX_EXIT:{
 				state->doing_pid_theta = 1;
 				rotateTheta(state, 2*M_PI - 0.001);
@@ -761,11 +755,20 @@ void* FSM(void* data){
 					nextState = EX_EXIT;
 					break;
 				}
-				camera_process(state);
+				for (i = 0; i < 5; i++) {
+					analyzeAngle = i * 2.0 * M_PI / 5;
+					state->doing_pid_theta = 1;
+					driveToTheta(state, analyzeAngle);
+					state->doing_pid_theta = 0;
+					camera_process(state);
+				}
 			}
 			default: nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 				if(nextState == EX_MOVE){
-					path = choose_path(state);
+					while (state->targetPathValid == 0) {
+						usleep(1000);
+					}
+					//path = choose_path(state);
 				}
 		}
 		curState = nextState;
@@ -956,18 +959,16 @@ int main(int argc, char ** argv)
 	state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
 
 	//pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
-	pthread_create(&state->camera_thread, NULL, camera_analyze, state);
+	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
 	pthread_create(&state->cmd_thread,  NULL, send_cmds, state);
 	pthread_create(&state->lsr_thread,  NULL, send_lsr, state);
 	//pthread_create(&state->led_thread,  NULL, send_led, state);
 	pthread_create(&state->gui_thread,  NULL, gui_create, state);
 	pthread_create(&state->lcm_handle_thread, NULL, lcm_handle_loop, state);
-	pthread_create(&state->fsm_thread, NULL, FSM, state);
 	pthread_create(&state->position_tracker_thread, NULL, position_tracker, state);
 	pthread_create(&state->motion_thread,  NULL, motionFxn, state);
-
-
-	pthread_create(&state->calibrator_thread, NULL, calibrator, state);
+	//pthread_create(&state->calibrator_thread, NULL, calibrator, state);
+	pthread_create(&state->fsm_thread, NULL, FSM, state);
 
 
 	//pthread_join(state->camera_thread, NULL);
