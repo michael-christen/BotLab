@@ -186,7 +186,7 @@ void draw_path(vx_buffer_t *buf, path_t *path, const float color[]) {
         }
         traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
         traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
-        traj[baseIndex + 2] = 0.5;
+        traj[baseIndex + 2] = 0.1;
 
         if (i != path->length - 1 &&  i != 0) {
             traj[baseIndex + 3] = traj[baseIndex];
