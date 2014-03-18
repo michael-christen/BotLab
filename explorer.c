@@ -92,23 +92,19 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 
 	//printf("gridx: %d gridy: %d x: %f y: %f\n", gridx, gridy, x, y);
 	//find coordinates for center of all neighboring grid cells
-	int mid_x, mid_y;
+
 	int up, down, right, left;
 
-
-
-	mid_y = WORLD_MAP_RES*(gridy+1) - WORLD_MAP_RES*WORLD_MAP_MAX_HEIGHT/2;
- 	mid_x = WORLD_MAP_RES*(gridx+1) - WORLD_MAP_RES*WORLD_MAP_MAX_WIDTH/2;
-	up =  mid_y - WORLD_MAP_RES;
-	down = mid_y + WORLD_MAP_RES;
-	right = mid_x + WORLD_MAP_RES;
-	left = mid_x - WORLD_MAP_RES;
+	up =  y - WORLD_MAP_RES;
+	down = y + WORLD_MAP_RES;
+	right = x + WORLD_MAP_RES;
+	left = x - WORLD_MAP_RES;
 
 	//printf("midx, midy: (%d, %d) up: %d down: %d right %d left %d)\n", mid_x, mid_y, up, down, left, right);
 
 	int num_neighbors = 0;
 	//bounds check before calling to get path
-	if( up <= max_y ) {
+	if( up <= 0 ) {
 		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, x);
 		num_neighbors++;

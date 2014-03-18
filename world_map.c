@@ -22,6 +22,15 @@ void data_set(world_map_t *wm, int adjX, int adjY, int8_t type){
 	return;
 }
 
+int world_map_in_bounds(world_map_t *wm, int x, int y) {
+	if (x >= 0 && x < wm->width && y >= 0 && y < wm->height) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
 void world_map_init(world_map_t *wm, int w, int h) {
 	wm->image = image_u32_create(w, h);
 	wm->width = w;
@@ -30,7 +39,7 @@ void world_map_init(world_map_t *wm, int w, int h) {
 	wm->bottom = wm->height / 2;
 	wm->left = wm->width / 2;
 	wm->right = wm->width / 2;
-
+	position_t o[8] = {{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0}};
 
 	int x, y, z;
 	for (y = 0; y < h; y++) {
@@ -38,7 +47,12 @@ void world_map_init(world_map_t *wm, int w, int h) {
 			data_set(wm, x, y, WORLD_MAP_UNVISITED);
 			wm->worldMap[y*w + x].shot_diamond = 0;
 			for(z = 0; z < 8; z++){
-				//wm->worldMap[y*w + x].neighbors[z]->timestamp = CLOCKS_PER_SEC * 250;
+				int neX = x + o[z].x;
+				int neY = y + o[z].y;
+				if (world_map_in_bounds(wm, neX, neY)) {
+					wm->worldMap[y*w + x].neighbors[z] = &wm->worldMap[neY*w + neX];
+					wm->worldMap[y*w + x].neighbors[z]->timestamp = CLOCKS_PER_SEC * 250 ;
+				}
 			}
 		}
 	}
