@@ -104,7 +104,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 
 	int num_neighbors = 0;
 	//bounds check before calling to get path
-	if( up <= 0 ) {
+	if( up >= -max_y ) {
 		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, x);
 		num_neighbors++;
@@ -116,7 +116,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, left);
 			num_neighbors++;
 		}
-		if( right <= max_x ){
+		if( right < max_x ){
 			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, right);
 			num_neighbors++;
@@ -125,7 +125,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 			num_neighbors++;
 		}
 	}
-	if( down >= -max_y ) {
+	if( down < max_y ) {
 		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, x);
 		num_neighbors++;
@@ -134,7 +134,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, left);
 			num_neighbors++;
 		}
-		if( right <= max_x ){
+		if( right < max_x ){
 			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, right);
 			num_neighbors++;
@@ -147,8 +147,8 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	for (int i = 0; i < num_neighbors; i++){
 		double distance = curr_tile->neighbors[i]->path_to->distance;
 		int grid_dist = (distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
-		//printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
-		//printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
+		printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
+		printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
 		curr_tile->neighbors[i]->distance = grid_dist;
 
 	}
@@ -164,11 +164,6 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	}
 	state->targetPath = curr_tile->neighbors[use_path]->path_to;
     state->targetPathValid  = 1;
-
-	if(curr_tile->neighbors[use_path]->visited == 0){
-		curr_tile->neighbors[use_path]->visited = 1;
-		curr_tile->neighbors[use_path]->timestamp = clock();
-	}
 
 	return curr_tile->neighbors[use_path]->path_to;
 }
