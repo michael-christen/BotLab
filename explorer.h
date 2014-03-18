@@ -35,7 +35,8 @@ enum explorer_state{
 	EX_GOHOME,
 	EX_START,
 	EX_EXIT,
-	EX_WAIT
+	EX_WAIT,
+	EX_DEFAULT
 };
 
 path_t * choose_path(void * data, double pre_analyze_theta);

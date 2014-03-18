@@ -109,14 +109,14 @@ void driveToTheta(state_t * state, double theta) {
 	int64_t endInt = state->gyro_int[2];
 	double endTheta = state->pos_theta;
 	double gyroTheta = (endInt - beginningInt)/state->gyro_ticks_per_theta;
-	printf("Gyro angle in radians: %g\n", gyroTheta);
+	//printf("Gyro angle in radians: %g\n", gyroTheta);
 	double stateTheta = endTheta - beginningTheta;
 	gyroTheta = gyroTheta/M_PI * 180.0;
 	stateTheta = stateTheta/M_PI * 180.0;
 	//printf("stopping pid with diff: %f\n",
 		 //  getThetaDist(state->pos_theta, state->goal_theta));
-	printf("Theta measured by gyro: %g\n", gyroTheta);
-	printf("Theta measured by tick: %g\n", stateTheta);
+	//printf("Theta measured by gyro: %g\n", gyroTheta);
+	//printf("Theta measured by tick: %g\n", stateTheta);
 	driveStop(state);
 }
 
@@ -136,7 +136,7 @@ void driveToPosition(state_t * state, position_t position){
 	state->doing_pid_theta = 1;
 
 	if(dist > thresh) {
-		printf("theta chosen: %f\n",theta);
+		//printf("theta chosen: %f\n",theta);
 		rotateTheta(state,-theta);
 	}
 	pid_ctrl_t *pos_pid = malloc(sizeof(pid_ctrl_t));
@@ -147,7 +147,7 @@ void driveToPosition(state_t * state, position_t position){
 		dist = getDist(state->pos_x, state->pos_y,
 			state->goal_x, state->goal_y);
 		theta= getDiffTraj(state);
-		printf("dist: %f, theta: %f\n",dist, theta);
+		//printf("dist: %f, theta: %f\n",dist, theta);
 
 		//Negative is to the right
 		//Positive is to the left
@@ -168,11 +168,11 @@ void driveToPosition(state_t * state, position_t position){
 
 		double speed_f= pid_get_output(pos_pid, dist);
 		double speed  = fabs(speed_f);
-		printf("radius: %f, speed: %f\n",radius, speed);
+		//printf("radius: %f, speed: %f\n",radius, speed);
 
 		double thresh_ang = M_PI/2;
 		if(fabs(theta) >= thresh_ang) {
-			printf("rotating theta\n");
+			//printf("rotating theta\n");
 			rotateTheta(state, -theta);
 		} else {
 			driveRad(state, radius, speed);
@@ -180,7 +180,7 @@ void driveToPosition(state_t * state, position_t position){
 
 		usleep(50000);
 	}
-	printf("You have arrived at your destination!\n");
+	//printf("You have arrived at your destination!\n");
 	state->doing_pid_theta = 0;
 	driveStop(state);
 	free(pos_pid);
