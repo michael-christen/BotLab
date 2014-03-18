@@ -723,7 +723,7 @@ void* FSM(void* data){
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
-				printf("STATE: Move\n");
+				printf("\nSTATE: Move\n");
 				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
 					driveToPosition(state, waypoint);
@@ -739,13 +739,13 @@ void* FSM(void* data){
 				}
 				break;}
 			case EX_TURN:{
-				printf("STATE: Turn\n");
+				printf("\nSTATE: Turn\n");
 				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
 				nextState = EX_ANALYZE; */
 				break;}
 			case EX_WAIT: {
-				printf("STATE: Wait\n");
+				printf("\nSTATE: Wait\n");
 				while (!state->FSM) {
 					usleep(1000);
 				}
@@ -753,7 +753,7 @@ void* FSM(void* data){
 			break;}
 			case EX_ZAP_DIAMOND:{
 				printf("STATE: Zap Diamond\n");
-				/*for(int h = 0; h < state->num_balls; h++){
+				for(int h = 0; h < state->num_balls; h++){
 					ball_t diamond = state->balls[h];
 					double image_x = diamond.x;
 					double image_y = diamond.y;
@@ -762,13 +762,14 @@ void* FSM(void* data){
 					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
 					double pos_x = diamond_x + state->pos_x;
 					double pos_y = diamond_y + state->pos_y;
-
+					printf("Diamond %d at %f, %f\n", h, pos_x, pos_y);
 					if(diamondIsZapped(state, pos_x, pos_y)){
 						//Go to next diamond in image
+						printf("Alread saw diamond %d\n", h);
 						continue;
 					}
 
-/*
+
 					for(int k = 0; k < state->num_pts_tape; k++){
 						if(state->tape[k].x == image_x){
 							image_y = state->tape[k].y;
@@ -779,7 +780,7 @@ void* FSM(void* data){
 					pos_x = diamond_x + state->pos_x;
 					pos_y = diamond_y + state->pos_y;
 
-					double dx = pos_x - state->pos_x;
+					/*double dx = pos_x - state->pos_x;
 					double dy = pos_y - state->pos_y;
 					double dtheta = atan2(dy, dx);
 					double originalTheta = state->pos_theta;
@@ -798,14 +799,15 @@ void* FSM(void* data){
 					state->doing_pid_theta = 1;
 					driveToTheta(state, originalTheta);
 
-					state->doing_pid_theta = 0; */
+					state->doing_pid_theta = 0;*/
+				}
 
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_GOHOME:
-				printf("STATE: Go Home\n");
+				printf("\nSTATE: Go Home\n");
 			case EX_EXIT:{
-				printf("STATE: Exit\n");
+				printf("\nSTATE: Exit\n");
 				state->doing_pid_theta = 1;
 				rotateTheta(state, 2*M_PI - 0.001);
 				rotateTheta(state, -2*M_PI + 0.001);
@@ -814,7 +816,7 @@ void* FSM(void* data){
 				return NULL;
 				break;}
 			case EX_START:{
-				printf("STATE: Start\n");
+				printf("\nSTATE: Start\n");
 				if(!camera_init(state)){
 					nextState = EX_EXIT;
 					break;
@@ -824,7 +826,7 @@ void* FSM(void* data){
 				nextState = EX_WAIT;
 			break;}
 			case EX_ANALYZE:{
-				printf("STATE: Analyze");
+				printf("\nSTATE: Analyze\n");
 				pre_analyze_theta = state->pos_theta;
 				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
@@ -842,10 +844,11 @@ void* FSM(void* data){
 					state->doing_pid_theta = 0;
 					camera_process(state);
 					//Uncomment to zap diamonds (pew pew)
-					/*if(state->num_balls){
-						nextState = EX_ZAP_DIAMOND;
-						break;
-					}*/
+					if(state->num_balls){
+						printf("Found a diamond!\n");
+						//nextState = EX_ZAP_DIAMOND;
+						//break;
+					}
 				}
 				if(turnIndex == 5){
 					turnIndex = 0;
@@ -853,7 +856,7 @@ void* FSM(void* data){
 				printf("going into default\n");
 			}
 			default:
-				printf("STATE: Default");
+				printf("\nSTATE: Default\n");
 				if (!state->FSM) {
 					nextState = EX_WAIT;
 				} else {
@@ -1002,21 +1005,9 @@ int main(int argc, char ** argv)
 	pid_init(state->theta_pid, 0.5, 0.4, 0.04, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
-	//haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 10, HAZ_MAP_MAX_HEIGHT/2 + 10, HAZ_MAP_OBSTACLE);
-	//haz_map_compute_config(&state->hazMap);
-	/*for (i = 0; i < 10; i++) {
-		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
-		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2, HAZ_MAP_MAX_HEIGHT/2 + 10 + i, HAZ_MAP_OBSTACLE);
-		haz_map_set(&state->hazMap, HAZ_MAP_MAX_WIDTH/2 + 2 + i, HAZ_MAP_MAX_HEIGHT/2 + i, HAZ_MAP_OBSTACLE);
-	}*/
 
 
 	world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
-
-
-	//state->targetPath = haz_map_get_path(&state->hazMap, 40, 40);
-	//state->targetPathValid = 1;
-
 
 	//Should be width
 	state->tape = calloc(1000, sizeof(pixel_t));
