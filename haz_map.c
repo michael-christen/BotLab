@@ -197,6 +197,10 @@ void haz_map_translate(haz_map_t *hm, double newX, double newY) {
 }
 
 void haz_map_get(haz_map_t *hm, haz_map_tile_t *tile, int x, int y) {
+	if(y*hm->width + x >= hm->height*hm->width) {
+		tile->type = HAZ_MAP_INVALID;
+		return;
+	}
 	int i;
 	haz_map_tile_t *tTile = &hm->hazMap[y*hm->width + x];
 	tile->type = tTile->type;
@@ -245,11 +249,11 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	int testindex = adjEndY*hm->width + adjEndX;
 	if(testindex >= HAZ_MAP_MAX_WIDTH * HAZ_MAP_MAX_HEIGHT) { printf("testindex %d out of range in djikstra\n", testindex); return;}
 	curTile = &hm->hazMap[testindex];
-	/*if (curTile->type == HAZ_MAP_OBSTACLE) {
+	if (curTile->type == HAZ_MAP_OBSTACLE || curTile->type == HAZ_MAP_UNKNOWN) {
 		retPath = malloc(sizeof(path_t));
 		retPath->length = retPath->distance = 0;
 		return retPath;
-	}*/
+	}
 	//int startX = 0;
 	//int startY = 0;
 
@@ -339,6 +343,28 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	retPath->position = 0;
 	for (i = retPath->length - 1; i >= 0; i--) {
 		curIndex = curTile->y*hm->width + curTile->x;
+		switch(curTile->type) {
+			case HAZ_MAP_OBSTACLE:
+				printf("tile is OBSTACLE\n");
+			break;
+			case HAZ_MAP_UNKNOWN:
+				printf("tile is UNKNOWN\n");
+			break;
+			case HAZ_MAP_FREE:
+				printf("tile is FREE\n");
+			break;
+		}
+		if (curTile->type == HAZ_MAP_OBSTACLE || curTile->type == HAZ_MAP_UNKNOWN) {
+			if (curTile->type == HAZ_MAP_OBSTACLE) {
+				printf("tile on the way back was OBSTACLE\n");
+			} else {
+				printf("tile on the way back was UNKNOWN\n");
+			}
+			retPath->length = 0;
+			distance = 0;
+			free(retPath->waypoints);
+			break;
+		}
 		if (curTile != prevTile) {
 			if (curTile->x != prevTile->x && curTile->y != prevTile->y) {
 				distance += GRID_RES * 1.41421; // GRID_RES * sqrt(2)
@@ -429,7 +455,7 @@ void haz_map_compute_config(haz_map_t *hm) {
 					for (u = minU; u <= maxU; u++) {
 						dist = sqrt(pow(u - x, 2) + pow(y - v, 2));
 						confDist  = sqrt(pow(u - originX, 2) + pow(v - originY, 2));
-						if (dist >= obstOffset) {
+						if (dist > obstOffset) {
 							if (confDist < obstDist) {
 								haz_map_get(hm, &tile, u, v);
 								val = pow(offset - dist, 2) + HAZ_MAP_REPULSE_FACTOR;

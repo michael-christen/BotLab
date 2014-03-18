@@ -83,7 +83,11 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, double bruce_x, doubl
 		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
 	}
 	else{
-		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
+		//haz_map_tile_t checkTile;
+		//haz_map_get(hm, &checkTile, map_x_scaled, map_y_scaled);
+		//if (checkTile.type != HAZ_MAP_INVALID && checkTile.type != HAZ_MAP_OBSTACLE) {
+			haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
+		//}
 	}
 
 	matd_destroy(rel_coords);

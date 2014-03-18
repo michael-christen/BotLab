@@ -725,7 +725,6 @@ void* FSM(void* data){
 	curState = EX_START;
 	nextState = curState;
 	path_t* path = state->targetPath;
-	path = choose_path(state, pre_analyze_theta);
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
 	int turnIndex = 0;
@@ -884,11 +883,11 @@ void* FSM(void* data){
 							usleep(1000);
 						}
 						// To use mouse path, uncomment following line
-						//path = state->targetPath;
+						path = state->targetPath;
 						// To use autonomous path finding, uncomment following lines
-						path = choose_path(state, pre_analyze_theta);
-						state->targetPath = path;
-						state->targetPathValid = 1;
+						//path = choose_path(state, pre_analyze_theta);
+						//state->targetPath = path;
+						//state->targetPathValid = 1;
 						printf("after path calc\n");
 					}
 
@@ -925,7 +924,7 @@ void* position_tracker(void *data) {
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
 
-		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
+		//world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
 	//		state->pos_x += 1;
 	//		state->pos_y += 2;
 
@@ -1026,7 +1025,7 @@ int main(int argc, char ** argv)
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
 
-	world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
+	//world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
 
 	//Should be width
 	state->tape = calloc(1000, sizeof(pixel_t));

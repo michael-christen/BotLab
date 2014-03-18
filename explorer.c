@@ -277,7 +277,6 @@ explorer_state_t explorer_run(explorer_t *ex, haz_map_t *hm, double x, double y,
 	/*int forwardDist = explorer_check_region(ex, hm, EXPLORER_REGION_FORWARD, theta);
 	int leftDist = explorer_check_region(ex, hm, EXPLORER_REGION_LEFT, theta);
 	printf("forwardDist: %d\n", forwardDist);
-<<<<<<< HEAD
 	printf("leftDist: %d\n", leftDist);*/
 	return EX_MOVE;
 
