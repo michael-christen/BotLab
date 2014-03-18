@@ -90,24 +90,21 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	cm_to_world_cell(x, y, &gridx, &gridy);
 	world_map_tile_t * curr_tile = &wm->worldMap[gridy*(wm->width) + gridx];
 
-	printf("gridx: %d gridy: %d x: %f y: %f\n", gridx, gridy, x, y);
+	//printf("gridx: %d gridy: %d x: %f y: %f\n", gridx, gridy, x, y);
 	//find coordinates for center of all neighboring grid cells
-	int mid_x, mid_y;
+
 	int up, down, right, left;
 
+	up =  y - WORLD_MAP_RES;
+	down = y + WORLD_MAP_RES;
+	right = x + WORLD_MAP_RES;
+	left = x - WORLD_MAP_RES;
 
-	mid_y =  WORLD_MAP_RES*gridy - WORLD_MAP_RES*WORLD_MAP_MAX_HEIGHT/2;
- 	mid_x =  WORLD_MAP_RES*gridx - WORLD_MAP_RES*WORLD_MAP_MAX_WIDTH/2;
-	up =  mid_y - WORLD_MAP_RES;
-	down = mid_y + WORLD_MAP_RES;
-	right = mid_x + WORLD_MAP_RES;
-	left = mid_x - WORLD_MAP_RES;
-
-	printf("midx, midy: (%d, %d) up: %d down: %d right %d left %d)\n", mid_x, mid_y, up, down, left, right);
+	//printf("midx, midy: (%d, %d) up: %d down: %d right %d left %d)\n", mid_x, mid_y, up, down, left, right);
 
 	int num_neighbors = 0;
 	//bounds check before calling to get path
-	if( up <= max_y ) {
+	if( up >= -max_y ) {
 		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, x);
 		num_neighbors++;
@@ -119,7 +116,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, left);
 			num_neighbors++;
 		}
-		if( right <= max_x ){
+		if( right < max_x ){
 			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, right);
 			num_neighbors++;
@@ -128,7 +125,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 			num_neighbors++;
 		}
 	}
-	if( down >= -max_y ) {
+	if( down < max_y ) {
 		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, x);
 		num_neighbors++;
@@ -137,20 +134,21 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, left);
 			num_neighbors++;
 		}
-		if( right <= max_x ){
+		if( right < max_x ){
 			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, right);
 			num_neighbors++;
 		}
 	}
 
-	printf("num_neighbors: %d\n", num_neighbors);
+	//printf("num_neighbors: %d\n", num_neighbors);
 
 	//evaluate grid cell distance for all neighbors
 	for (int i = 0; i < num_neighbors; i++){
 		double distance = curr_tile->neighbors[i]->path_to->distance;
 		int grid_dist = (distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
 		printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
+		printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
 		curr_tile->neighbors[i]->distance = grid_dist;
 
 	}
@@ -158,17 +156,16 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	//qsort
 	qsort(curr_tile->neighbors, num_neighbors, sizeof(world_map_tile_t), movement_compare);
 
-	printf("target path length: %d \n", curr_tile->neighbors[0]->path_to->length);
-    state->targetPath = curr_tile->neighbors[0]->path_to;
+	int use_path = 0;
+
+	//printf("target path length: %d \n", curr_tile->neighbors[0]->path_to->length);
+	while(curr_tile->neighbors[use_path]->path_to->length == 0 && use_path < 8){
+		use_path++;
+	}
+	state->targetPath = curr_tile->neighbors[use_path]->path_to;
     state->targetPathValid  = 1;
 
-	 if(curr_tile->neighbors[0]->visited == 0){
-		curr_tile->neighbors[0]->visited = 1;
-		curr_tile->neighbors[0]->timestamp = clock();
-	 }
-
-
-	return curr_tile->neighbors[0]->path_to;
+	return curr_tile->neighbors[use_path]->path_to;
 }
 
 
