@@ -235,7 +235,9 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	zarray_t *dData, *pq;
 	haz_map_tile_t *curTile, *checkTile;
 	int adjEndX = ((endX - hm->x) / GRID_RES) + hm->width/2;
+	printf("endX: %f, hm->x %f\n", endX, hm->x);
 	int adjEndY = ((endY - hm->y) / GRID_RES) + hm->height/2;
+	printf("endY: %f, hm->y %f\n", endY, hm->y);
 	//int adjEndX = 0;
 	//int adjEndY = 4;
 	int startX = hm->width/2;

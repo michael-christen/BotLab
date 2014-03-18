@@ -144,7 +144,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 		}
 	}
 
-	printf("num_neighbors: %d", num_neighbors);
+	printf("num_neighbors: %d\n", num_neighbors);
 
 	//evaluate grid cell distance for all neighbors
 	for (int i = 0; i < num_neighbors; i++){
