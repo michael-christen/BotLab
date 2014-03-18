@@ -42,5 +42,6 @@ double getDiffTraj(state_t *state);
 
 double getDist(double cur_x, double cur_y,
 						double new_x, double new_y);
+void driveLR(state_t *state, double l, double r, double speed);
 
 #endif

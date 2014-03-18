@@ -131,7 +131,8 @@ void moveBot(state_t* state){
 		usleep(50000);
 		driveStop(state);
 	} else if (state->cmd_val == FORWARD) {
-		driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
+		//driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
+		driveLR(state, 1, 1+state->left_offset, LONG_SPEED);
 		//printf("ARC: %f\n", state->left_offset);
 	} else if(state->cmd_val == BACKWARD) {
 		driveStraight(state, -LONG_SPEED);
@@ -321,11 +322,11 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 				state->calibrating = 0;
 			}
 		} else if(key->key_code ==';') {
-			state->left_offset += 5;
-			printf("off: %f\n", STRAIGHT_OFFSET + state->left_offset);
+			state->left_offset += 0.01;
+			printf("off: %f\n", state->left_offset);
 		} else if(key->key_code =='\'') {
-			state->left_offset -= 5;
-			printf("off: %f\n", STRAIGHT_OFFSET + state->left_offset);
+			state->left_offset -= 0.01;
+			printf("off: %f\n", state->left_offset);
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
 		} else if(key->key_code == '-') {
@@ -882,7 +883,7 @@ void* FSM(void* data){
 					/*	while (state->targetPathValid == 0) {
 							usleep(1000);
 						}
-					*/	
+					*/
 						// To use mouse path, uncomment following line
 						path = state->targetPath;
 						// To use autonomous path finding, uncomment following lines
@@ -1022,7 +1023,7 @@ int main(int argc, char ** argv)
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 	//0.5 is way too high for d
-	pid_init(state->theta_pid, 0.8, 0.0, 0.2, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
