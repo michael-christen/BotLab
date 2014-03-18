@@ -721,6 +721,7 @@ void* FSM(void* data){
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
+				printf("STATE: Move\n");
 				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
 					driveToPosition(state, waypoint);
@@ -736,17 +737,20 @@ void* FSM(void* data){
 				}
 				break;}
 			case EX_TURN:{
+				printf("STATE: Turn\n");
 				/*double theta = explorer_get_theta(&explorer);
 				rotateTheta(state, theta);
 				nextState = EX_ANALYZE; */
 				break;}
 			case EX_WAIT: {
+				printf("STATE: Wait\n");
 				while (!state->FSM) {
 					usleep(1000);
 				}
 				nextState = EX_ANALYZE;
 			break;}
 			case EX_ZAP_DIAMOND:{
+				printf("STATE: Zap Diamond\n");
 				/*for(int h = 0; h < state->num_balls; h++){
 					ball_t diamond = state->balls[h];
 					double image_x = diamond.x;
@@ -797,7 +801,9 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE;
 				break;}
 			case EX_GOHOME:
+				printf("STATE: Go Home\n");
 			case EX_EXIT:{
+				printf("STATE: Exit\n");
 				state->doing_pid_theta = 1;
 				rotateTheta(state, 2*M_PI - 0.001);
 				rotateTheta(state, -2*M_PI + 0.001);
@@ -806,6 +812,7 @@ void* FSM(void* data){
 				return NULL;
 				break;}
 			case EX_START:{
+				printf("STATE: Start\n");
 				if(!camera_init(state)){
 					nextState = EX_EXIT;
 					break;
@@ -815,8 +822,8 @@ void* FSM(void* data){
 				nextState = EX_WAIT;
 			break;}
 			case EX_ANALYZE:{
-				pre_analyze_theta = state->pos_theta;
 				printf("STATE: Analyze");
+				pre_analyze_theta = state->pos_theta;
 				time_t cur_time = time(NULL);
 				clock_t curTime = clock();
 				state->fsm_time_elapsed = difftime(cur_time, start_time);
@@ -844,19 +851,20 @@ void* FSM(void* data){
 				printf("going into default\n");
 			}
 			default:
+				printf("STATE: Default");
 				if (!state->FSM) {
 					nextState = EX_WAIT;
 				} else {
 					printf("before path calc\n");
 					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 					if(nextState == EX_MOVE){
-						/*while (state->targetPathValid == 0) {
+						while (state->targetPathValid == 0) {
 							usleep(1000);
-						}*/
-						//path = state->targetPath;
+						}
+						path = state->targetPath;
 						path = dumb_explore(state, pre_analyze_theta);
-						state->targetPath = path;
-						state->targetPathValid = 1;
+						//state->targetPath = path;
+						//state->targetPathValid = 1;
 						printf("after path calc\n");
 					}
 

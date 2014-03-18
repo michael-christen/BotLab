@@ -355,7 +355,6 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 		}
 	}
 	retPath->distance = distance;
-	printf("curDist: %f\n", retPath->distance);
 	zarray_destroy(dData);
 	return retPath;
 }
