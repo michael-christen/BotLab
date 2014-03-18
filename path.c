@@ -2,7 +2,9 @@
 #include "stdlib.h"
 
 void path_destroy(path_t *path) {
-	free(path->waypoints);
-	path->waypoints = NULL;
+	if (path->length > 0) {
+		free(path->waypoints);
+		path->waypoints = NULL;
+	}
 	free(path);
 }

@@ -186,7 +186,7 @@ void draw_path(vx_buffer_t *buf, path_t *path, const float color[]) {
         }
         traj[baseIndex] = path->waypoints[i].x * CM_TO_VX;
         traj[baseIndex + 1] = path->waypoints[i].y * CM_TO_VX;
-        traj[baseIndex + 2] = 0.5;
+        traj[baseIndex + 2] = 0.1;
 
         if (i != path->length - 1 &&  i != 0) {
             traj[baseIndex + 3] = traj[baseIndex];
@@ -522,7 +522,7 @@ void* gui_create(void *data) {
 	state->layers[1].render = renderCameraPOVLayer;
 	state->layers[1].destroy = destroyCameraPOVLayer;
 
-	state->layers[2].enable = 1;
+	state->layers[2].enable = 0;
 	state->layers[2].name = "WorldSeen";
 	state->layers[2].position[0] = 0.666f;
 	state->layers[2].position[1] = 0;
