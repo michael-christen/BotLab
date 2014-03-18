@@ -90,7 +90,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	cm_to_world_cell(x, y, &gridx, &gridy);
 	world_map_tile_t * curr_tile = &wm->worldMap[gridy*(wm->width) + gridx];
 
-	//printf("gridx: %d gridy: %d x: %f y: %f\n", gridx, gridy, x, y);
+	printf("gridx: %d gridy: %d x: %f y: %f\n", gridx, gridy, x, y);
 	//find coordinates for center of all neighboring grid cells
 	int mid_x, mid_y;
 	int up, down, right, left;
@@ -144,7 +144,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 		}
 	}
 
-	//printf("num_neighbors: %d", num_neighbors);
+	printf("num_neighbors: %d", num_neighbors);
 
 	//evaluate grid cell distance for all neighbors
 	for (int i = 0; i < num_neighbors; i++){

@@ -715,7 +715,7 @@ void* FSM(void* data){
 	curState = EX_START;
 	nextState = curState;
 	path_t* path = state->targetPath;
-	path = dumb_explore(state, pre_analyze_theta);
+	path = choose_path(state, pre_analyze_theta);
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
 	int turnIndex = 0;
@@ -876,9 +876,9 @@ void* FSM(void* data){
 						// To use mouse path, uncomment following line
 						path = state->targetPath;
 						// To use autonomous path finding, uncomment following lines
-						//path = dumb_explore(state, pre_analyze_theta);
-						//state->targetPath = path;
-						//state->targetPathValid = 1;
+						path = choose_path(state, pre_analyze_theta);
+						state->targetPath = path;
+						state->targetPathValid = 1;
 						printf("after path calc\n");
 					}
 
