@@ -74,7 +74,7 @@ void unionLabels(Set *links[MAX_NUM_BALLS], int n_labels[MAX_NUM_NEIGHBORS],
 
 int blob_detection(image_u32_t *im, ball_t *final_balls,
 				   double template_hue, uint32_t show_px,
-				   double color_threshold) {
+				   double color_threshold, int min_pxs) {
 	//aka max #labels
 	//list of links b/t labels
 	//Array of Set *
@@ -203,7 +203,7 @@ int blob_detection(image_u32_t *im, ball_t *final_balls,
 	//printf("%d possible diamonds\n",label_num);
 	for(i = 1; i < label_num; ++i) {
 		//Assert right num_pxs
-		int right_num_pxs = (balls[i].num_px >= MIN_PXS &&
+		int right_num_pxs = (balls[i].num_px >= min_pxs &&
 							 balls[i].num_px <= MAX_PXS);
 
 		if(right_num_pxs) {
