@@ -96,8 +96,8 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	int up, down, right, left;
 
 
-	mid_y = WORLD_MAP_RES/2 + WORLD_MAP_RES*gridy;
- 	mid_x = WORLD_MAP_RES/2 + WORLD_MAP_RES*gridx;
+	mid_y =  WORLD_MAP_RES*gridy - WORLD_MAP_RES*WORLD_MAP_MAX_HEIGHT/2;
+ 	mid_x =  WORLD_MAP_RES*gridx - WORLD_MAP_RES*WORLD_MAP_MAX_WIDTH/2;
 	up =  mid_y - WORLD_MAP_RES;
 	down = mid_y + WORLD_MAP_RES;
 	right = mid_x + WORLD_MAP_RES;
@@ -161,6 +161,11 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	printf("target path length: %d \n", curr_tile->neighbors[0]->path_to->length);
     state->targetPath = curr_tile->neighbors[0]->path_to;
     state->targetPathValid  = 1;
+
+	 if(curr_tile->neighbors[0]->visited == 0){
+		curr_tile->neighbors[0]->visited = 1;
+		curr_tile->neighbors[0]->timestamp = clock();
+	 }
 
 
 	return curr_tile->neighbors[0]->path_to;

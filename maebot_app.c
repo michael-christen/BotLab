@@ -884,7 +884,7 @@ void* FSM(void* data){
 							usleep(1000);
 						}
 						// To use mouse path, uncomment following line
-						path = state->targetPath;
+						//path = state->targetPath;
 						// To use autonomous path finding, uncomment following lines
 						path = choose_path(state, pre_analyze_theta);
 						state->targetPath = path;
