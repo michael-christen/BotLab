@@ -846,21 +846,22 @@ void* FSM(void* data){
 					camera_process(state);
 					printf("Finsihed camera process\n");
 					//Uncomment to zap diamonds (pew pew)
-					if(state->num_balls){
+					/*if(state->num_balls){
 						printf("Found a diamond!\n");
 						nextState = EX_ZAP_DIAMOND;
 						break;
-					}
+					}*/
 				}
-				if (nextState == EX_ZAP_DIAMOND) {
+				/*if (nextState == EX_ZAP_DIAMOND) {
 					break;
-				}
+				}*/
 				if(turnIndex == 5){
 					turnIndex = 0;
 				}
 				printf("going into default\n");
 				nextState = EX_DEFAULT;
 			break;}
+			case EX_DEFAULT:
 			default:
 				printf("\nSTATE: Default\n");
 				if (!state->FSM) {
@@ -872,7 +873,9 @@ void* FSM(void* data){
 						while (state->targetPathValid == 0) {
 							usleep(1000);
 						}
+						// To use mouse path, uncomment following line
 						path = state->targetPath;
+						// To use autonomous path finding, uncomment following lines
 						//path = dumb_explore(state, pre_analyze_theta);
 						//state->targetPath = path;
 						//state->targetPathValid = 1;
