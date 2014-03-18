@@ -837,10 +837,10 @@ void* FSM(void* data){
 					break;
 				}
 				for (; turnIndex < 5; turnIndex++) {
-					analyzeAngle = turnIndex * 2.0 * M_PI / 5;
+					analyzeAngle = 2.0 * M_PI / 5;
 
 					state->doing_pid_theta = 1;
-					driveToTheta(state, analyzeAngle);
+					driveToTheta(state, state->pos_theta + analyzeAngle);
 					state->doing_pid_theta = 0;
 					camera_process(state);
 					//Uncomment to zap diamonds (pew pew)
