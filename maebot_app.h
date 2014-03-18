@@ -248,6 +248,7 @@ struct state_t {
 	int         doing_pid_theta;
 
 	double left_offset;
+	int min_pxs;
 };
 
 //////////////

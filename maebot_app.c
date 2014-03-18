@@ -87,7 +87,9 @@ void moveBot(state_t* state){
 			//Wait for fresh image to arrive
 			pthread_cond_wait(&state->image_cv, &state->image_mutex);
 			state->num_balls = blob_detection(state->im, state->balls,
-											  state->hue, 0xff039dfd, state->thresh);
+											  state->hue, 0xff039dfd,
+											  state->thresh,
+											  state->min_pxs);
 			//printf("num_balls: %d\n",state->num_balls);
 			if(state->num_balls == 1) {
 				state->diff_x = state->im->width/2.0 - state->balls[0].x;
@@ -327,7 +329,13 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			printf("off: %f\n", STRAIGHT_OFFSET + state->left_offset);
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
-		} /*else if(key->key_code == 'z') {
+		} else if(key->key_code == '-') {
+			state->min_pxs	-= 10;
+			printf("min_pxs: %d",state->min_pxs);
+		}else if(key->key_code == '=') {
+			state->min_pxs += 10;
+			printf("min_pxs: %d",state->min_pxs);
+		}/*else if(key->key_code == 'z') {
 			double average_change_int[120];
 			double average_theta[120];
 			double average_theta_degrees[120];
@@ -559,7 +567,9 @@ void camera_process(state_t* state){
 			//Also, gonna need to copy image
 			//Green
 			if(!state->doing_pid) {
-				state->num_balls = blob_detection(state->im, state->balls, state->hue, 0xff039dfd, state->thresh);
+				state->num_balls = blob_detection(state->im,
+						state->balls, state->hue, 0xff039dfd,
+						state->thresh, state->min_pxs);
 			}
 			//DO NOT DELETE
 			//Uncommont to filter zapped diamonds from detection
@@ -1023,6 +1033,7 @@ int main(int argc, char ** argv)
 	state->displayStarted = state->displayFinished = 0;
 
 	state->left_offset = 0;
+	state->min_pxs     = 500;
 
 	pthread_mutex_init(&state->layer_mutex, NULL);
 	pthread_mutex_init(&state->cmd_mutex, NULL);

@@ -54,7 +54,7 @@ void unionLabels(Set *links[MAX_NUM_BALLS], int n_labels[MAX_NUM_NEIGHBORS],
 
 int blob_detection(image_u32_t *im, ball_t *final_balls,
                    double template_hue, uint32_t show_px,
-                   double color_threshold);
+                   double color_threshold, int min_pxs);
 
 
 #endif
