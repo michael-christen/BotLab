@@ -51,12 +51,14 @@ void world_map_init(world_map_t *wm, int w, int h) {
 		for (x = 0; x < w; x++) {
 			data_set(wm, x, y, WORLD_MAP_UNVISITED);
 			wm->worldMap[y*w + x].shot_diamond = 0;
+			wm->worldMap[y*w + x].visited = 0;
+			wm->worldMap[y*w + x].timestamp = CLOCKS_PER_SEC * 250 ;
+			wm->worldMap[y*w + x].distance = 0 ;
 			for(z = 0; z < 8; z++){
 				int neX = x + o[z].x;
 				int neY = y + o[z].y;
 				if (world_map_in_bounds(wm, neX, neY)) {
 					wm->worldMap[y*w + x].neighbors[z] = &wm->worldMap[neY*w + neX];
-					wm->worldMap[y*w + x].neighbors[z]->timestamp = CLOCKS_PER_SEC * 250 ;
 				}
 			}
 		}

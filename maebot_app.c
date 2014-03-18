@@ -1092,6 +1092,13 @@ int main(int argc, char ** argv)
 	pthread_create(&state->fsm_thread, NULL, FSM, state);
 
 
+	int i;
+	for (i = 0; i <20; i ++){
+		choose_path(state, 0);
+		state->pos_x += 3;
+		state->pos_y += 10;
+
+	}
 
 	/*	find_H_matrix(state);
 		int obstacle = 0, x_px = 156, y_px = 352;

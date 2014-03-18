@@ -141,11 +141,15 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 		}
 	}
 
-	//printf("num_neighbors: %d\n", num_neighbors);
+	printf("num_neighbors: %d\n", num_neighbors);
 
 	//evaluate grid cell distance for all neighbors
 	for (int i = 0; i < num_neighbors; i++){
-		double distance = curr_tile->neighbors[i]->path_to->distance;
+
+		double distance = 0;
+		if (curr_tile->neighbors[num_neighbors]/->path_to->length != 0){
+			distance = curr_tile->neighbors[num_neighbors]->path_to->distance;
+		}
 		int grid_dist = (distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
 		printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
 		printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
