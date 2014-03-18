@@ -321,8 +321,10 @@ static int key_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_key_event_t *
 			}
 		} else if(key->key_code ==';') {
 			state->left_offset += 5;
+			printf("off: %f\n", STRAIGHT_OFFSET + state->left_offset);
 		} else if(key->key_code =='\'') {
 			state->left_offset -= 5;
+			printf("off: %f\n", STRAIGHT_OFFSET + state->left_offset);
 		} else if(key->key_code == 'f') {
 			state->FSM = !state->FSM;
 		} /*else if(key->key_code == 'z') {
