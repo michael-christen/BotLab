@@ -738,12 +738,18 @@ void* FSM(void* data){
 	clock_t startTime = clock();
 	int turnIndex = 0;
 	double analyzeAngle;
+	fired_from_t* firedFrom;
+	int fires = 0;
+	int ftthresh = 12;
+	double frthresh = M_PI/3;
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
 				printf("\nSTATE: Move\n");
 				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
+					printf("cX: %d, cY: %d\n", state->pos_x, state->pos_y);
+					printf("tX: %d, tY: %d\n", waypoint.x, waypoint.y);
 					driveToPosition(state, waypoint);
 					path->position++;
 					printf("Completed move %d\n", path->position);
@@ -771,7 +777,7 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE;
 			break;}
 			case EX_ZAP_DIAMOND:{
-				printf("STATE: Zap Diamond\n");
+				printf("STATE: Zap Diamond\n");/*
 				for(int h = 0; h < state->num_balls; h++){
 					ball_t diamond = state->balls[h];
 					double image_x = diamond.x;
@@ -799,7 +805,7 @@ void* FSM(void* data){
 					pos_x = diamond_x + state->pos_x;
 					pos_y = diamond_y + state->pos_y;
 
-					/*double dx = pos_x - state->pos_x;
+					double dx = pos_x - state->pos_x;
 					double dy = pos_y - state->pos_y;
 					double dtheta = atan2(dy, dx);
 					double originalTheta = state->pos_theta;
@@ -818,8 +824,15 @@ void* FSM(void* data){
 					state->doing_pid_theta = 1;
 					driveToTheta(state, originalTheta);
 
-					state->doing_pid_theta = 0;*/
-				}
+					state->doing_pid_theta = 0;
+				}*/
+				double originalTheta = state->pos_theta;
+				shoot_diamond(state);
+				firedFrom[fires].x = state->pos_x;
+				firedFrom[fires].y = state->pos_y;
+				firedFrom[fires].theta = state->pos_theta;
+				fires++;
+				driveToTheta(state, originalTheta);
 
 				nextState = EX_ANALYZE;
 				break;}
@@ -856,24 +869,41 @@ void* FSM(void* data){
 					break;
 				}
 				for (; turnIndex < 6; turnIndex++) {
+					printf("Turn Index: %d\n", turnIndex);
 					analyzeAngle = 2.0 * M_PI / 5;
 					printf("Drive to theta: %f\n", state->pos_theta + analyzeAngle);
+					clock_t analyzeTime = clock();
 					state->doing_pid_theta = 1;
+					printf("Driving to theta\n");
 					driveToTheta(state, state->pos_theta + analyzeAngle);
 					state->doing_pid_theta = 0;
-					printf("Finished driving to theta\n");
+					clock_t endTime = clock();
+					printf("Finished driving to theta in %g s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
+					analyzeTime = clock();
 					camera_process(state);
-					printf("Finsihed camera process\n");
+					endTime = clock();
+					printf("Finsihed camera process in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
 					//Uncomment to zap diamonds (pew pew)
-					/*if(state->num_balls){
-						printf("Found a diamond!\n");
-						nextState = EX_ZAP_DIAMOND;
-						break;
-					}*/
+					if(state->num_balls){
+						int zappedIt = 0;
+						for(int i = 0; i < fires; i++){
+							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
+								fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
+								fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
+									zappedIt = 1;
+							}
+						}
+						if(!zappedIt){
+							printf("Found a diamond!\n");
+							turnIndex++;
+							nextState = EX_ZAP_DIAMOND;
+							break;
+						}
+					}
 				}
-				/*if (nextState == EX_ZAP_DIAMOND) {
+				if (nextState == EX_ZAP_DIAMOND) {
 					break;
-				}*/
+				}
 				if(turnIndex == 5){
 					turnIndex = 0;
 				}
@@ -897,6 +927,7 @@ void* FSM(void* data){
 							path = state->targetPath;
 						} else {
 							path = choose_path(state, pre_analyze_theta);
+							printf("AutoNave path length: %u\n", path->length);
 							if (path->length == 0) {
 								printf("Bad path returned by explorer!\n");
 								nextState = EX_ANALYZE;
@@ -942,7 +973,7 @@ void* position_tracker(void *data) {
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
 
-		//world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
 	//		state->pos_x += 1;
 	//		state->pos_y += 2;
 
@@ -1090,11 +1121,10 @@ int main(int argc, char ** argv)
 
 	state->getopt_options.verbose = getopt_get_bool(state->gopt, "verbose");
 	state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
-	state->getopt_options.mouseGuidance = pow(2, getopt_get_bool(state->gopt, "mouse-guidance"));
+	state->getopt_options.mouseGuidance = getopt_get_bool(state->gopt, "mouse-guidance");
 	state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
 	state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
 	state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
-
 
 	//pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);

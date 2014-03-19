@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "path.h"
+#include "maebot_app.h"
 typedef struct map map_t;
 typedef struct map_tile map_tile_t;
 #define MAX_MAP_WIDTH  300
@@ -16,6 +17,7 @@ struct map_tile {
 };
 
 struct map {
+	image_u32_t *image;
 	int width, height;
 	map_tile_t tiles[MAX_MAP_WIDTH * MAX_MAP_HEIGHT];
 };

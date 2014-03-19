@@ -165,7 +165,7 @@ void driveToPosition(state_t * state, position_t position){
 		double offset = ang_f*angle_mag;
 		double radius = STRAIGHT_OFFSET + offset;
 		double r_off  = -0.07 + offset;
-		printf("r_off: %f\n",r_off);
+		//printf("r_off: %f\n",r_off);
 
 		double speed_f= pid_get_output(pos_pid, dist);
 		double speed  = fabs(speed_f);
