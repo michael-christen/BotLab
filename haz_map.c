@@ -367,9 +367,9 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 		}
 		if (curTile != prevTile) {
 			if (curTile->x != prevTile->x && curTile->y != prevTile->y) {
-				distance += curTile->val * GRID_RES * 1.41421; // GRID_RES * sqrt(2)
+				distance += GRID_RES * 1.41421; // GRID_RES * sqrt(2)
 			} else {
-				distance += curTile->val * GRID_RES;
+				distance += GRID_RES;
 			}
 		}
 		if (curIndex != startIndex) {
