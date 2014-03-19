@@ -40,7 +40,7 @@ void map_init(map_t *map, int w, int h) {
 			tile->type = MAP_FREE;
 			tile->repulse_val = 1;
 			tile->wf_num = 1;
-			map->image->buf[y*map->image->stride + x] = 0xFF777777;
+			map->image->buf[y*map->image->width + x] = 0xFF777777;
 		}
 	}
 }
@@ -52,6 +52,7 @@ void map_set(map_t *map, double wX, double wY, uint8_t type) {
 	// Bounds checking
 	map_worldcoords_to_map_tile(map, wX, wY, &x, &y);
 	printf("wX: %f, wY: %f\n", wX, wY);
+	printf("mX: %f, mY: %f\n", x, y);
 	if (x >= map->width || x < 0 || y >= map->height || y < 0) {
 		return;
 	}
@@ -114,14 +115,14 @@ void map_compute_config(map_t *map) {
 								if (dist <= MAP_OBSTACLE_RADIUS) {
 									tile->type = MAP_OBSTACLE;
 									tile->repulse_val = MAP_MAX_REPULSE;
-									map->image->buf[rY*map->image->stride + rX] = 0xFFFFFF00 | (tile->repulse_val - 1);
+									map->image->buf[rY*map->image->width + rX] = 0xFFFFFF00 | (tile->repulse_val - 1);
 								} else if (dist <= MAP_REPULSE_RADIUS) {
 									tempVal = map_map_value(dist, 0, MAP_REPULSE_RADIUS,
 													MAP_MIN_REPULSE, MAP_MAX_REPULSE);
 									if (tempVal > tile->repulse_val) {
 										tile->type = MAP_FREE;
 										tile->repulse_val = tempVal;
-										map->image->buf[rY*map->image->stride + rX] = 0xFFFFFF00 | (tile->repulse_val - 1);
+										map->image->buf[rY*map->image->width + rX] = 0xFFFFFF00 | (tile->repulse_val - 1);
 									}
 								}
 							}
@@ -129,7 +130,7 @@ void map_compute_config(map_t *map) {
 					}
 				}
 			} else {
-				map->image->buf[y*map->image->stride + x] = 0xFF777777;
+				map->image->buf[y*map->image->width + x] = 0xFF777777;
 			}
 		}	
 	}

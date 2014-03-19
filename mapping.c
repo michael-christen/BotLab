@@ -28,23 +28,26 @@ void add_obstacles_to_map( double x_rel, double y_rel, double bruce_x, double br
 	double map_x = x_rel + xbias;
 	double map_y = y_rel;
 
-	int map_x_scaled = (map_x/MAP_RES) +(map->width/2) + (int)bruce_x;
-	int map_y_scaled = (map_y/MAP_RES) +(map->height/2) + (int)bruce_y;
+	/*int map_x_scaled = (map_x/MAP_RES) +(map->width/2);
+	int map_y_scaled = (map_y/MAP_RES) +(map->height/2);*/
 
-	if ( map_x_scaled < 0 ||  map_x_scaled > map->width){
+	int map_x_adj= map_x + (int)bruce_x;
+	int map_y_adj = map_y + (int)bruce_y;
+
+	/*if ( map_x_scaled < 0 ||  map_x_scaled > map->width){
 		return;
 	}
 	if ( map_y_scaled < 0 ||  map_y_scaled > map->height){
 		return;
-	}
+	}*/
 
 	//place point on map
 	if(obstacle == 1){
-		map_set(map,  map_x_scaled,  map_y_scaled, MAP_OBSTACLE);
+		map_set(map,  map_x_adj,  map_y_adj, MAP_OBSTACLE);
 	}
 	else{
 		//if (checkTile.type != HAZ_MAP_INVALID && checkTile.type != HAZ_MAP_OBSTACLE) {
-			map_set(map,  map_x_scaled,  map_y_scaled, MAP_FREE);
+			map_set(map,  map_x_adj,  map_y_adj, MAP_FREE);
 		//}
 	}
 
