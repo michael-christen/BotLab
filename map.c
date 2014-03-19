@@ -1,4 +1,5 @@
 #include "map.h"
+#include <stdio.h>
 
 // Private helper functions
 
@@ -29,13 +30,32 @@ void map_init(map_t *map, int w, int h) {
 	map->minX = map->maxX = w / 2;
 	map->minY = map->maxY = h / 2;
 	map->image = image_u32_create(w, h);
+
+	int x, y;
+	map_tile_t *tile;
+	for (y = 0; y < h; y++) {
+		for (x = 0; x < w; x++) {
+			tile = map_get(map, x, y);
+			tile->seen = 0;
+			tile->type = MAP_FREE;
+			tile->repulse_val = 1;
+			tile->wf_num = 1;
+			map->image->buf[y*map->image->stride + x] = 0xFF777777;
+		}
+	}
 }
 
 void map_set(map_t *map, double wX, double wY, uint8_t type) {
 	int x, y;
 	map_tile_t *tile;
 
+	// Bounds checking
 	map_worldcoords_to_map_tile(map, wX, wY, &x, &y);
+	printf("wX: %f, wY: %f\n", wX, wY);
+	if (x >= map->width || x < 0 || y >= map->height || y < 0) {
+		return;
+	}
+
 	tile = map_get(map, x, y);
 	tile->type = type;
 	tile->seen = 1;
@@ -65,8 +85,9 @@ void map_compute_config(map_t *map) {
 	int rMinX, rMaxX, rMinY, rMaxY;
 	int tempVal;
 	double dist;
+	printf("calling compute config\n");
 
-	for (y = map->minX; y < map->maxY; y++) {
+	for (y = map->minY; y < map->maxY; y++) {
 		for (x = map->minX; x < map->maxX; x++) {
 			tile = map_get(map, x, y);
 			if (tile->type == MAP_FREE) {
@@ -75,22 +96,21 @@ void map_compute_config(map_t *map) {
 		}
 	}
 
-	for (y = map->minX; y < map->maxY; y++) {
+	for (y = map->minY; y < map->maxY; y++) {
 		for (x = map->minX; x < map->maxX; x++) {
-			printf("x: %d, y: %d\n", x, y);
+			//printf("x: %d, y: %d\n", x, y);
 			tile = map_get(map, x, y);
-			if (tile->seen) {
+			if (tile->seen == 1) {
 				if (tile->type == MAP_OBSTACLE) {
 					rMinX = max(x - MAP_REPULSE_RADIUS, 0);
 					rMaxX = min(x + MAP_REPULSE_RADIUS, map->width - 1);
 					rMinY = max(y - MAP_REPULSE_RADIUS, 0);
 					rMaxY = min(y + MAP_REPULSE_RADIUS, map->height - 1);
 					for (rX = rMinX; rX <= rMaxX; rX++) {
-						for (rY = rMinY; rX <= rMaxY; rY++) {
-							tile = map_get(map, x, y);
-							if (tile->seen) {
+						for (rY = rMinY; rY <= rMaxY; rY++) {
+							tile = map_get(map, rX, rY);
+							if (tile->seen == 1) {
 								dist = sqrt(pow(rX - x, 2) + pow(rY - y, 2));
-
 								if (dist <= MAP_OBSTACLE_RADIUS) {
 									tile->type = MAP_OBSTACLE;
 									tile->repulse_val = MAP_MAX_REPULSE;
@@ -234,6 +254,6 @@ path_t * compute_wavefront(map_t * map, int cur_x, int cur_y) {
 	return return_path;
 }
 
-map_destroy(map_t *map) {
+void map_destroy(map_t *map) {
 	image_u32_destroy(map->image);
 }

@@ -28,8 +28,8 @@ void add_obstacles_to_map( double x_rel, double y_rel, double bruce_x, double br
 	double map_x = x_rel + xbias;
 	double map_y = y_rel;
 
-	int map_x_scaled = (map_x/MAP_RES) +(map->width/2) + bruce_x;
-	int map_y_scaled = (map_y/MAP_RES) +(map->height/2) + bruce_y;
+	int map_x_scaled = (map_x/MAP_RES) +(map->width/2) + (int)bruce_x;
+	int map_y_scaled = (map_y/MAP_RES) +(map->height/2) + (int)bruce_y;
 
 	if ( map_x_scaled < 0 ||  map_x_scaled > map->width){
 		return;
