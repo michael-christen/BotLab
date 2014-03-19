@@ -168,7 +168,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 		curr_tile->neighbors[i]->distance = grid_dist;
 	}
 
-	
+
 
 	//qsort
 	qsort(curr_tile->neighbors, num_neighbors, sizeof(curr_tile->neighbors[0]), movement_compare);
@@ -188,7 +188,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	if(use_path >= num_neighbors){
 		best_path = malloc(sizeof(path_t));
 		best_path->length = best_path->distance = 0;
-	
+
 	}
 	else{
 		best_path = curr_tile->neighbors[use_path]->path_to;
