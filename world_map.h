@@ -17,10 +17,12 @@ typedef struct world_map_tile_t world_map_tile_t;
 struct world_map_tile_t {
 	uint8_t visited;		//1 true, 0 false
 	clock_t timestamp; 	//initial_visit_time		VALID IF VISITED = TRUE
+	int shot_diamond; 	//1 true, 0 false
+
+	world_map_tile_t * neighbors[8]; 
 	int distance; 	//distance in grid cells NOT ALWAYS VALID
 	path_t * path_to;		//path to (for neighbors) NOT ALWAYS VALID
-	int shot_diamond; 	//1 true, 0 false
-	world_map_tile_t * neighbors[8]; 
+
 };
 
 struct world_map_t {
