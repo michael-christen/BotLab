@@ -1,49 +1,9 @@
 #include "mapping.h"
 #include "stdio.h"
-#include "haz_map.h"
+#include "map.h"
 #include "pixel.h"
 
-//not using add_obstacles_to_map right now, no global map
-/*
-void add_obstacles_to_map(double x_rel, double y_rel, void * data){
-
-	state_t * state = data;
-
-	//get obstacles into map coords with a rotation based on bruce's rotation, translation based on bruce's location
-	double rot_theta = 0; //need to get from gyro sensors. gyro[0/1/2?]
-	double bruce_x = state->pos_x, bruce_y = state->pos_y;
-
-	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
-																y_rel,
-																0});
-	matd_t *R = matd_create_data(3, 3, (double[]) {	cos(rot_theta),		sin(rot_theta),	0,
-													-sin(rot_theta),	cos(rot_theta),	0,
-													0,					0,				1});
-	matd_t *T = matd_create_data(3, 3, (double[]) {	1,	0,  bruce_x,
-													0,	1,	bruce_y,
-													0,	0,	1});
-	matd_t * rel_to_real = matd_multiply(T, R);
-
-	matd_t * real = matd_multiply(rel_to_real, rel_coords);
-
-
-	int x = matd_get(real, 0, 0);
-	int y = matd_get(real, 0, 1);
-
-	int scale_x = (x+GRID_RES/2)/GRID_RES; //add half res to make it round, not truncate
-	int scale_y = (y+GRID_RES/2)/GRID_RES; //add half res to make it round, not truncate
-
-	state->obstacle_map[scale_x][scale_y].status = OCCUPIED;
-	state->obstacle_map[scale_x][scale_y].created = clock();
-
-
-
-	return;
-
-}
-*/
-
-void add_obstacles_to_haz_map( double x_rel, double y_rel, double bruce_x, double bruce_y, double theta, haz_map_t *hm, int obstacle){
+void add_obstacles_to_map( double x_rel, double y_rel, double bruce_x, double bruce_y, double theta, map_t *map, int obstacle){
 
 	//matrices for position realtive to bruce, rotation, and multiplication of the 2
 	matd_t *rel_coords = matd_create_data(3, 1, (double[]) {	x_rel,
@@ -68,25 +28,23 @@ void add_obstacles_to_haz_map( double x_rel, double y_rel, double bruce_x, doubl
 	double map_x = x_rel + xbias;
 	double map_y = y_rel;
 
-	int map_x_scaled = (map_x/GRID_RES) +(HAZ_MAP_MAX_WIDTH/2);
-	int map_y_scaled = (map_y/GRID_RES) +(HAZ_MAP_MAX_HEIGHT/2);
+	int map_x_scaled = (map_x/MAP_RES) +(map->width/2) + bruce_x;
+	int map_y_scaled = (map_y/MAP_RES) +(map->height/2) + bruce_y;
 
-	if ( map_x_scaled < 0 ||  map_x_scaled > HAZ_MAP_MAX_WIDTH){
+	if ( map_x_scaled < 0 ||  map_x_scaled > map->width){
 		return;
 	}
-	if ( map_y_scaled < 0 ||  map_y_scaled > HAZ_MAP_MAX_HEIGHT){
+	if ( map_y_scaled < 0 ||  map_y_scaled > map->height){
 		return;
 	}
 
-	//place point on haz_map
+	//place point on map
 	if(obstacle == 1){
-		haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_OBSTACLE);
+		map_set(map,  map_x_scaled,  map_y_scaled, MAP_OBSTACLE);
 	}
 	else{
-		//haz_map_tile_t checkTile;
-		//haz_map_get(hm, &checkTile, map_x_scaled, map_y_scaled);
 		//if (checkTile.type != HAZ_MAP_INVALID && checkTile.type != HAZ_MAP_OBSTACLE) {
-			haz_map_set(hm,  map_x_scaled,  map_y_scaled, HAZ_MAP_FREE);
+			map_set(map,  map_x_scaled,  map_y_scaled, MAP_FREE);
 		//}
 	}
 
@@ -121,7 +79,7 @@ void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, 
 		int obstacle: 0 if free space, 1 if obstacle
 	*/
 	state_t * state = data;
-	haz_map_t *hm = &state->hazMap;
+	map_t *map = &state->map;
 
 	matd_t * H = matd_create_data(3, 3, (double[]) { 0.014442,       0.002133,      -6.026192,
       															-0.001299,      -0.000377,       5.889305,
@@ -138,16 +96,15 @@ void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, 
 		double x_px = state->tape[i].x;
 		double y_px = state->tape[i].y;
 		homography_project(H, x_px, y_px, &x_cm, &y_cm);
-		add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, hm, obstacle);
+		add_obstacles_to_map( x_cm, y_cm, bruce_x, bruce_y, theta, map, obstacle);
 		obstacle = 0;
 		for(y_px = y_px + 10; y_px < 480; y_px += 10){
 			homography_project(H, x_px, y_px, &x_cm, &y_cm);
-			add_obstacles_to_haz_map( x_cm, y_cm, bruce_x, bruce_y, theta, hm, obstacle);
+			add_obstacles_to_map(x_cm, y_cm, bruce_x, bruce_y, theta, map, obstacle);
 		}
 	}
 
-	haz_map_cleanup(hm);
-	haz_map_compute_config(hm);
+	map_compute_config(map);
 
 	matd_destroy(H);
 	return;

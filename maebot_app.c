@@ -199,7 +199,7 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 			state->goalMouseX = man_point[0] / CM_TO_VX;
 			state->goalMouseY = man_point[1] / CM_TO_VX;
 			//printf("Clicked: %f cm's x, %f cm's y\n", state->goalMouseX, state->goalMouseY);
-			pthread_mutex_lock(&state->haz_map_mutex);
+			/*pthread_mutex_lock(&state->map_mutex);
 			if (state->targetPathValid == 1) {
 				path_destroy(state->targetPath);
 			}
@@ -211,7 +211,7 @@ static int mouse_event (vx_event_handler_t * vh, vx_layer_t * vl, vx_camera_pos_
 				free(state->targetPath);
 				state->targetPathValid = 0;
 			}
-			pthread_mutex_unlock(&state->haz_map_mutex);
+			pthread_mutex_unlock(&state->map_mutex);*/
 			position_t pos;
 			pos.x = state->goalMouseX;
 			pos.y = state->goalMouseY;
@@ -600,12 +600,11 @@ void camera_process(state_t* state){
 			 *state->balls = *diamonds;
 			 state->num_balls = updated_num_balls;*/
 
-			pthread_mutex_lock(&state->haz_map_mutex);
+			pthread_mutex_lock(&state->map_mutex);
 			int obstacle = 1;
-			haz_map_translate(&state->hazMap, bruce_x, bruce_y);
 			find_point_pos(state, bruce_theta, bruce_x, bruce_y, obstacle);
 
-			pthread_mutex_unlock(&state->haz_map_mutex);
+			pthread_mutex_unlock(&state->map_mutex);
 
 			//find_point_pos( state, obstacle);
 		} else {
@@ -917,7 +916,7 @@ void* FSM(void* data){
 					nextState = EX_WAIT;
 				} else {
 					printf("before path calc\n");
-					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
+					nextState = explorer_run(&explorer, &state->map, state->pos_x, state->pos_y, state->pos_theta);
 					if(nextState == EX_MOVE){
 						printf("\nchoosing next move\n");
 						if (state->getopt_options.mouseGuidance) {
@@ -970,14 +969,6 @@ void* position_tracker(void *data) {
         }
         path->waypoints[path->length - 1].x = state->pos_x;
         path->waypoints[path->length - 1].y = state->pos_y;
-
-//	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
-
-		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
-	//		state->pos_x += 1;
-	//		state->pos_y += 2;
-
-
 
         usleep(POS_SAMPLES_INTERVAL);
     }
@@ -1073,10 +1064,7 @@ int main(int argc, char ** argv)
 	//pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
 	pid_init(state->theta_pid, 0.60, 0.3, 0.30, 0, .1, M_PI);
 
-	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
-
-
-	world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
+	map_init(&state->map, MAX_MAP_WIDTH, MAX_MAP_HEIGHT);
 
 	//Should be width
 	state->tape = calloc(1000, sizeof(pixel_t));
@@ -1099,8 +1087,7 @@ int main(int argc, char ** argv)
 	pthread_mutex_init(&state->lcm_mutex, NULL);
 	pthread_mutex_init(&state->running_mutex, NULL);
 	pthread_mutex_init(&state->image_mutex, NULL);
-	pthread_mutex_init(&state->haz_map_mutex, NULL);
-	pthread_mutex_init(&state->world_map_mutex, NULL);
+	pthread_mutex_init(&state->map_mutex, NULL);
 
 	state->layer_map = zhash_create(sizeof(vx_display_t*), sizeof(vx_layer_t*), zhash_uint64_hash, zhash_uint64_equals);
 
@@ -1140,12 +1127,6 @@ int main(int argc, char ** argv)
 	pthread_create(&state->fsm_thread, NULL, FSM, state);
 
 
-	/*	find_H_matrix(state);
-		int obstacle = 0, x_px = 156, y_px = 352;
-		for(x_px; x_px < 525; x_px++){
-		find_point_pos( state, x_px, y_px, &state->hazMap, obstacle);
-		} */
-
 	//pthread_join(state->camera_thread, NULL);
 
 	if (pthread_join(state->gui_thread, NULL) != 0) {
@@ -1156,7 +1137,7 @@ int main(int argc, char ** argv)
 
 	// clean up
 	destroyLookupTable(state->lookupTable);
-    haz_map_destroy(&state->hazMap);
+    map_destroy(&state->map);
     if (state->pathTakenValid == 1) {
         path_destroy(state->pathTaken);
     }

@@ -30,8 +30,7 @@
 
 #include "blob_detection.h"
 #include "line_detection.h"
-#include "haz_map.h"
-#include "world_map.h"
+#include "map.h"
 
 int displayCount;
 
@@ -279,14 +278,14 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
 	vx_buffer_add_back(gridBuff, vxo_grid());
 	//printf("stride %d\n", state->gridMap.image->stride);
-	pthread_mutex_lock(&state->haz_map_mutex);
+	pthread_mutex_lock(&state->map_mutex);
 	vx_object_t *vo = vxo_chain(
+			vxo_mat_scale3(MAP_RES, MAP_RES, MAP_RES),
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-			vxo_mat_translate3(state->hazMap.x-(int)(state->hazMap.width * GRID_RES / 2), state->hazMap.y-(int)(state->hazMap.height * GRID_RES / 2), -0.05),
-			vxo_mat_scale3(GRID_RES, GRID_RES, 1),
-			vxo_image_from_u32(state->hazMap.image, 0, 0)
+			vxo_mat_translate3(-state->map.width / 2, -state->map.height / 2, -0.05),
+			vxo_image_from_u32(state->map.image, 0, 0)
 			);
-	pthread_mutex_unlock(&state->haz_map_mutex);
+	pthread_mutex_unlock(&state->map_mutex);
 
 	vx_buffer_add_back(gridBuff, vo);
 	//Draw Axes
@@ -371,25 +370,6 @@ int displayInitWorldSeenLayer(state_t *state, layer_data_t *layerData) {
 }
 
 int renderWorldSeenLayer(state_t *state, layer_data_t *layerData) {
-	vx_buffer_t *gridBuff = vx_world_get_buffer(layerData->world, "grid");
-	vx_buffer_add_back(gridBuff, vxo_grid());
-
-	vx_buffer_t *worldBuff = vx_world_get_buffer(layerData->world, "world_map");
-	pthread_mutex_lock(&state->world_map_mutex);
-
-	vx_object_t *vo = vxo_chain(
-			vxo_mat_scale3(WORLD_MAP_RES, WORLD_MAP_RES, WORLD_MAP_RES),
-			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-			vxo_mat_translate3(-(int)(state->world_map.width/2), -(int)(state->world_map.height/2), -1),
-			vxo_image_from_u32(state->world_map.image, 0, 0)
-			);
-
-	pthread_mutex_unlock(&state->world_map_mutex);
-	vx_buffer_add_back(worldBuff, vo);
-
-	vx_buffer_swap(gridBuff);
-	vx_buffer_swap(worldBuff);
-
 	return 1;
 }
 
@@ -511,7 +491,6 @@ void* gui_create(void *data) {
 
 
 	state->layers[1].enable = !state->getopt_options.no_video;
-	//state->layers[1].enable = 1;
 	state->layers[1].name = "CameraPOV";
 	state->layers[1].position[0] = 0.666f;
 	state->layers[1].position[1] = 0.5f;
@@ -522,7 +501,7 @@ void* gui_create(void *data) {
 	state->layers[1].render = renderCameraPOVLayer;
 	state->layers[1].destroy = destroyCameraPOVLayer;
 
-	state->layers[2].enable = 1;
+	state->layers[2].enable = 0;
 	state->layers[2].name = "WorldSeen";
 	state->layers[2].position[0] = 0.666f;
 	state->layers[2].position[1] = 0;

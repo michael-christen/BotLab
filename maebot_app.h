@@ -16,11 +16,10 @@
 #include "blob_detection.h"
 #include "barrel_distortion.h"
 #include "pixel.h"
-#include "haz_map.h"
+#include "map.h"
 #include "pid_ctrl.h"
 #include "odometry.h"
 #include "path.h"
-#include "world_map.h"
 #include "explorer.h"
 #include "line_detection.h"
 
@@ -173,9 +172,6 @@ struct state_t {
 
 	double alpha, beta;
 
-	//map
-	world_map_t world_map;
-
 	//bot is moving forward or back
 	int translating;
 	int rotating;
@@ -190,8 +186,7 @@ struct state_t {
     int imageValid;
     image_u32_t *im;
     pthread_mutex_t image_mutex;
-    pthread_mutex_t haz_map_mutex;
-	pthread_mutex_t world_map_mutex;
+    pthread_mutex_t map_mutex;
 	pthread_cond_t  image_cv;
     pthread_t camera_thread;
 
@@ -228,8 +223,7 @@ struct state_t {
 
     pixel_t* lookupTable;
 
-    // Haz map
-    haz_map_t hazMap;
+    map_t map;
 
     //Tape data
     pixel_t* tape;
