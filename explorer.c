@@ -108,7 +108,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	right = x + WORLD_MAP_RES;
 	left = x - WORLD_MAP_RES;
 
-	printf("x: %f, y: %f, up: %f down: %f right %f left %f)\n", x, y, up, down, left, right);
+	//printf("x: %f, y: %f, up: %f down: %f right %f left %f)\n", x, y, up, down, left, right);
 
 	int num_neighbors = 0;
 	//bounds check before calling to get path
@@ -149,7 +149,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 		}
 	}
 
-	printf("num_neighbors: %d\n", num_neighbors);
+	//printf("num_neighbors: %d\n", num_neighbors);
 
 
 	//evaluate grid cell distance for all neighbors
@@ -163,12 +163,12 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 			distance = curr_tile->neighbors[i]->path_to->distance;
 		}
 		int grid_dist = ((int)distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
-		printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
-		printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
+		//printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
+		//printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
 		curr_tile->neighbors[i]->distance = grid_dist;
 	}
 
-	
+
 
 	//qsort
 	qsort(curr_tile->neighbors, num_neighbors, sizeof(curr_tile->neighbors[0]), movement_compare);
@@ -188,7 +188,7 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	if(use_path >= num_neighbors){
 		best_path = malloc(sizeof(path_t));
 		best_path->length = best_path->distance = 0;
-	
+
 	}
 	else{
 		best_path = curr_tile->neighbors[use_path]->path_to;
