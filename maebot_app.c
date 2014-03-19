@@ -738,6 +738,10 @@ void* FSM(void* data){
 	clock_t startTime = clock();
 	int turnIndex = 0;
 	double analyzeAngle;
+	fired_from_t* firedFrom;
+	int fires = 0;
+	int ftthresh = 12;
+	double frthresh = M_PI/3;
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
@@ -822,6 +826,10 @@ void* FSM(void* data){
 				}*/
 				double originalTheta = state->pos_theta;
 				shoot_diamond(state);
+				firedFrom[fires].x = state->pos_x;
+				firedFrom[fires].y = state->pos_y;
+				firedFrom[fires].theta = state->pos_theta;
+				fires++;
 				driveToTheta(state, originalTheta);
 
 				nextState = EX_ANALYZE;
@@ -874,12 +882,22 @@ void* FSM(void* data){
 					endTime = clock();
 					printf("Finsihed camera process in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
 					//Uncomment to zap diamonds (pew pew)
-					/*if(state->num_balls){
-						printf("Found a diamond!\n");
-						turnIndex++;
-						nextState = EX_ZAP_DIAMOND;
-						break;
-					}*/
+					if(state->num_balls){
+						int zappedIt = 0;
+						for(int i = 0; i < fires; i++){
+							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
+								fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
+								fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
+									zappedIt = 1;
+							}
+						}
+						if(!zappedIt){
+							printf("Found a diamond!\n");
+							turnIndex++;
+							nextState = EX_ZAP_DIAMOND;
+							break;
+						}
+					}
 				}
 				if (nextState == EX_ZAP_DIAMOND) {
 					break;
