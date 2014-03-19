@@ -367,11 +367,12 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 			break;
 		}
 		if (curTile != prevTile) {
-			if (curTile->x != prevTile->x && curTile->y != prevTile->y) {
-				distance += GRID_RES * 1.41421; // GRID_RES * sqrt(2)
+			distance += curTile->val * GRID_RES;
+			/*if (curTile->x != prevTile->x && curTile->y != prevTile->y) {
+				distance += curTile->val * GRID_RES * 1.41421; // GRID_RES * sqrt(2)
 			} else {
-				distance += GRID_RES;
-			}
+				distance += curTile->val * GRID_RES;
+			}*/
 		}
 		if (curIndex != startIndex) {
 			zarray_get(dData, curIndex, &curData);

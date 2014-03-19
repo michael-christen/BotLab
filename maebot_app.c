@@ -933,7 +933,7 @@ void* FSM(void* data){
 							path = state->targetPath;
 						} else {
 							path = choose_path(state, pre_analyze_theta);
-							printf("AutoNave path length: %u\n", path->length);
+							printf("AutoNav path length %u\n", path->length);
 							if (path->length == 0) {
 								printf("Bad path returned by explorer!\n");
 								nextState = EX_ANALYZE;
