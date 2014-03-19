@@ -479,7 +479,7 @@ static void * send_led(void * data){
 }
 
 int diamondIsZapped(state_t *state, double diamond_x, double diamond_y){
-	double thresh = 10.0;
+	double thresh = 50.0;
 	for(int k = 0; k < state->num_zapped_diamonds; k++){
 		if(fabs(diamond_x - state->zapped_diamonds[k].x) < thresh &&
 			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh){
