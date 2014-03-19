@@ -522,7 +522,7 @@ void* gui_create(void *data) {
 	state->layers[1].render = renderCameraPOVLayer;
 	state->layers[1].destroy = destroyCameraPOVLayer;
 
-	state->layers[2].enable = 0;
+	state->layers[2].enable = 1;
 	state->layers[2].name = "WorldSeen";
 	state->layers[2].position[0] = 0.666f;
 	state->layers[2].position[1] = 0;

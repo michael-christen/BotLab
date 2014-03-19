@@ -738,12 +738,18 @@ void* FSM(void* data){
 	clock_t startTime = clock();
 	int turnIndex = 0;
 	double analyzeAngle;
+	fired_from_t firedFrom[100];
+	int fires = 0;
+	int ftthresh = 12;
+	double frthresh = M_PI/3;
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
 				printf("\nSTATE: Move\n");
 				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
+					printf("cX: %d, cY: %d\n", state->pos_x, state->pos_y);
+					printf("tX: %d, tY: %d\n", waypoint.x, waypoint.y);
 					driveToPosition(state, waypoint);
 					path->position++;
 					printf("Completed move %d\n", path->position);
@@ -822,6 +828,10 @@ void* FSM(void* data){
 				}*/
 				double originalTheta = state->pos_theta;
 				shoot_diamond(state);
+				firedFrom[fires].x = state->pos_x;
+				firedFrom[fires].y = state->pos_y;
+				firedFrom[fires].theta = state->pos_theta;
+				fires++;
 				driveToTheta(state, originalTheta);
 
 				nextState = EX_ANALYZE;
@@ -874,12 +884,22 @@ void* FSM(void* data){
 					endTime = clock();
 					printf("Finsihed camera process in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
 					//Uncomment to zap diamonds (pew pew)
-					/*if(state->num_balls){
-						printf("Found a diamond!\n");
-						turnIndex++;
-						nextState = EX_ZAP_DIAMOND;
-						break;
-					}*/
+					if(state->num_balls){
+						int zappedIt = 0;
+						for(int i = 0; i < fires; i++){
+							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
+								fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
+								fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
+									zappedIt = 1;
+							}
+						}
+						if(!zappedIt){
+							printf("Found a diamond!\n");
+							turnIndex++;
+							nextState = EX_ZAP_DIAMOND;
+							break;
+						}
+					}
 				}
 				if (nextState == EX_ZAP_DIAMOND) {
 					break;
@@ -953,7 +973,7 @@ void* position_tracker(void *data) {
 
 //	printf("call world map set x: %f y: %f \n", state->pos_x, state->pos_y);
 
-		//world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
+		world_map_set(&state->world_map, state->pos_x, state->pos_y, WORLD_MAP_VISITED);
 	//		state->pos_x += 1;
 	//		state->pos_y += 2;
 
@@ -1046,11 +1066,12 @@ int main(int argc, char ** argv)
 	-0.001299, -0.000377, 5.889305,
 	-0.000036, 0.001629, -0.385430});
 
-	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
+	pid_init(state->green_pid, 1.0, 0.1, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 	//0.5 is way too high for d
-	pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
+	//pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.60, 0.3, 0.30, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
@@ -1101,11 +1122,10 @@ int main(int argc, char ** argv)
 
 	state->getopt_options.verbose = getopt_get_bool(state->gopt, "verbose");
 	state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
-	state->getopt_options.mouseGuidance = pow(2, getopt_get_bool(state->gopt, "mouse-guidance"));
+	state->getopt_options.mouseGuidance = getopt_get_bool(state->gopt, "mouse-guidance");
 	state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
 	state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
 	state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
-
 
 	//pthread_create(&state->dmon_thread, NULL, driver_monitor, state);
 	//pthread_create(&state->camera_thread, NULL, camera_analyze, state);
