@@ -1,4 +1,16 @@
 #include "map.h"
+
+
+void map_worldcoords_to_map_tile(map_t * m, double x, double y, int * tileX, int * tileY){
+	*tileX = x / MAP_RES + MAX_MAP_WIDTH / 2;
+	*tileY = y / MAP_RES + MAX_MAP_HEIGHT / 2;
+}
+
+void map_tile_to_worldcoords(map_t * m, double * x, double * y, int tileX, int tileY){
+	*x = (tileX  - MAX_MAP_WIDTH / 2) * MAP_RES;
+	*y = (tileY  - MAX_MAP_HEIGHT / 2) * MAP_RES;
+}
+
 //-1 means no visited neighbors
 int min_neighbor_val(map_t * map, int * visited, int x, int y) {
 	int min_val = -1;

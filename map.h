@@ -1,6 +1,7 @@
 #ifndef __MAP__H__
 #define __MAP__H__
 #include <assert.h>
+#include "maebot_app.h"
 typedef struct map map_t;
 typedef struct map_tile map_tile_t;
 #define MAX_MAP_WIDTH  300
