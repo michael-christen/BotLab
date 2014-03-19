@@ -197,7 +197,7 @@ struct state_t {
 
     int num_balls;
     ball_t balls[MAX_NUM_BALLS];
-	pixel_t zapped_diamonds[50];
+	fired_from_t zapped_diamonds[50];
 	int num_zapped_diamonds;
 
 
