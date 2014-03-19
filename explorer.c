@@ -6,31 +6,30 @@
 
 int movement_compare(const void *elt1, const void *elt2){
 	//compares tiles, moving higher priority tiles to front of array
-	world_map_tile_t tile1 = *((world_map_tile_t*)elt1);
-	world_map_tile_t tile2 = *((world_map_tile_t*)elt2);
-
-	if((tile1.path_to->length != 0 && tile2.path_to->length != 0)){
-		if(tile1.visited == WORLD_MAP_VISITED){
-			if(tile2.visited == WORLD_MAP_VISITED){
-				if(tile1.distance > tile2.distance) { return 1;} 	//both visited: tile 2 closer [tile2 | tile1]
-				if(tile1.distance < tile2.distance) { return -1;} 	//both visited: tile 1 closer [tile1 | tile2]
-				return(tile1.timestamp - tile2.timestamp); 			// if tile 2 older -> [tile2 | tile1]
+	const world_map_tile_t *tile1 = *((const world_map_tile_t**) elt1);
+	const world_map_tile_t *tile2 = *((const world_map_tile_t**) elt2);
+	if((tile1->path_to->length != 0 && tile2->path_to->length != 0)){
+		if(tile1->visited == WORLD_MAP_VISITED){
+			if(tile2->visited == WORLD_MAP_VISITED){
+				if(tile1->distance > tile2->distance) { return 1;} 	//both visited: tile 2 closer [tile2 | tile1]
+				if(tile1->distance < tile2->distance) { return -1;} 	//both visited: tile 1 closer [tile1 | tile2]
+				return(tile1->timestamp - tile2->timestamp); 			// if tile 2 older -> [tile2 | tile1]
 			}
 			else{
 				return 1; //1 visited, 2 unvisited [tile2 | tile1]
 			}
 		}
 		else{
-			if(tile2.visited == WORLD_MAP_VISITED){
+			if(tile2->visited == WORLD_MAP_VISITED){
 				return -1; //1 unvisited, 2 visited [tile1 | tile2]
 			}
 			else{
-				return(tile1.distance - tile2.distance); 	//both unvisited: tile 2 closer -> [tile2 | tile1]
+				return(tile1->distance - tile2->distance); 	//both unvisited: tile 2 closer -> [tile2 | tile1]
 			}
 		}
 	}
 	else{
-		if (tile1.path_to->length > 0){ return -1;} //tile 1 has path [tile1 | tile2]
+		if (tile1->path_to->length > 0){ return -1;} //tile 1 has path [tile1 | tile2]
 		else { return 1;} //tile 2 has path [tile2 | tile1]
 	}
 
@@ -101,15 +100,15 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	//printf("gridx: %d gridy: %d x: %f y: %f\n", gridx, gridy, x, y);
 	//find coordinates for center of all neighboring grid cells
 
-	int up, down, right, left;
-	y = gridy*WORLD_MAP_RES + WORLD_MAP_RES/2;
-	x = gridx*WORLD_MAP_RES + WORLD_MAP_RES/2;
+	double up, down, right, left;
+	y = gridy*WORLD_MAP_RES + WORLD_MAP_RES/2 - WORLD_MAP_MAX_WIDTH*WORLD_MAP_RES/2;
+	x = gridx*WORLD_MAP_RES + WORLD_MAP_RES/2 - WORLD_MAP_MAX_HEIGHT*WORLD_MAP_RES/2;
 	up =  y - WORLD_MAP_RES;
 	down = y + WORLD_MAP_RES;
 	right = x + WORLD_MAP_RES;
 	left = x - WORLD_MAP_RES;
 
-	//printf("midx, midy: (%d, %d) up: %d down: %d right %d left %d)\n", mid_x, mid_y, up, down, left, right);
+	printf("x: %f, y: %f, up: %f down: %f right %f left %f)\n", x, y, up, down, left, right);
 
 	int num_neighbors = 0;
 	//bounds check before calling to get path
@@ -167,13 +166,12 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 		printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
 		printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
 		curr_tile->neighbors[i]->distance = grid_dist;
-
 	}
 
 	
 
 	//qsort
-	qsort(curr_tile->neighbors, num_neighbors, sizeof(world_map_tile_t), movement_compare);
+	qsort(curr_tile->neighbors, num_neighbors, sizeof(curr_tile->neighbors[0]), movement_compare);
 
 	int use_path = 0;
 
@@ -181,6 +179,8 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	while(use_path < num_neighbors){
 		if (curr_tile->neighbors[use_path]->path_to->length == 0 ){
 			use_path++;
+		} else {
+			break;
 		}
 	}
 

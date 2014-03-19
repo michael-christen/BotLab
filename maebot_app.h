@@ -65,7 +65,7 @@ typedef enum command_val cmd_val_t;
 
 
 struct getopt_options_t {
-    int verbose, no_video, limitKBs, autoCamera;
+    int verbose, no_video, limitKBs, autoCamera, mouseGuidance;
     double decimate;
 };
 

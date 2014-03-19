@@ -250,6 +250,7 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	if(testindex >= HAZ_MAP_MAX_WIDTH * HAZ_MAP_MAX_HEIGHT) { printf("testindex %d out of range in djikstra\n", testindex); return;}
 	curTile = &hm->hazMap[testindex];
 	if (curTile->type == HAZ_MAP_OBSTACLE || curTile->type == HAZ_MAP_UNKNOWN) {
+		printf("INVALID PATH!\n");
 		retPath = malloc(sizeof(path_t));
 		retPath->length = retPath->distance = 0;
 		return retPath;
@@ -343,7 +344,7 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 	retPath->position = 0;
 	for (i = retPath->length - 1; i >= 0; i--) {
 		curIndex = curTile->y*hm->width + curTile->x;
-		switch(curTile->type) {
+		/*switch(curTile->type) {
 			case HAZ_MAP_OBSTACLE:
 				printf("tile is OBSTACLE\n");
 			break;
@@ -353,13 +354,13 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 			case HAZ_MAP_FREE:
 				printf("tile is FREE\n");
 			break;
-		}
+		}*/
 		if (curTile->type == HAZ_MAP_OBSTACLE || curTile->type == HAZ_MAP_UNKNOWN) {
-			if (curTile->type == HAZ_MAP_OBSTACLE) {
+			/*if (curTile->type == HAZ_MAP_OBSTACLE) {
 				printf("tile on the way back was OBSTACLE\n");
 			} else {
 				printf("tile on the way back was UNKNOWN\n");
-			}
+			}*/
 			retPath->length = 0;
 			distance = 0;
 			free(retPath->waypoints);
@@ -367,9 +368,9 @@ path_t* haz_map_get_path(haz_map_t *hm, double endX, double endY) {
 		}
 		if (curTile != prevTile) {
 			if (curTile->x != prevTile->x && curTile->y != prevTile->y) {
-				distance += curTile->val * GRID_RES * 1.41421; // GRID_RES * sqrt(2)
+				distance += GRID_RES * 1.41421; // GRID_RES * sqrt(2)
 			} else {
-				distance += curTile->val * GRID_RES;
+				distance += GRID_RES;
 			}
 		}
 		if (curIndex != startIndex) {

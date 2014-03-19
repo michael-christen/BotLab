@@ -894,16 +894,22 @@ void* FSM(void* data){
 					nextState = explorer_run(&explorer, &state->hazMap, state->pos_x, state->pos_y, state->pos_theta);
 					if(nextState == EX_MOVE){
 						printf("\nchoosing next move\n");
-						while (state->targetPathValid == 0) {
-							usleep(1000);
+						if (state->getopt_options.mouseGuidance) {
+							while (state->targetPathValid == 0) {
+								usleep(1000);
+							}
+							path = state->targetPath;
+						} else {
+							path = choose_path(state, pre_analyze_theta);
+							if (path->length == 0) {
+								printf("Bad path returned by explorer!\n");
+								nextState = EX_ANALYZE;
+								turnIndex = 0;
+							} else {
+								state->targetPath = path;
+								state->targetPathValid = 1;
+							}
 						}
-
-						// To use mouse path, uncomment following line
-						path = state->targetPath;
-						// To use autonomous path finding, uncomment following lines
-						//path = choose_path(state, pre_analyze_theta);
-						//state->targetPath = path;
-						//state->targetPathValid = 1;
 						printf("after path calc\n");
 					}
 
@@ -1075,6 +1081,7 @@ int main(int argc, char ** argv)
 	getopt_add_bool(state->gopt, 'h', "help", 0, "Show this help");
 	getopt_add_bool(state->gopt, 'v', "verbose", 0, "Show extra debugging output");
 	getopt_add_bool(state->gopt, 'c', "auto-camera", 0, "Automatically detect which camera to use");
+	getopt_add_bool(state->gopt, 'm', "mouse-guidance", 0, "Guide with mouse for path planning");
 	getopt_add_bool(state->gopt, '\0', "no-video", 0, "Disable video");
 	getopt_add_int (state->gopt, 'l', "limitKBs", "-1", "Remote display bandwidth limit. < 0: unlimited.");
 	getopt_add_double (state->gopt, 'd', "decimate", "0", "Decimate image by this amount before showing in vx");
@@ -1087,6 +1094,7 @@ int main(int argc, char ** argv)
 
 	state->getopt_options.verbose = getopt_get_bool(state->gopt, "verbose");
 	state->getopt_options.autoCamera = getopt_get_bool(state->gopt, "auto-camera");
+	state->getopt_options.mouseGuidance = pow(2, getopt_get_bool(state->gopt, "mouse-guidance"));
 	state->getopt_options.no_video = getopt_get_bool(state->gopt, "no-video");
 	state->getopt_options.limitKBs = getopt_get_int(state->gopt, "limitKBs");
 	state->getopt_options.decimate = pow(2, getopt_get_double(state->gopt, "decimate"));
