@@ -9,24 +9,32 @@ int movement_compare(const void *elt1, const void *elt2){
 	world_map_tile_t tile1 = *((world_map_tile_t*)elt1);
 	world_map_tile_t tile2 = *((world_map_tile_t*)elt2);
 
-	if(tile1.visited == WORLD_MAP_VISITED){
-		if(tile2.visited == WORLD_MAP_VISITED){
-			if(tile1.distance > tile2.distance) { return 1;} 	//both visited: tile 2 closer [tile2 | tile1]
-			if(tile1.distance < tile2.distance) { return -1;} 	//both visited: tile 1 closer [tile1 | tile2]
-			return(tile1.timestamp - tile2.timestamp); 			// if tile 2 older -> [tile2 | tile1]
+	if((tile1.path_to->length != 0 && tile2.path_to->length != 0)){
+		if(tile1.visited == WORLD_MAP_VISITED){
+			if(tile2.visited == WORLD_MAP_VISITED){
+				if(tile1.distance > tile2.distance) { return 1;} 	//both visited: tile 2 closer [tile2 | tile1]
+				if(tile1.distance < tile2.distance) { return -1;} 	//both visited: tile 1 closer [tile1 | tile2]
+				return(tile1.timestamp - tile2.timestamp); 			// if tile 2 older -> [tile2 | tile1]
+			}
+			else{
+				return 1; //1 visited, 2 unvisited [tile2 | tile1]
+			}
 		}
 		else{
-			return 1; //1 visited, 2 unvisited [tile2 | tile1]
+			if(tile2.visited == WORLD_MAP_VISITED){
+				return -1; //1 unvisited, 2 visited [tile1 | tile2]
+			}
+			else{
+				return(tile1.distance - tile2.distance); 	//both unvisited: tile 2 closer -> [tile2 | tile1]
+			}
 		}
 	}
 	else{
-		if(tile2.visited == WORLD_MAP_VISITED){
-			return -1; //1 unvisited, 2 visited [tile1 | tile2]
-		}
-		else{
-			return(tile1.distance - tile2.distance); 	//both unvisited: tile 2 closer -> [tile2 | tile1]
-		}
+		if (tile1.path_to->length > 0){ return -1;} //tile 1 has path [tile1 | tile2]
+		else { return 1;} //tile 2 has path [tile2 | tile1]
 	}
+
+
 }
 
 
@@ -35,7 +43,7 @@ int movement_compare(const void *elt1, const void *elt2){
 
 void cm_to_world_cell(int x, int y, int *gridx, int *gridy){
 		*gridx = x / WORLD_MAP_RES + WORLD_MAP_MAX_WIDTH / 2;
-		*gridy = y / WORLD_MAP_RES + WORLD_MAP_MAX_HEIGHT / 2;
+		*gridy = -(y / WORLD_MAP_RES) + WORLD_MAP_MAX_HEIGHT / 2;
 }
 
 
@@ -94,7 +102,8 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	//find coordinates for center of all neighboring grid cells
 
 	int up, down, right, left;
-
+	y = gridy*WORLD_MAP_RES + WORLD_MAP_RES/2;
+	x = gridx*WORLD_MAP_RES + WORLD_MAP_RES/2;
 	up =  y - WORLD_MAP_RES;
 	down = y + WORLD_MAP_RES;
 	right = x + WORLD_MAP_RES;
@@ -105,53 +114,63 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	int num_neighbors = 0;
 	//bounds check before calling to get path
 	if( up >= -max_y ) {
-		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx)];
+		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*wm->width + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, x);
 		num_neighbors++;
 		if( left >= -max_x ){
-			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx - 1)];
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*wm->width + (gridx - 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, left);
 			num_neighbors++;
-			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*(wm->width) + (gridx - 1)];
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*wm->width + (gridx - 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, left);
 			num_neighbors++;
 		}
 		if( right < max_x ){
-			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*(wm->width) + (gridx + 1)];
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy - 1)*wm->width + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, up, right);
 			num_neighbors++;
-			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*(wm->width) + (gridx + 1)];
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy)*wm->width + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, y, right);
 			num_neighbors++;
 		}
 	}
 	if( down < max_y ) {
-		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx)];
+		curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*wm->width + (gridx)];
 		curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, x);
 		num_neighbors++;
 		if( left >= -max_x ){
-			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx - 1)];
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*wm->width + (gridx - 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, left);
 			num_neighbors++;
 		}
 		if( right < max_x ){
-			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*(wm->width) + (gridx + 1)];
+			curr_tile->neighbors[num_neighbors] = &wm->worldMap[(gridy + 1)*wm->width + (gridx + 1)];
 			curr_tile->neighbors[num_neighbors]->path_to = haz_map_get_path(hm, down, right);
 			num_neighbors++;
 		}
 	}
 
-	//printf("num_neighbors: %d\n", num_neighbors);
+	printf("num_neighbors: %d\n", num_neighbors);
+
 
 	//evaluate grid cell distance for all neighbors
-	for (int i = 0; i < num_neighbors; i++){
-		double distance = curr_tile->neighbors[i]->path_to->distance;
-		int grid_dist = (distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
+	int i;
+	double distance = 0;
+
+	for (i = 0; i < num_neighbors; i++){
+
+		distance = 0;
+		if (curr_tile->neighbors[i]->path_to->length != 0){
+			distance = curr_tile->neighbors[i]->path_to->distance;
+		}
+		int grid_dist = ((int)distance + WORLD_MAP_RES/2)  / WORLD_MAP_RES;
 		printf("neighbor %d has distance %f and grid_dist %d\n", i, distance, grid_dist);
 		printf("neighbor %d visited: %d, timestamp %d\n", i, curr_tile->neighbors[i]->visited,  curr_tile->neighbors[i]->timestamp);
 		curr_tile->neighbors[i]->distance = grid_dist;
 
 	}
+
+	
 
 	//qsort
 	qsort(curr_tile->neighbors, num_neighbors, sizeof(world_map_tile_t), movement_compare);
@@ -159,13 +178,29 @@ path_t * choose_path(void * data, double pre_analyze_theta){
 	int use_path = 0;
 
 	//printf("target path length: %d \n", curr_tile->neighbors[0]->path_to->length);
-	while(curr_tile->neighbors[use_path]->path_to->length == 0 && use_path < 8){
-		use_path++;
+	while(use_path < num_neighbors){
+		if (curr_tile->neighbors[use_path]->path_to->length == 0 ){
+			use_path++;
+		}
 	}
-	state->targetPath = curr_tile->neighbors[use_path]->path_to;
-    state->targetPathValid  = 1;
 
-	return curr_tile->neighbors[use_path]->path_to;
+	path_t * best_path;
+	if(use_path >= num_neighbors){
+		best_path = malloc(sizeof(path_t));
+		best_path->length = best_path->distance = 0;
+	
+	}
+	else{
+		best_path = curr_tile->neighbors[use_path]->path_to;
+	}
+
+	for(i = 0; i < num_neighbors; i++){
+		if(i != use_path){
+			path_destroy(curr_tile->neighbors[i]->path_to);
+		}
+	}
+
+	return best_path;
 }
 
 

@@ -1038,7 +1038,7 @@ int main(int argc, char ** argv)
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
 
-	//world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
+	world_map_init(&state->world_map, WORLD_MAP_MAX_WIDTH, WORLD_MAP_MAX_HEIGHT);
 
 	//Should be width
 	state->tape = calloc(1000, sizeof(pixel_t));
@@ -1099,7 +1099,6 @@ int main(int argc, char ** argv)
 	pthread_create(&state->motion_thread,  NULL, motionFxn, state);
 	//pthread_create(&state->calibrator_thread, NULL, calibrator, state);
 	pthread_create(&state->fsm_thread, NULL, FSM, state);
-
 
 
 	/*	find_H_matrix(state);
