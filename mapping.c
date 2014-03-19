@@ -78,6 +78,7 @@ void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, 
 	/*
 		int obstacle: 0 if free space, 1 if obstacle
 	*/
+	printf("top of find point pos\n");
 	state_t * state = data;
 	map_t *map = &state->map;
 
@@ -103,8 +104,9 @@ void find_point_pos( void * data, double theta, double bruce_x, double bruce_y, 
 			add_obstacles_to_map(x_cm, y_cm, bruce_x, bruce_y, theta, map, obstacle);
 		}
 	}
-
+	printf("above compute config\n");
 	map_compute_config(map);
+	printf("after compute config\n");
 
 	matd_destroy(H);
 	return;
