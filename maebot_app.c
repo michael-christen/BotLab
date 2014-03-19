@@ -802,6 +802,9 @@ void* FSM(void* data){
 					double pos_x = diamond_x + state->pos_x;
 					double pos_y = diamond_y + state->pos_y;
 					printf("Diamond at %f, %f\n", pos_x, pos_y);
+					printf("Diamond is %f, %f from the bot\n", diamond_x, diamond_y);
+					printf("Bot is at %f, %f\n", state->pos_x, state->pos_y);
+					sleep(10);
 					if(diamondIsZapped(state, pos_x, pos_y)){
 						//Go to next diamond in image
 						printf("Diamond seen by its position\n");
