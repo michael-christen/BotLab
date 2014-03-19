@@ -99,12 +99,14 @@ void detect_diamonds(state_t * state) {
 
 int shoot_diamond(state_t * state) {
 	state->doing_pid = 1;
+	int not_seen = 0;
+	int last_seen = 0;
 	while(state->doing_pid) {
 		detect_diamonds(state);
 		double pid_out = pid_get_output( state->green_pid,state->diff_x);
 		if(pid_out == 0 ) {
 			if(state->diamond_seen) {
-				printf("done with pid\n");
+				//printf("done with pid\n");
 				state->num_pid_zeros ++;
 				if(state->num_pid_zeros >= 5) {
 					state->doing_pid = 0;
@@ -117,15 +119,28 @@ int shoot_diamond(state_t * state) {
 		state->green_pid_out = pid_out;
 		//printf("pid_out: %f\n",pid_out);
 		if(!state->diamond_seen) {
-			printf("not seen\n");
+			//printf("not seen %d\n", not_seen);
+			/*if(!last_seen){
+				not_seen++;
+			}
+			last_seen = 0;*/
+		}/*else{
+			last_seen = 1;
+			not_seen = 0;
 		}
+		if(not_seen == 15){
+			return 0;
+		}*/
 		double rot = pid_to_rot(state->green_pid, state->green_pid_out);
 		driveRot(state, rot);
 		usleep(20000);
 		driveStop(state);
 		usleep(20000);
 	}
+	printf("Firing laser\n");
 	fireLaser(state);
+	usleep(10000);
+	return 1;
 }
 
 void moveBot(state_t* state){
@@ -134,7 +149,7 @@ void moveBot(state_t* state){
 		return;
 	}
 	if(((state->cmd_val == PID) | state->doing_pid) != 0) {
-		shoot_diamond(state);
+		//shoot_diamond(state);
 	} else if (state->cmd_val == FORWARD) {
 		//driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		driveLR(state, 1, 1+state->left_offset, LONG_SPEED);
@@ -479,7 +494,7 @@ static void * send_led(void * data){
 }
 
 int diamondIsZapped(state_t *state, double diamond_x, double diamond_y){
-	double thresh = 10.0;
+	double thresh = 50.0;
 	for(int k = 0; k < state->num_zapped_diamonds; k++){
 		if(fabs(diamond_x - state->zapped_diamonds[k].x) < thresh &&
 			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh){
@@ -596,7 +611,7 @@ void camera_process(state_t* state){
 			  diamonds[updated_num_balls] = diamond;
 			  updated_num_balls++;
 			  }
-			  }
+		  }
 			 *state->balls = *diamonds;
 			 state->num_balls = updated_num_balls;*/
 
@@ -738,10 +753,11 @@ void* FSM(void* data){
 	clock_t startTime = clock();
 	int turnIndex = 0;
 	double analyzeAngle;
-	fired_from_t* firedFrom;
+	state->num_zapped_diamonds = 0;
+	fired_from_t firedFrom[100];
 	int fires = 0;
 	int ftthresh = 12;
-	double frthresh = M_PI/3;
+	double frthresh = M_PI/4.0;
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
@@ -778,30 +794,49 @@ void* FSM(void* data){
 			break;}
 			case EX_ZAP_DIAMOND:{
 				printf("STATE: Zap Diamond\n");/*
-				for(int h = 0; h < state->num_balls; h++){
-					ball_t diamond = state->balls[h];
+				for(int h = 0; h < state->num_balls; h++){*/
+					ball_t diamond = state->balls[0];
 					double image_x = diamond.x;
 					double image_y = diamond.y;
-
-					double diamond_x = 0, diamond_y = 0;
-					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
-					double pos_x = diamond_x + state->pos_x;
-					double pos_y = diamond_y + state->pos_y;
-					printf("Diamond %d at %f, %f\n", h, pos_x, pos_y);
-					if(diamondIsZapped(state, pos_x, pos_y)){
-						//Go to next diamond in image
-						printf("Alread saw diamond %d\n", h);
-						continue;
-					}
-
-
-					for(int k = 0; k < state->num_pts_tape; k++){
+					int k;
+					double closest = 1000;
+					int iclosest = 0;
+					double max = 0;
+					for( k = 0; k < state->num_pts_tape; k++){
+						if(fabs(image_x - state->tape[k].x) < closest){
+							closest = state->tape[k].x;
+							iclosest = k;
+						}
+						if(state->tape[k].x > max){
+							max = state->tape[k].x;
+						}
 						if(state->tape[k].x == image_x){
+							printf("Found a tape reference\n!");
 							image_y = state->tape[k].y;
+							break;
 						}
 					}
+					if(closest != image_x){
+						image_y = state->tape[iclosest].y;
+					}
+					printf("Searched %d columns for tape at x: %f. Closest was %f\n", k, image_x, closest);
+					double diamond_x = 0, diamond_y = 0;
+					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
+					double pos_x = (diamond_x + state->pos_x) * cos(state->pos_theta);
+					double pos_y = (diamond_y + state->pos_y) * sin(state->pos_theta);
+					printf("Diamond at %f, %f\n", pos_x, pos_y);
+					printf("Diamond is %f, %f from the bot\n", diamond_x, diamond_y);
+					printf("Bot is at %f, %f, %f\n", state->pos_x, state->pos_y, state->pos_theta);
 
-					homography_project(state->H ,image_x, image_y, &diamond_x, &diamond_y);
+					if(diamondIsZapped(state, pos_x, pos_y)){
+						//Go to next diamond in image
+						printf("Diamond seen by its position\n");
+						nextState = EX_ANALYZE;
+						break;
+					}
+
+
+					/*homography_project(state->H ,image_x, image_y, &diamond_x, &diamond_y);
 					pos_x = diamond_x + state->pos_x;
 					pos_y = diamond_y + state->pos_y;
 
@@ -827,12 +862,18 @@ void* FSM(void* data){
 					state->doing_pid_theta = 0;
 				}*/
 				double originalTheta = state->pos_theta;
-				shoot_diamond(state);
-				firedFrom[fires].x = state->pos_x;
-				firedFrom[fires].y = state->pos_y;
-				firedFrom[fires].theta = state->pos_theta;
-				fires++;
-				driveToTheta(state, originalTheta);
+				if(shoot_diamond(state)){
+					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
+					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
+					state->num_zapped_diamonds++;
+
+					firedFrom[fires].x = state->pos_x;
+					firedFrom[fires].y = state->pos_y;
+					firedFrom[fires].theta = state->pos_theta;
+					fires++;
+				}
+				//driveToTheta(state, originalTheta); //kind of
+				//unecessary
 
 				nextState = EX_ANALYZE;
 				break;}
@@ -865,8 +906,9 @@ void* FSM(void* data){
 				state->fsm_time_elapsed = difftime(cur_time, start_time);
 				state->fsmTimeElapsed = (double)(curTime - startTime)/CLOCKS_PER_SEC;
 				if(state->fsm_time_elapsed >= 180){
-					nextState = EX_EXIT;
-					break;
+					printf("Three minutes are up!\n");
+					//nextState = EX_EXIT;
+					//break;
 				}
 				for (; turnIndex < 6; turnIndex++) {
 					printf("Turn Index: %d\n", turnIndex);
@@ -886,11 +928,13 @@ void* FSM(void* data){
 					//Uncomment to zap diamonds (pew pew)
 					if(state->num_balls){
 						int zappedIt = 0;
-						for(int i = 0; i < fires; i++){
+						for(int i = fires; i >=0 ; i--){
 							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
 								fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
 								fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
+									printf("Diamond seen by bot position\n");
 									zappedIt = 1;
+									break;
 							}
 						}
 						if(!zappedIt){
@@ -1066,11 +1110,12 @@ int main(int argc, char ** argv)
 	-0.001299, -0.000377, 5.889305,
 	-0.000036, 0.001629, -0.385430});
 
-	pid_init(state->green_pid, 1.0, 0, 0, 0, 16, 100);
+	pid_init(state->green_pid, 1.0, 0.1, 0, 0, 16, 100);
 	//pid_init(state->theta_pid, 2.0, 0.3, 3.5, 0, .1, 2*M_PI);
 	//pid_init(state->theta_pid, 0.5, 0.2, 0.4, 0, .1, M_PI);
 	//0.5 is way too high for d
-	pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
+	//pid_init(state->theta_pid, 0.60, 0.285, 0.30, 0, .1, M_PI);
+	pid_init(state->theta_pid, 0.65, 0.29, 0.30, 0, .1, M_PI);
 
 	haz_map_init(&state->hazMap, HAZ_MAP_MAX_WIDTH, HAZ_MAP_MAX_HEIGHT);
 
