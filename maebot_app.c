@@ -771,7 +771,7 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE;
 			break;}
 			case EX_ZAP_DIAMOND:{
-				printf("STATE: Zap Diamond\n");
+				printf("STATE: Zap Diamond\n");/*
 				for(int h = 0; h < state->num_balls; h++){
 					ball_t diamond = state->balls[h];
 					double image_x = diamond.x;
@@ -799,7 +799,7 @@ void* FSM(void* data){
 					pos_x = diamond_x + state->pos_x;
 					pos_y = diamond_y + state->pos_y;
 
-					/*double dx = pos_x - state->pos_x;
+					double dx = pos_x - state->pos_x;
 					double dy = pos_y - state->pos_y;
 					double dtheta = atan2(dy, dx);
 					double originalTheta = state->pos_theta;
@@ -818,8 +818,11 @@ void* FSM(void* data){
 					state->doing_pid_theta = 1;
 					driveToTheta(state, originalTheta);
 
-					state->doing_pid_theta = 0;*/
-				}
+					state->doing_pid_theta = 0;
+				}*/
+				double originalTheta = state->pos_theta;
+				shoot_diamond(state);
+				driveToTheta(state, originalTheta);
 
 				nextState = EX_ANALYZE;
 				break;}
@@ -865,15 +868,15 @@ void* FSM(void* data){
 					camera_process(state);
 					printf("Finsihed camera process\n");
 					//Uncomment to zap diamonds (pew pew)
-					/*if(state->num_balls){
+					if(state->num_balls){
 						printf("Found a diamond!\n");
 						nextState = EX_ZAP_DIAMOND;
 						break;
-					}*/
+					}
 				}
-				/*if (nextState == EX_ZAP_DIAMOND) {
+				if (nextState == EX_ZAP_DIAMOND) {
 					break;
-				}*/
+				}
 				if(turnIndex == 5){
 					turnIndex = 0;
 				}
