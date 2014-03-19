@@ -40,7 +40,7 @@ void map_init(map_t *map, int w, int h) {
 			tile->type = MAP_FREE;
 			tile->repulse_val = 1;
 			tile->wf_num = 1;
-			map->image->buf[y*map->image->width + x] = 0xFF777777;
+			map->image->buf[y*map->image->stride + x] = 0xFF777777;
 		}
 	}
 }
@@ -50,10 +50,13 @@ void map_set(map_t *map, double wX, double wY, uint8_t type) {
 	map_tile_t *tile;
 
 	// Bounds checking
-	map_worldcoords_to_map_tile(map, wX, wY, &x, &y);
-	printf("wX: %f, wY: %f\n", wX, wY);
-	printf("mX: %f, mY: %f\n", x, y);
+	//map_worldcoords_to_map_tile(map, wX, wY, &x, &y);
+	x = ((int)wX / MAP_RES + MAX_MAP_WIDTH / 2);
+	y = ((int)wY / MAP_RES + MAX_MAP_HEIGHT / 2);
+	//printf("wX: %f, wY: %f\n", wX, wY);
+	printf("mX: %d, mY: %d\n", x, y);
 	if (x >= map->width || x < 0 || y >= map->height || y < 0) {
+		printf("shouldn't be here\n");
 		return;
 	}
 
@@ -63,14 +66,18 @@ void map_set(map_t *map, double wX, double wY, uint8_t type) {
 
 	//Extend max check dimensions
 	if (x < map->minX) {
+		printf("minX\n");
 		map->minX = x;
 	} else if (x > map->maxX) {
+		printf("maxX\n");
 		map->maxX = x;
 	}
 
 	if (y < map->minY) {
+		printf("minY\n");
 		map->minY = y;
 	} else if (y > map->maxY) {
+		printf("maxY\n");
 		map->maxY = y;
 	}
 }
@@ -97,8 +104,8 @@ void map_compute_config(map_t *map) {
 		}
 	}
 
-	for (y = map->minY; y < map->maxY; y++) {
-		for (x = map->minX; x < map->maxX; x++) {
+	for (y = map->minY; y <= map->maxY; y++) {
+		for (x = map->minX; x <= map->maxX; x++) {
 			//printf("x: %d, y: %d\n", x, y);
 			tile = map_get(map, x, y);
 			if (tile->seen == 1) {
@@ -107,6 +114,7 @@ void map_compute_config(map_t *map) {
 					rMaxX = min(x + MAP_REPULSE_RADIUS, map->width - 1);
 					rMinY = max(y - MAP_REPULSE_RADIUS, 0);
 					rMaxY = min(y + MAP_REPULSE_RADIUS, map->height - 1);
+					//printf("rMinX: %d, rMaxX: %d, rMinY: %d, rMaxY: %d\n", rMinX, rMaxX, rMinY, rMaxY);
 					for (rX = rMinX; rX <= rMaxX; rX++) {
 						for (rY = rMinY; rY <= rMaxY; rY++) {
 							tile = map_get(map, rX, rY);
@@ -115,14 +123,15 @@ void map_compute_config(map_t *map) {
 								if (dist <= MAP_OBSTACLE_RADIUS) {
 									tile->type = MAP_OBSTACLE;
 									tile->repulse_val = MAP_MAX_REPULSE;
-									map->image->buf[rY*map->image->width + rX] = 0xFFFFFF00 | (tile->repulse_val - 1);
+									map->image->buf[rY*map->image->stride + rX] = 0xFFFFFFFF | (tile->repulse_val - 1);
 								} else if (dist <= MAP_REPULSE_RADIUS) {
-									tempVal = map_map_value(dist, 0, MAP_REPULSE_RADIUS,
+									tempVal = map_map_value(MAP_REPULSE_RADIUS - dist, 0, MAP_REPULSE_RADIUS,
 													MAP_MIN_REPULSE, MAP_MAX_REPULSE);
+									//printf("repulse %d\n", tempVal);
 									if (tempVal > tile->repulse_val) {
 										tile->type = MAP_FREE;
 										tile->repulse_val = tempVal;
-										map->image->buf[rY*map->image->width + rX] = 0xFFFFFF00 | (tile->repulse_val - 1);
+										map->image->buf[rY*map->image->stride + rX] = 0xFFFFFF00 | (tile->repulse_val - 1);
 									}
 								}
 							}
@@ -130,7 +139,7 @@ void map_compute_config(map_t *map) {
 					}
 				}
 			} else {
-				map->image->buf[y*map->image->width + x] = 0xFF777777;
+				map->image->buf[y*map->image->stride + x] = 0xFF777777;
 			}
 		}	
 	}
@@ -175,8 +184,8 @@ int min_neighbor_id(map_t * map, int * visited, int x, int y) {
 
 
 void map_worldcoords_to_map_tile(map_t * m, double x, double y, int * tileX, int * tileY){
-	*tileX = x / MAP_RES + MAX_MAP_WIDTH / 2;
-	*tileY = y / MAP_RES + MAX_MAP_HEIGHT / 2;
+	*tileX = (int)(x / MAP_RES + MAX_MAP_WIDTH / 2);
+	*tileY = (int)(y / MAP_RES + MAX_MAP_HEIGHT / 2);
 }
 
 void map_tile_to_worldcoords(map_t * m, double * x, double * y, int tileX, int tileY){

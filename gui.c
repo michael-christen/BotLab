@@ -282,7 +282,7 @@ int renderWorldTopDownLayer(state_t *state, layer_data_t *layerData) {
 	vx_object_t *vo = vxo_chain(
 			vxo_mat_scale3(MAP_RES, MAP_RES, MAP_RES),
 			vxo_mat_scale3(CM_TO_VX, CM_TO_VX, CM_TO_VX),
-			vxo_mat_translate3(-state->map.width / 2, -state->map.height / 2, -0.05),
+			vxo_mat_translate3(-state->map.width / 2 - 0.5, -state->map.height / 2 - 0.5, -0.05),
 			vxo_image_from_u32(state->map.image, 0, 0)
 			);
 	pthread_mutex_unlock(&state->map_mutex);
