@@ -13,6 +13,7 @@ struct map_tile {
 };
 
 struct map {
+	image_u32_t *image;
 	int width, height;
 	map_tile_t tiles[MAX_MAP_WIDTH * MAX_MAP_HEIGHT];
 };
