@@ -73,63 +73,68 @@ void fireLaser(state_t* state){
 	LEDStatus(state, NONE);
 }
 
+void detect_diamonds(state_t * state) {
+	update_image(state);
+	pthread_mutex_lock(&state->image_mutex);
+	{
+		//Wait for fresh image to arrive
+		state->num_balls = blob_detection(state->im, state->balls,
+				state->hue, 0xff039dfd,
+				state->thresh,
+				state->min_pxs);
+		//printf("num_balls: %d\n",state->num_balls);
+		if(state->num_balls > 0) {
+			state->diff_x = state->im->width/2.0 - state->balls[0].x;
+			printf("diff_x = %f\n",state->diff_x);
+			//printf("x: %f\n", diff_x);
+			state->im->buf[(int) (state->im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
+
+			state->diamond_seen  = 1;
+		} else {
+			state->diamond_seen = 0;
+		}
+	}
+	pthread_mutex_unlock(&state->image_mutex);
+}
+
+int shoot_diamond(state_t * state) {
+	state->doing_pid = 1;
+	while(state->doing_pid) {
+		detect_diamonds(state);
+		double pid_out = pid_get_output( state->green_pid,state->diff_x);
+		if(pid_out == 0 ) {
+			if(state->diamond_seen) {
+				printf("done with pid\n");
+				state->num_pid_zeros ++;
+				if(state->num_pid_zeros >= 5) {
+					state->doing_pid = 0;
+				}
+			} else {
+				//Give it a little kick in the pants to go looking
+				state->diff_x = 0.1;
+			}
+		}
+		state->green_pid_out = pid_out;
+		//printf("pid_out: %f\n",pid_out);
+		if(!state->diamond_seen) {
+			printf("not seen\n");
+		}
+		double rot = pid_to_rot(state->green_pid, state->green_pid_out);
+		driveRot(state, rot);
+		usleep(20000);
+		driveStop(state);
+		usleep(20000);
+	}
+	fireLaser(state);
+}
+
 void moveBot(state_t* state){
 	//double arc_val = 5;
 	if(state->doing_pid_theta) {
 		return;
 	}
 	if(((state->cmd_val == PID) | state->doing_pid) != 0) {
-		//uint32_t color_detect = state->red | state->green << 8 | state->blue << 16 | 0xff << 24;
-		//printf("color: %x\n",color_detect);
-		//printf("thresh: %f\n",state->thresh);
-		pthread_mutex_lock(&state->image_mutex);
-		{
-			//Wait for fresh image to arrive
-			pthread_cond_wait(&state->image_cv, &state->image_mutex);
-			state->num_balls = blob_detection(state->im, state->balls,
-											  state->hue, 0xff039dfd,
-											  state->thresh,
-											  state->min_pxs);
-			//printf("num_balls: %d\n",state->num_balls);
-			if(state->num_balls == 1) {
-				state->diff_x = state->im->width/2.0 - state->balls[0].x;
-				printf("diff_x = %f\n",state->diff_x);
-				//printf("x: %f\n", diff_x);
-				state->im->buf[(int) (state->im->stride*state->balls[0].y + state->balls[0].x)] = 0xffff0000;
-
-				state->diamond_seen  = 1;
-			} else {
-				state->diamond_seen = 0;
-			}
-		}
-		pthread_mutex_unlock(&state->image_mutex);
-		if(state->doing_pid) {
-			double pid_out = pid_get_output( state->green_pid,state->diff_x);
-			if(pid_out == 0 ) {
-				if(state->diamond_seen) {
-					printf("done with pid\n");
-					state->num_pid_zeros ++;
-					if(state->num_pid_zeros >= 5) {
-						state->doing_pid = 0;
-					}
-				} else {
-					//Give it a little kick in the pants to go
-					//looking
-					state->diff_x = 0.1;
-				}
-			}
-			state->green_pid_out = pid_out;
-			//printf("pid_out: %f\n",pid_out);
-		}
-
-
-		if(!state->diamond_seen) {
-			printf("not seen\n");
-		}
-		double rot = pid_to_rot(state->green_pid, state->green_pid_out);
-		driveRot(state, rot);
-		usleep(50000);
-		driveStop(state);
+		shoot_diamond(state);
 	} else if (state->cmd_val == FORWARD) {
 		//driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		driveLR(state, 1, 1+state->left_offset, LONG_SPEED);
@@ -529,23 +534,16 @@ int camera_init(state_t *state){
 	return 1;
 }
 
-void camera_process(state_t* state){
-
+void update_image(state_t* state) {
 	int res;
 	image_source_data_t isdata;
 	image_source_t *isrc = state->isrc;
-	image_u32_t *oldIm;
 
-		pthread_mutex_lock(&state->image_mutex);
-		//Let PID know that I am here
-		pthread_cond_signal(&state->image_cv);
-		double bruce_theta = -state->pos_theta;
-		double bruce_x = state->pos_x;
-		double bruce_y = state->pos_y;
+	pthread_mutex_lock(&state->image_mutex);
+	{
 		res = isrc->get_frame(isrc, &isdata);
 		isrc->release_frame(isrc, &isdata);
 		res = isrc->get_frame(isrc, &isdata);
-		oldIm = state->im;
 		if (!res) {
 			if (state->imageValid == 1) {
 				image_u32_destroy(state->im);
@@ -555,9 +553,19 @@ void camera_process(state_t* state){
 		} else {
 			printf("Here!\n");
 		}
-
 		isrc->release_frame(isrc, &isdata);
+	}
+	pthread_mutex_unlock(&state->image_mutex);
+}
 
+void camera_process(state_t* state){
+
+	double bruce_theta = -state->pos_theta;
+	double bruce_x = state->pos_x;
+	double bruce_y = state->pos_y;
+	update_image(state);
+	pthread_mutex_lock(&state->image_mutex);
+	{
 		if (state->imageValid == 1) {
 			correctDistortion(state->im, state->lookupTable);
 			//Blue
@@ -574,23 +582,23 @@ void camera_process(state_t* state){
 			//DO NOT DELETE
 			//Uncommont to filter zapped diamonds from detection
 			/*int updated_num_balls = 0;
-			ball_t diamonds[MAX_NUM_BALLS];
-			for(int i = 0; i < state->num_balls; i++){
-				ball_t diamond = state->balls[i];
-				double image_x = diamond.x;
-				double image_y = diamond.y;
+			  ball_t diamonds[MAX_NUM_BALLS];
+			  for(int i = 0; i < state->num_balls; i++){
+			  ball_t diamond = state->balls[i];
+			  double image_x = diamond.x;
+			  double image_y = diamond.y;
 
-				double diamond_x = 0, diamond_y = 0;
-				homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
-				double pos_x = diamond_x + state->pos_x;
-				double pos_y = diamond_y + state->pos_y;
-				if(!diamondIsZapped(state, pos_x, pos_y)){
-					diamonds[updated_num_balls] = diamond;
-					updated_num_balls++;
-				}
-			}
-			*state->balls = *diamonds;
-			state->num_balls = updated_num_balls;*/
+			  double diamond_x = 0, diamond_y = 0;
+			  homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
+			  double pos_x = diamond_x + state->pos_x;
+			  double pos_y = diamond_y + state->pos_y;
+			  if(!diamondIsZapped(state, pos_x, pos_y)){
+			  diamonds[updated_num_balls] = diamond;
+			  updated_num_balls++;
+			  }
+			  }
+			 *state->balls = *diamonds;
+			 state->num_balls = updated_num_balls;*/
 
 			pthread_mutex_lock(&state->haz_map_mutex);
 			int obstacle = 1;
@@ -603,7 +611,8 @@ void camera_process(state_t* state){
 		} else {
 			printf("shouldn't get heree!!!\n");
 		}
-		pthread_mutex_unlock(&state->image_mutex);
+	}
+	pthread_mutex_unlock(&state->image_mutex);
 }
 
 void camera_destroy(state_t* state){
@@ -744,6 +753,7 @@ void* FSM(void* data){
 					path_destroy(path);
 					printf("Path done, going to analyze\n");
 					nextState = EX_ANALYZE;
+					turnIndex = 0;
 					//nextState = EX_ANALYZE;
 				}
 				break;}
