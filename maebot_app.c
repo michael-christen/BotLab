@@ -99,8 +99,6 @@ void detect_diamonds(state_t * state) {
 
 int shoot_diamond(state_t * state) {
 	state->doing_pid = 1;
-	int not_seen = 0;
-	int last_seen = 0;
 	while(state->doing_pid) {
 		detect_diamonds(state);
 		double pid_out = pid_get_output( state->green_pid,state->diff_x);
@@ -148,8 +146,8 @@ void moveBot(state_t* state){
 	if(state->doing_pid_theta) {
 		return;
 	}
-	if(((state->cmd_val == PID) | state->doing_pid) != 0) {
-		//shoot_diamond(state);
+	if(state->cmd_val == PID != 0) {
+		shoot_diamond(state);
 	} else if (state->cmd_val == FORWARD) {
 		//driveRad(state, STRAIGHT_OFFSET + state->left_offset, LONG_SPEED);
 		driveLR(state, 1, 1+state->left_offset, LONG_SPEED);
@@ -497,7 +495,8 @@ int diamondIsZapped(state_t *state, double diamond_x, double diamond_y){
 	double thresh = 50.0;
 	for(int k = 0; k < state->num_zapped_diamonds; k++){
 		if(fabs(diamond_x - state->zapped_diamonds[k].x) < thresh &&
-			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh){
+			fabs(diamond_y - state->zapped_diamonds[k].y) < thresh &&
+			fabs(state->pos_theta - state->zapped_diamonds[k].y < M_PI)){
 			//Diamond's been zapped already
 			return 1;
 		}
@@ -741,6 +740,43 @@ void* lcm_handle_loop(void *data) {
 	return NULL;
 }
 
+void analyze(state_t *state, double analyzeAngle, fired_from_t firedFrom[],
+	int fires, explorer_state_t *nextState, int* turnIndex){
+	printf("Drive to theta: %f\n", state->pos_theta + analyzeAngle);
+	//clock_t analyzeTime = clock();
+	state->doing_pid_theta = 1;
+	//printf("Driving to theta\n");
+	driveToTheta(state, analyzeAngle);
+	state->doing_pid_theta = 0;
+	//clock_t endTime = clock();
+	printf("Finished driving to theta\n");// in %g s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
+	//analyzeTime = clock();
+	camera_process(state);
+	//endTime = clock();
+	printf("Finsihed camera process\n");// in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
+	//Uncomment to zap diamonds (pew pew)
+
+	int ftthresh = 12;
+	double frthresh = M_PI/4.0;
+	if(state->num_balls){
+		int zappedIt = 0;
+		for(int i = fires; i >=0 ; i--){
+			if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
+				fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
+				fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
+				printf("Diamond seen by bot position\n");
+				zappedIt = 1;
+				break;
+			}
+		}
+		if(!zappedIt){
+			printf("Found a diamond!\n");
+			*turnIndex = *turnIndex + 1;
+			*nextState = EX_ZAP_DIAMOND;
+		}
+	}
+}
+
 void* FSM(void* data){
 	state_t* state = data;
 	explorer_t explorer;
@@ -752,20 +788,20 @@ void* FSM(void* data){
 	time_t start_time = time(NULL);
 	clock_t startTime = clock();
 	int turnIndex = 0;
-	double analyzeAngle;
+	double analyzeAngle = 2 * M_PI / 5;
 	state->num_zapped_diamonds = 0;
 	fired_from_t firedFrom[100];
 	int fires = 0;
-	int ftthresh = 12;
-	double frthresh = M_PI/4.0;
+	int firstLook = 1;
+	double startTheta;
 	while(state->running){
 		switch(curState){
 			case EX_MOVE:{
 				printf("\nSTATE: Move\n");
 				if(path->position != path->length){
 					position_t waypoint = path->waypoints[path->position];
-					printf("cX: %d, cY: %d\n", state->pos_x, state->pos_y);
-					printf("tX: %d, tY: %d\n", waypoint.x, waypoint.y);
+					printf("cX: %f, cY: %f\n", state->pos_x, state->pos_y);
+					printf("tX: %f, tY: %f\n", waypoint.x, waypoint.y);
 					driveToPosition(state, waypoint);
 					path->position++;
 					printf("Completed move %d\n", path->position);
@@ -793,78 +829,51 @@ void* FSM(void* data){
 				nextState = EX_ANALYZE;
 			break;}
 			case EX_ZAP_DIAMOND:{
-				printf("STATE: Zap Diamond\n");/*
-				for(int h = 0; h < state->num_balls; h++){*/
-					ball_t diamond = state->balls[0];
-					double image_x = diamond.x;
-					double image_y = diamond.y;
-					int k;
-					double closest = 1000;
-					int iclosest = 0;
-					double max = 0;
-					for( k = 0; k < state->num_pts_tape; k++){
-						if(fabs(image_x - state->tape[k].x) < closest){
-							closest = state->tape[k].x;
-							iclosest = k;
-						}
-						if(state->tape[k].x > max){
-							max = state->tape[k].x;
-						}
-						if(state->tape[k].x == image_x){
-							printf("Found a tape reference\n!");
-							image_y = state->tape[k].y;
-							break;
-						}
+				printf("STATE: Zap Diamond\n");
+				ball_t diamond = state->balls[0];
+				double image_x = diamond.x;
+				double image_y = diamond.y;
+				int k;
+				double closest = 1000;
+				int iclosest = 0;
+				double max = 0;
+				for( k = 0; k < state->num_pts_tape; k++){
+					if(fabs(image_x - state->tape[k].x) < closest){
+						closest = state->tape[k].x;
+						iclosest = k;
 					}
-					if(closest != image_x){
-						image_y = state->tape[iclosest].y;
+					if(state->tape[k].x > max){
+						max = state->tape[k].x;
 					}
-					printf("Searched %d columns for tape at x: %f. Closest was %f\n", k, image_x, closest);
-					double diamond_x = 0, diamond_y = 0;
-					homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
-					double pos_x = (diamond_x + state->pos_x) * cos(state->pos_theta);
-					double pos_y = (diamond_y + state->pos_y) * sin(state->pos_theta);
-					printf("Diamond at %f, %f\n", pos_x, pos_y);
-					printf("Diamond is %f, %f from the bot\n", diamond_x, diamond_y);
-					printf("Bot is at %f, %f, %f\n", state->pos_x, state->pos_y, state->pos_theta);
-
-					if(diamondIsZapped(state, pos_x, pos_y)){
-						//Go to next diamond in image
-						printf("Diamond seen by its position\n");
-						nextState = EX_ANALYZE;
+					if(state->tape[k].x == image_x){
+						printf("Found a tape reference\n!");
+						image_y = state->tape[k].y;
 						break;
 					}
+				}
+				if(closest != image_x){
+					image_y = state->tape[iclosest].y;
+				}
+				printf("Searched %d columns for tape at x: %f. Closest was %f\n", k, image_x, closest);
+				double diamond_x = 0, diamond_y = 0;
+				homography_project(state->H, image_x, image_y, &diamond_x, &diamond_y);
+				double pos_x = (diamond_x + state->pos_x) * cos(state->pos_theta);
+				double pos_y = (diamond_y + state->pos_y) * sin(state->pos_theta);
+				printf("Diamond at %f, %f\n", pos_x, pos_y);
+				printf("Diamond is %f, %f from the bot\n", diamond_x, diamond_y);
+				printf("Bot is at %f, %f, %f\n", state->pos_x, state->pos_y, state->pos_theta);
 
+				if(diamondIsZapped(state, pos_x, pos_y)){
+					//Go to next diamond in image
+					printf("Diamond seen by its position\n");
+					nextState = EX_ANALYZE;
+					break;
+				}
 
-					/*homography_project(state->H ,image_x, image_y, &diamond_x, &diamond_y);
-					pos_x = diamond_x + state->pos_x;
-					pos_y = diamond_y + state->pos_y;
-
-					double dx = pos_x - state->pos_x;
-					double dy = pos_y - state->pos_y;
-					double dtheta = atan2(dy, dx);
-					double originalTheta = state->pos_theta;
-					//rotate toward diamond
-					state->doing_pid_theta = 1;
-					driveToTheta(state, dtheta);
-					state->doing_pid_theta = 0;
-
-					//shoot diamond
-					fireLaser(state);
-					//update diamond to zapped
-					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
-					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
-					state->num_zapped_diamonds++;
-
-					state->doing_pid_theta = 1;
-					driveToTheta(state, originalTheta);
-
-					state->doing_pid_theta = 0;
-				}*/
-				double originalTheta = state->pos_theta;
 				if(shoot_diamond(state)){
 					state->zapped_diamonds[state->num_zapped_diamonds].x = pos_x;
 					state->zapped_diamonds[state->num_zapped_diamonds].y = pos_y;
+					state->zapped_diamonds[state->num_zapped_diamonds].theta = state->pos_theta;
 					state->num_zapped_diamonds++;
 
 					firedFrom[fires].x = state->pos_x;
@@ -910,48 +919,43 @@ void* FSM(void* data){
 					//nextState = EX_EXIT;
 					//break;
 				}
-				for (; turnIndex < 6; turnIndex++) {
-					printf("Turn Index: %d\n", turnIndex);
-					analyzeAngle = 2.0 * M_PI / 5;
-					printf("Drive to theta: %f\n", state->pos_theta + analyzeAngle);
-					clock_t analyzeTime = clock();
-					state->doing_pid_theta = 1;
-					printf("Driving to theta\n");
-					driveToTheta(state, state->pos_theta + analyzeAngle);
-					state->doing_pid_theta = 0;
-					clock_t endTime = clock();
-					printf("Finished driving to theta in %g s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
-					analyzeTime = clock();
-					camera_process(state);
-					endTime = clock();
-					printf("Finsihed camera process in  %f s\n", (double) (endTime - analyzeTime)/CLOCKS_PER_SEC);
-					//Uncomment to zap diamonds (pew pew)
-					if(state->num_balls){
-						int zappedIt = 0;
-						for(int i = fires; i >=0 ; i--){
-							if(fabs(firedFrom[i].x - state->pos_x) < ftthresh &&
-								fabs(firedFrom[i].y - state->pos_y) < ftthresh &&
-								fabs(firedFrom[i].theta - state->pos_theta) < frthresh){
-									printf("Diamond seen by bot position\n");
-									zappedIt = 1;
-									break;
-							}
-						}
-						if(!zappedIt){
-							printf("Found a diamond!\n");
-							turnIndex++;
-							nextState = EX_ZAP_DIAMOND;
+				if(firstLook){
+					for (; turnIndex < 6; turnIndex++) {
+						printf("Turn Index: %d\n", turnIndex);
+						analyzeAngle = state->pos_theta + 2.0 * M_PI / 5;
+						analyze(state, analyzeAngle, firedFrom, fires, &nextState, &turnIndex);
+						if (nextState == EX_ZAP_DIAMOND) {
 							break;
 						}
+					}
+					if(turnIndex >= 5){
+						turnIndex = 0;
+						firstLook = 0;
+					}
+				}else{
+					startTheta = state->pos_theta;
+					for(; turnIndex < 3; turnIndex++){
+						switch(turnIndex){
+							case 0: analyzeAngle = startTheta;
+								break;
+							case 1: analyzeAngle = startTheta + 2.0 * M_PI / 5;
+								break;
+							case 2: analyzeAngle = startTheta - 2.0 * M_PI / 5;
+								break;
+						}
+
+						analyze(state, analyzeAngle, firedFrom, fires, &nextState, &turnIndex);
+						if (nextState == EX_ZAP_DIAMOND) {
+							break;
+						}
+					}
+					if(turnIndex >= 2){
+						turnIndex = 0;
 					}
 				}
 				if (nextState == EX_ZAP_DIAMOND) {
 					break;
 				}
-				if(turnIndex == 5){
-					turnIndex = 0;
-				}
-				printf("going into default\n");
 				nextState = EX_DEFAULT;
 			break;}
 			case EX_DEFAULT:
